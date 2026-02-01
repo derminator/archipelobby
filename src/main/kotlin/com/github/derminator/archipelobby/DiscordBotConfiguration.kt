@@ -12,7 +12,7 @@ class DiscordBotConfiguration {
 
     @Bean
     @ConditionalOnProperty("DISCORD_BOT_TOKEN")
-    fun gatewayDiscordClient(@Value("\${DISCORD_BOT_TOKEN}") token: String): GatewayDiscordClient {
+    fun gatewayDiscordClient(@Value($$"${DISCORD_BOT_TOKEN}") token: String): GatewayDiscordClient {
         return DiscordClientBuilder.create(token)
             .build()
             .login()
