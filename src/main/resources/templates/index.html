@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Archipelobby</title>
+</head>
+<body>
+<header>
+    <div sec:authorize="isAuthenticated()">
+        Logged in as: <span sec:authentication="principal.attributes['username']">User</span>
+        |
+        <form method="post" style="display: inline;" th:action="@{/logout}">
+            <input style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0;"
+                   type="submit"
+                   value="Logout"/>
+        </form>
+    </div>
+    <div sec:authorize="isAnonymous()">
+        <a th:href="@{/oauth2/authorization/discord}">Login with Discord</a>
+    </div>
+</header>
+<main>
+    <h1>Welcome to Archipelobby</h1>
+</main>
+</body>
+</html>

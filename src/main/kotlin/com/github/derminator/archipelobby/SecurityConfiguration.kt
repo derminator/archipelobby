@@ -17,9 +17,11 @@ class SecurityConfiguration {
     ): SecurityWebFilterChain {
         return http
             .authorizeExchange { exchange ->
+                exchange.pathMatchers("/", "/error").permitAll()
                 exchange.anyExchange().authenticated()
             }
             .oauth2Login(Customizer.withDefaults())
+            .anonymous(Customizer.withDefaults())
             .build()
     }
 }
