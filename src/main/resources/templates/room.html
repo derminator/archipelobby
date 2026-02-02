@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${room.name}">Room Name</title>
+</head>
+<body>
+<header>
+    <div sec:authorize="isAuthenticated()">
+        Logged in as: <span sec:authentication="principal.attributes['username']">User</span>
+        |
+        <form method="post" style="display: inline;" th:action="@{/logout}">
+            <input style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0;"
+                   type="submit"
+                   value="Logout"/>
+        </form>
+    </div>
+    <a th:href="@{/}">Back to Index</a>
+</header>
+<main>
+    <h1 th:text="${room.name}">Room Name</h1>
+
+    <h2>Members</h2>
+    <ul>
+        <li th:each="member : ${members}" th:text="${member.username}">Username</li>
+    </ul>
+
+    <form method="post" th:action="@{/rooms/{id}/join(id=${room.id})}" th:if="${not isMember}">
+        <input type="submit" value="Join Room"/>
+    </form>
+
+    <form method="post" th:action="@{/rooms/{id}/leave(id=${room.id})}" th:if="${isMember}">
+        <input type="submit" value="Leave Room"/>
+    </form>
+
+    <div th:if="${isAdmin}">
+        <h2>Admin Actions</h2>
+        <form method="post" th:action="@{/rooms/{id}/delete(id=${room.id})}">
+            <input onclick="return confirm('Are you sure?')" type="submit" value="Delete Room"/>
+        </form>
+    </div>
+</main>
+</body>
+</html>
