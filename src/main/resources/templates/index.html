@@ -6,18 +6,7 @@
 </head>
 <body>
 <header>
-    <div sec:authorize="isAuthenticated()">
-        Logged in as: <span sec:authentication="principal.attributes['username']">User</span>
-        |
-        <form method="post" style="display: inline;" th:action="@{/logout}">
-            <input style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0;"
-                   type="submit"
-                   value="Logout"/>
-        </form>
-    </div>
-    <div sec:authorize="isAnonymous()">
-        <a th:href="@{/oauth2/authorization/discord}">Login with Discord</a>
-    </div>
+    <div th:replace="~{layout :: user-bar}"></div>
 </header>
 <main>
     <h1>Welcome to Archipelobby</h1>

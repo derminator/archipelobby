@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
+<div th:fragment="user-bar">
+    <div sec:authorize="isAuthenticated()">
+        Logged in as: <span sec:authentication="principal.attributes['username']">User</span>
+        |
+        <form th:action="@{/logout}" method="post" style="display: inline;">
+            <input type="submit" value="Logout"
+                   style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0;"/>
+        </form>
+    </div>
+    <div sec:authorize="isAnonymous()">
+        <a th:href="@{/oauth2/authorization/discord}">Login with Discord</a>
+    </div>
+</div>
+</html>

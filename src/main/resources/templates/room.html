@@ -1,20 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title th:text="${room.name}">Room Name</title>
 </head>
 <body>
 <header>
-    <div sec:authorize="isAuthenticated()">
-        Logged in as: <span sec:authentication="principal.attributes['username']">User</span>
-        |
-        <form method="post" style="display: inline;" th:action="@{/logout}">
-            <input style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0;"
-                   type="submit"
-                   value="Logout"/>
-        </form>
-    </div>
+    <div th:replace="~{layout :: user-bar}"></div>
     <a th:href="@{/}">Back to Index</a>
 </header>
 <main>
