@@ -6,7 +6,7 @@ import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
-@Table("rooms")
+@Table("ROOMS")
 data class Room(
     @Id val id: Long? = null,
     val guildId: Long,
@@ -20,7 +20,7 @@ data class Room(
     }
 }
 
-@Table("room_members")
+@Table("ROOM_MEMBERS")
 data class RoomMember(
     @Id val id: Long? = null,
     val roomId: Long,
@@ -36,5 +36,4 @@ interface RoomMemberRepository : ReactiveCrudRepository<RoomMember, Long> {
     fun findByRoomIdAndUserId(roomId: Long, userId: Long): Mono<RoomMember>
     fun findByUserId(userId: Long): Flux<RoomMember>
     fun deleteByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Void>
-    fun deleteByRoomId(roomId: Long): Mono<Void>
 }

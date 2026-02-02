@@ -22,9 +22,11 @@ class RoomService(
     private val gatewayDiscordClient: GatewayDiscordClient
 ) {
 
-    fun getRoomsForUser(userId: Long): Flux<Room> {
-        return roomMemberRepository.findByUserId(userId)
-            .flatMap { roomRepository.findById(it.roomId) }
+    fun getRoomsForUser(userId: Long): Flux<Room> = flux {
+        roomMemberRepository.findByUserId(userId).collect {
+            val room = roomRepository.findById(it.roomId).awaitSingle()
+            send(room)
+        }
     }
 
     fun getAdminGuilds(userId: Long): Flux<GuildInfo> = flux {
