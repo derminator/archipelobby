@@ -10,8 +10,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockOAuth2Login
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.springSecurity
+import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.*
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
@@ -99,6 +98,38 @@ class WebTests {
                 assert(body != null)
                 assert(body!!.contains("404"))
                 assert(body.contains("Page Not Found"))
+            }
+    }
+
+    @Test
+    fun `bad request shows generic error page`() {
+        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+            .mutateWith(csrf())
+            .post().uri("/rooms")
+            // guildId and name are missing, should trigger 400 Bad Request
+            .header("Accept", "text/html")
+            .exchange()
+            .expectStatus().isBadRequest
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("An error occurred"))
+            }
+    }
+
+    @Test
+    fun `internal server error shows generic error page`() {
+        `when`(roomRepository.findById(anyLong())).thenThrow(RuntimeException("Test exception"))
+
+        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+            .get().uri("/rooms/123")
+            .header("Accept", "text/html")
+            .exchange()
+            .expectStatus().is5xxServerError
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("An error occurred"))
             }
     }
 
