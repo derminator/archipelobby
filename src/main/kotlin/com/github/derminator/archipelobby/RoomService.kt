@@ -32,8 +32,8 @@ class RoomService(
     fun getAdminGuilds(userId: Long): Flux<GuildInfo> = flux {
         val userSnowflake = Snowflake.of(userId)
         gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake).awaitSingle()
-            if (member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
+            val member = guid.getMemberById(userSnowflake).awaitSingleOrNull()
+            if (member != null && member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
                 send(GuildInfo(guid.id.asLong(), guid.name))
             }
         }
@@ -93,7 +93,7 @@ class RoomService(
         if (!isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
-        roomRepository.deleteById(roomId).awaitSingle()
+        roomRepository.deleteById(roomId).awaitSingleOrNull()
     }
 
     fun getRoom(roomId: Long, userId: Long): Mono<RoomWithMembers> = mono {
