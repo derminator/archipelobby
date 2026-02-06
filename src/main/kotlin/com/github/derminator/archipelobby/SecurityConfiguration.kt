@@ -2,6 +2,7 @@ package com.github.derminator.archipelobby
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
@@ -17,7 +18,9 @@ class SecurityConfiguration {
     ): SecurityWebFilterChain {
         return http
             .authorizeExchange { exchange ->
-                exchange.pathMatchers("/", "/error").permitAll()
+                exchange.pathMatchers("/", "/error", "/error/**", "/guide").permitAll()
+                exchange.pathMatchers(HttpMethod.GET, "/worlds").permitAll()
+                exchange.pathMatchers(HttpMethod.GET, "/worlds/files/**").permitAll()
                 exchange.anyExchange().authenticated()
             }
             .oauth2Login(Customizer.withDefaults())

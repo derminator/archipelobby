@@ -142,4 +142,28 @@ class WebTests {
             .expectStatus().is3xxRedirection
             .expectHeader().valueMatches("Location", ".*/oauth2/authorization/discord")
     }
+
+    @Test
+    fun `guide page is accessible without authentication`() {
+        webTestClient.get().uri("/guide")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("How to Join an Archipelago Game"))
+            }
+    }
+
+    @Test
+    fun `worlds page is accessible without authentication`() {
+        webTestClient.get().uri("/worlds")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("Supported Games"))
+            }
+    }
 }

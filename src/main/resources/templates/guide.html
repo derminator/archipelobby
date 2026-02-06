@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Archipelobby Guide</title>
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+    <a th:href="@{/}">Back to Index</a>
+</header>
+<main>
+    <h1>How to Join an Archipelago Game</h1>
+
+    <p>It's time to prepare for the next <a href="https://archipelago.gg/" target="_blank" rel="noopener">Archipelago</a> game!
+        Start time is still up in the air, but probably sometime next week (remember it's async, so no need to be present).</p>
+
+    <h2>Before the game starts</h2>
+    <ol>
+        <li>Pick a <a th:href="@{/worlds}">supported game</a> (let us know if there's something you want to play not on the list; we can probably get it working).</li>
+        <li>Generate a YAML file for the game you picked with your desired randomizer settings. There's a link to a form for each game on the supported games list or you can do it manually.</li>
+        <li>Upload your YAML file on your room page.</li>
+        <li>Wait for the game to start. You can get a head start on the setup guide for your game (see link on the games list or <a href="https://archipelago.gg/games" target="_blank" rel="noopener">here</a> for officially supported games) if you want; patch files and the server address will be available once the game starts.</li>
+    </ol>
+
+    <h2>New to Archipelago?</h2>
+    <p>Here are some useful resources:</p>
+    <ul>
+        <li><strong><a href="https://archipelago.gg/glossary/en/" target="_blank" rel="noopener">Commonly used terms</a></strong></li>
+    </ul>
+
+    <h3>Setup Guide</h3>
+    <ol>
+        <li><a href="https://archipelago.gg/tutorial/Archipelago/setup_en#installing-the-archipelago-software" target="_blank" rel="noopener">Install the latest version of the Archipelago Software</a></li>
+        <li>(Skip this step for <a href="https://archipelago.gg/games" target="_blank" rel="noopener">core-verified games</a>) If you're playing a community-supported game, then <a href="https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds" target="_blank" rel="noopener">install the game's APWorld file</a>. There's download links in the games list.</li>
+        <li>Follow the game-specific setup instructions for your game
+            <ul>
+                <li>Note that the server address and patch files (if applicable; usually for emulated games) will be provided once the game starts</li>
+                <li>For core-verified games, setup instructions can be found <a href="https://archipelago.gg/games" target="_blank" rel="noopener">here</a></li>
+                <li>Setup instructions for community-supported games are a little harder to find. Most of the time, they're in the .apworld file itself. It's actually just a ZIP file, so open it with 7-ZIP or similar programs and check for a <code>docs</code> directory. If that doesn't work, there's links to the game's discord channel on the games list.</li>
+            </ul>
+        </li>
+        <li>Once the game has started, use your game-specific method to connect to the server. Usually this involves a text client that connects to an emulator or a mod for PC games. It's important to be connected to both the server (logged into your slot) and the game so that you can send and receive items.
+            <ul>
+                <li><strong>Don't use the link on the Archipelago webpage to connect.</strong> If you're having trouble or keep joining as "viewing", close all Archipelago windows and try again.</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Useful Tools</h3>
+    <ul>
+        <li><strong>Hints:</strong> Type <code>!hint &lt;item&gt;</code> into a text client to find out where one of your items is. A hint costs points (usually 10% of the total points &amp; you get a point for a check). <code>!hint</code> will show how many points you have.
+            <ul>
+                <li>Don't have enough points? Try a hint game like <a href="https://archipelago.gg/tutorial/Sudoku/setup_en" target="_blank" rel="noopener">Sudoku</a> for a free hint.</li>
+            </ul>
+        </li>
+        <li><strong>Trackers:</strong> Trackers are supplementary clients that show what locations are possible to reach based on the current game state. They're really useful if you think you're stuck.
+            <ul>
+                <li><a href="https://archipelago.miraheze.org/wiki/PopTracker" target="_blank" rel="noopener">PopTracker</a>: Shows an auto-updating map of your game with locations available to check. However, this requires a game-specific pack to exist. <a href="https://archipelago.miraheze.org/wiki/Category:Games_with_PopTracker" target="_blank" rel="noopener">See available packs</a>.</li>
+                <li><strong>Universal Tracker:</strong> A text-based tracker that uses the randomizer itself to show accessible locations for any game and a high-level route to those locations (usefulness of this depends on the game). Note that this tends to be less specific than PopTracker and has some limitations with certain randomization options. There's also some additional setup required since it needs to run the generator locally:
+                    <ol>
+                        <li>Download the <a href="https://github.com/FarisTheAncient/Archipelago/releases?q=Tracker" target="_blank" rel="noopener">Universal Tracker APWorld</a> and <a href="https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds" target="_blank" rel="noopener">install it like a custom game</a></li>
+                        <li>Download and install all custom worlds present in the game, even if they aren't your game</li>
+                        <li>Download all YAMLs for the game (you can get them from the room where we uploaded them). Make sure to get them as separate files; not a bundled file. Place them in <code>C:\\ProgramData\\Archipelago\\Players</code>.</li>
+                        <li>Open the Universal Tracker from the Archipelago Launcher and connect to your slot in the server. Use <code>/help</code> to see all available commands.</li>
+                    </ol>
+                </li>
+            </ul>
+        </li>
+    </ul>
+</main>
+</body>
+</html>

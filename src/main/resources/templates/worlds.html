@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Supported Games (APWorlds)</title>
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+    <a th:href="@{/}">Back to Index</a>
+</header>
+<main>
+    <h1>Supported Games</h1>
+    <p>Upload custom worlds (.apworld) to make them available to players. Once uploaded, everyone can download them for setup.</p>
+
+    <div sec:authorize="isAuthenticated()">
+        <h2>Upload a Custom World</h2>
+        <form th:action="@{/worlds}" method="post" enctype="multipart/form-data">
+            <input type="file" name="file" accept=".apworld" required>
+            <input type="submit" value="Upload APWorld">
+        </form>
+    </div>
+    <div sec:authorize="isAnonymous()">
+        <p><em>Login to upload new APWorlds.</em></p>
+    </div>
+
+    <h2>Available Worlds</h2>
+    <ul>
+        <li th:if="${#lists.isEmpty(worldFiles)}">No worlds uploaded yet.</li>
+        <li th:each="wf : ${worldFiles}">
+            <a th:href="@{/worlds/files/{f}(f=${wf.name})}" th:text="${wf.name}">file.apworld</a>
+            (<span th:text="${wf.size}">0</span> bytes)
+        </li>
+    </ul>
+
+    <p>For core-verified games and official setup guides, see <a href="https://archipelago.gg/games" target="_blank" rel="noopener">archipelago.gg/games</a>.</p>
+</main>
+</body>
+</html>

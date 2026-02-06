@@ -10,6 +10,13 @@
 </header>
 <main>
     <h1>Welcome to Archipelobby</h1>
+
+    <nav>
+        <a th:href="@{/guide}">New? Read the Guide</a>
+        |
+        <a th:href="@{/worlds}">Supported Games</a>
+    </nav>
+
     <div sec:authorize="isAuthenticated()">
         <div th:if="${not #lists.isEmpty(userRooms)}">
             <h2>Your Rooms</h2>
@@ -47,6 +54,11 @@
                 <input type="submit" value="Create Room"/>
             </form>
         </div>
+    </div>
+
+    <div sec:authorize="isAnonymous()">
+        <p>Login with Discord to join or create rooms.</p>
+        <p>New to Archipelago? Start with the <a th:href="@{/guide}">setup guide</a> and browse <a th:href="@{/worlds}">supported games</a>.</p>
     </div>
 </main>
 </body>

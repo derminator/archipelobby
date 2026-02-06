@@ -8,6 +8,10 @@
 <header>
     <div th:replace="~{layout :: user-bar}"></div>
     <a th:href="@{/}">Back to Index</a>
+    |
+    <a th:href="@{/guide}">Guide</a>
+    |
+    <a th:href="@{/worlds}">Supported Games</a>
 </header>
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
@@ -24,6 +28,21 @@
     <form method="post" th:action="@{/rooms/{id}/leave(id=${room.id})}" th:if="${isMember}">
         <input type="submit" value="Leave Room"/>
     </form>
+
+    <div>
+        <h2>YAML Files</h2>
+        <div th:if="${#lists.isEmpty(yamlFiles)}">No YAML files uploaded yet.</div>
+        <ul>
+            <li th:each="f : ${yamlFiles}">
+                <a th:href="@{/rooms/{id}/yamls/{file}(id=${room.id}, file=${f.name})}" th:text="${f.name}">file.yaml</a>
+                (<span th:text="${f.size}">0</span> bytes)
+            </li>
+        </ul>
+        <form th:if="${isMember}" method="post" enctype="multipart/form-data" th:action="@{/rooms/{id}/yaml(id=${room.id})}">
+            <input type="file" name="file" accept=".yaml,.yml" required>
+            <input type="submit" value="Upload YAML">
+        </form>
+    </div>
 
     <div th:if="${isAdmin}">
         <h2>Admin Actions</h2>
