@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Glossary - Archipelago Lobby</title>
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+    <a th:href="@{/help}">Back to Help</a> | <a th:href="@{/}">Back to Index</a>
+</header>
+<main>
+    <h1>Archipelago Glossary</h1>
+    <p>
+        This page covers commonly used terms in Archipelago. For a complete glossary, visit the
+        <a href="https://archipelago.gg/glossary/en/" target="_blank">official Archipelago glossary</a>.
+    </p>
+
+    <h2>Common Terms</h2>
+    <dl>
+        <dt><strong>Slot</strong></dt>
+        <dd>Your player slot in the multiworld game. Each player has their own slot.</dd>
+
+        <dt><strong>Check / Location</strong></dt>
+        <dd>A location in a game where you can find an item. "Checking" a location means collecting the item there.</dd>
+
+        <dt><strong>Item</strong></dt>
+        <dd>Something you can find at a location. Items can be for your game or for other players' games.</dd>
+
+        <dt><strong>Multiworld</strong></dt>
+        <dd>A randomizer game involving multiple players, where items are shuffled across all players' games.</dd>
+
+        <dt><strong>YAML</strong></dt>
+        <dd>A configuration file that contains your game settings and randomizer options. You generate and upload this
+            before the game starts.
+        </dd>
+
+        <dt><strong>APWorld</strong></dt>
+        <dd>A file that adds support for a specific game to Archipelago. Core-verified games are built-in, but community
+            games require you to install their .apworld file.
+        </dd>
+
+        <dt><strong>Core-Verified / Official Game</strong></dt>
+        <dd>A game that's officially supported and included with Archipelago by default.</dd>
+
+        <dt><strong>Community-Supported Game</strong></dt>
+        <dd>A game created by the community that requires installing a custom APWorld file.</dd>
+
+        <dt><strong>Patch File</strong></dt>
+        <dd>A file generated after the multiworld is created. For emulated games, you apply this to your ROM to
+            randomize it.
+        </dd>
+
+        <dt><strong>Text Client</strong></dt>
+        <dd>A program that connects your game to the Archipelago server, allowing you to send and receive items.</dd>
+
+        <dt><strong>Hint</strong></dt>
+        <dd>Information about where one of your items is located (which player's game and which location). Hints cost
+            points.
+        </dd>
+
+        <dt><strong>Tracker</strong></dt>
+        <dd>A tool that shows you which locations are accessible based on the items you currently have.</dd>
+
+        <dt><strong>Async / Asynchronous</strong></dt>
+        <dd>A play style where players don't need to be online at the same time. You can play at your own pace.</dd>
+
+        <dt><strong>Goal</strong></dt>
+        <dd>The win condition for your game. Once you reach your goal, you've completed your part of the multiworld.
+        </dd>
+    </dl>
+
+    <h2>Additional Resources</h2>
+    <ul>
+        <li><a href="https://archipelago.gg/glossary/en/" target="_blank">Official Archipelago Glossary (Complete)</a>
+        </li>
+        <li><a th:href="@{/help}">Back to Help Index</a></li>
+        <li><a th:href="@{/help/setup}">Setup Guide</a></li>
+        <li><a th:href="@{/help/tools}">Useful Tools</a></li>
+    </ul>
+</main>
+</body>
+</html>
