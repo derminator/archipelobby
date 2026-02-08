@@ -1,5 +1,7 @@
 package com.github.derminator.archipelobby
 
+import com.github.derminator.archipelobby.data.EntryRepository
+import com.github.derminator.archipelobby.data.RoomRepository
 import discord4j.core.GatewayDiscordClient
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -33,7 +35,7 @@ class WebTests {
     lateinit var roomRepository: RoomRepository
 
     @MockitoBean
-    lateinit var roomMemberRepository: RoomMemberRepository
+    lateinit var entryRepository: EntryRepository
 
     @Autowired
     lateinit var context: ApplicationContext
@@ -49,8 +51,8 @@ class WebTests {
     @BeforeEach
     fun setup() {
         `when`(gatewayDiscordClient.guilds).thenReturn(Flux.empty())
-        `when`(roomMemberRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
-        `when`(roomMemberRepository.findByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.empty())
+        `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
+        `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
 
         webTestClient = WebTestClient.bindToApplicationContext(context)
             .apply(springSecurity())
