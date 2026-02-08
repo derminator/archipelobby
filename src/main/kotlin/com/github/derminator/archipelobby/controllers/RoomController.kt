@@ -64,6 +64,24 @@ class RoomController(private val roomService: RoomService) {
         "room"
     }
 
+    @PostMapping("/{roomId}/join")
+    fun joinRoom(
+        @PathVariable roomId: Long,
+        exchange: ServerWebExchange,
+        @AuthenticationPrincipal principal: OAuth2User
+    ): Mono<String> = mono {
+        val userId =
+            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val formData = exchange.formData.awaitSingle()
+        val entryName = formData.getFirst("entryName")
+            ?: throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Required form parameter 'entryName' is not present"
+            )
+        roomService.addEntry(roomId, userId, entryName).awaitSingle()
+        "redirect:/rooms/$roomId"
+    }
+
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,

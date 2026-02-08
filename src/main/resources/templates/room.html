@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title th:text="${room.name}">Room Name</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
 <header>
@@ -45,7 +46,7 @@
         <input type="submit" value="Add Entry"/>
     </form>
 
-    <div th:if="${isAdmin}">
+    <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
         <form method="post" th:action="@{/rooms/{id}/delete(id=${room.id})}">
             <input onclick="return confirm('Are you sure?')" type="submit" value="Delete Room"/>

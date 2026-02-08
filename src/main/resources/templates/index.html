@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Archipelobby</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
 <header>
@@ -20,7 +21,23 @@
             </ul>
         </div>
 
-        <div th:if="${not #lists.isEmpty(adminGuilds)}">
+        <div th:if="${not #lists.isEmpty(joinableRooms)}">
+            <h2>Join a Room</h2>
+            <ul>
+                <li th:each="room : ${joinableRooms}">
+                    <strong th:text="${room.name}">Room Name</strong>
+                    <form method="post" style="display: inline;" th:action="@{/rooms/{id}/join(id=${room.id})}">
+                        <label>
+                            Your Entry Name:
+                            <input name="entryName" placeholder="Entry name" required type="text"/>
+                        </label>
+                        <input type="submit" value="Join"/>
+                    </form>
+                </li>
+            </ul>
+        </div>
+
+        <div class="admin-section" th:if="${not #lists.isEmpty(adminGuilds)}">
             <h2>Create a Room</h2>
             <form method="post" th:action="@{/rooms}">
                 <label for="guildId">Guild:</label>
