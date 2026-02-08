@@ -21,8 +21,25 @@ import reactor.core.publisher.Mono
 @RequestMapping("/rooms")
 class RoomController(private val roomService: RoomService) {
     @GetMapping
-    fun getRooms(): String {
-        return "redirect:/"
+    fun getRooms(
+        @AuthenticationPrincipal principal: OAuth2User?,
+        model: Model
+    ): Mono<String> {
+        if (principal == null) {
+            return Mono.just("redirect:/")
+        }
+
+        val userId = principal.name.toLongOrNull() ?: return Mono.just("redirect:/")
+        return Mono.zip(
+            roomService.getRoomsForUser(userId).collectList(),
+            roomService.getAdminGuilds(userId).collectList(),
+            roomService.getJoinableRooms(userId).collectList()
+        ).map { tuple ->
+            model.addAttribute("userRooms", tuple.t1)
+            model.addAttribute("adminGuilds", tuple.t2)
+            model.addAttribute("joinableRooms", tuple.t3)
+            "rooms"
+        }
     }
 
     @PostMapping
