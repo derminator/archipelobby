@@ -1,4 +1,4 @@
-package com.github.derminator.archipelobby
+package com.github.derminator.archipelobby.data
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table

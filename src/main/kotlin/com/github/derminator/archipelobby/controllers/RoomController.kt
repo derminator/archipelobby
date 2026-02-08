@@ -1,5 +1,6 @@
-package com.github.derminator.archipelobby
+package com.github.derminator.archipelobby.controllers
 
+import com.github.derminator.archipelobby.data.RoomService
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono

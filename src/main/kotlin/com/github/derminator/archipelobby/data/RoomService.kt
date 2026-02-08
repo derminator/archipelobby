@@ -1,4 +1,4 @@
-package com.github.derminator.archipelobby
+package com.github.derminator.archipelobby.data
 
 import discord4j.common.util.Snowflake
 import discord4j.core.GatewayDiscordClient
