@@ -66,6 +66,9 @@ class RoomService(
         if (!member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
+        if (entryName.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
+        }
         val room = roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
         entryRepository.save(Entry(roomId = room.id!!, userId = userId, name = entryName)).awaitSingle()
         room
@@ -76,6 +79,16 @@ class RoomService(
         val room = roomRepository.findById(roomId).awaitSingle()
         val guid = gatewayDiscordClient.getGuildById(Snowflake.of(room.guildId)).awaitSingle()
         guid.getMemberById(Snowflake.of(userId)).awaitSingle()
+
+        if (entryName.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
+        }
+
+        val nameExists = entryRepository.existsByRoomIdAndName(roomId, entryName).awaitSingle()
+        if (nameExists) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
+        }
+
         entryRepository.save(Entry(roomId = roomId, userId = userId, name = entryName)).awaitSingle()
     }
 
@@ -98,6 +111,20 @@ class RoomService(
 
         if (entry.userId != userId) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot rename another user's entry")
+        }
+
+        if (newName.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
+        }
+
+        if (entry.name != newName) {
+            val nameExists = entryRepository.existsByRoomIdAndName(entry.roomId, newName).awaitSingle()
+            if (nameExists) {
+                throw ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "An entry with this name already exists in this room"
+                )
+            }
         }
 
         entryRepository.save(entry.copy(name = newName)).awaitSingle()

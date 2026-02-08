@@ -29,4 +29,5 @@ interface EntryRepository : ReactiveCrudRepository<Entry, Long> {
     fun findByRoomId(roomId: Long): Flux<Entry>
     fun findByUserId(userId: Long): Flux<Entry>
     fun countByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Long>
+    fun existsByRoomIdAndName(roomId: Long, name: String): Mono<Boolean>
 }
