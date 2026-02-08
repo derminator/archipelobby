@@ -13,6 +13,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.*
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus
@@ -32,6 +34,11 @@ import reactor.core.publisher.Mono
         "DISCORD_BOT_TOKEN=dummy",
         "DISCORD_CLIENT_ID=dummy",
         "DISCORD_CLIENT_SECRET=dummy"
+    ]
+)
+@EnableAutoConfiguration(
+    exclude = [
+        R2dbcAutoConfiguration::class,
     ]
 )
 class WebTests {
