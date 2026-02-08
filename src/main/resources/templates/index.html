@@ -20,18 +20,6 @@
             </ul>
         </div>
 
-        <div th:if="${not #lists.isEmpty(joinableRooms)}">
-            <h2>Joinable Rooms</h2>
-            <ul>
-                <li th:each="room : ${joinableRooms}">
-                    <span th:text="${room.name}">Room Name</span>
-                    <form method="post" style="display: inline;" th:action="@{/rooms/{id}/join(id=${room.id})}">
-                        <input type="submit" value="Join"/>
-                    </form>
-                </li>
-            </ul>
-        </div>
-
         <div th:if="${not #lists.isEmpty(adminGuilds)}">
             <h2>Create a Room</h2>
             <form method="post" th:action="@{/rooms}">
@@ -43,6 +31,9 @@
                 <br/>
                 <label for="name">Room Name:</label>
                 <input id="name" name="name" required type="text"/>
+                <br/>
+                <label for="entryName">Your Entry Name:</label>
+                <input id="entryName" name="entryName" required type="text"/>
                 <br/>
                 <input type="submit" value="Create Room"/>
             </form>

@@ -12,17 +12,37 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
-    <h2>Members</h2>
+    <h2>Entries</h2>
     <ul>
-        <li th:each="member : ${members}" th:text="${member.username}">Username</li>
+        <li th:each="entry : ${entries}">
+            <strong th:text="${entry.name}">Entry Name</strong>
+            (<span th:text="${entry.user.username}">Username</span>)
+            <form method="post"
+                  style="display: inline;"
+                  th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
+                  th:if="${entry.user.id == userId or isAdmin}">
+                <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
+            </form>
+            <form method="post"
+                  style="display: inline;"
+                  th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
+                  th:if="${entry.user.id == userId}">
+                <label>
+                    Name
+                    <input name="newName" placeholder="New name" required type="text"/>
+                </label>
+                <input type="submit" value="Rename"/>
+            </form>
+        </li>
     </ul>
 
-    <form method="post" th:action="@{/rooms/{id}/join(id=${room.id})}" th:if="${not isMember}">
-        <input type="submit" value="Join Room"/>
-    </form>
-
-    <form method="post" th:action="@{/rooms/{id}/leave(id=${room.id})}" th:if="${isMember}">
-        <input type="submit" value="Leave Room"/>
+    <h3 th:if="${hasMembership}">Add Entry</h3>
+    <form method="post" th:action="@{/rooms/{id}/entries(id=${room.id})}" th:if="${hasMembership}">
+        <label>
+            Name
+            <input name="entryName" placeholder="Entry name" required type="text"/>
+        </label>
+        <input type="submit" value="Add Entry"/>
     </form>
 
     <div th:if="${isAdmin}">

@@ -34,10 +34,15 @@ class RoomController(private val roomService: RoomService) {
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'guildId' is not present")
         val name = formData.getFirst("name")
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
+        val entryName = formData.getFirst("entryName")
+            ?: throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Required form parameter 'entryName' is not present"
+            )
 
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val room = roomService.createRoom(guildId, name, userId).awaitSingle()
+        val room = roomService.createRoom(guildId, name, userId, entryName).awaitSingle()
         "redirect:/rooms/${room.id}"
     }
 
@@ -49,34 +54,63 @@ class RoomController(private val roomService: RoomService) {
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val roomWithMembers = roomService.getRoom(roomId, userId).awaitSingle()
-        model.addAttribute("room", roomWithMembers.room)
-        model.addAttribute("members", roomWithMembers.members)
-        model.addAttribute("isAdmin", roomWithMembers.isAdmin)
-        model.addAttribute("isMember", roomWithMembers.isMember)
+        val roomWithEntries = roomService.getRoom(roomId, userId).awaitSingle()
+        model.addAttribute("room", roomWithEntries.room)
+        model.addAttribute("entries", roomWithEntries.entries)
+        model.addAttribute("isAdmin", roomWithEntries.isAdmin)
+        model.addAttribute("hasMembership", roomWithEntries.hasMembership)
+        model.addAttribute("userId", userId)
         "room"
     }
 
-    @PostMapping("/{roomId}/join")
-    fun joinRoom(
+    @PostMapping("/{roomId}/entries")
+    fun addEntry(
         @PathVariable roomId: Long,
+        exchange: ServerWebExchange,
         @AuthenticationPrincipal principal: OAuth2User
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        roomService.joinRoom(roomId, userId).awaitSingle()
+        val formData = exchange.formData.awaitSingle()
+        val entryName = formData.getFirst("entryName")
+            ?: throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Required form parameter 'entryName' is not present"
+            )
+        roomService.addEntry(roomId, userId, entryName).awaitSingle()
         "redirect:/rooms/$roomId"
     }
 
-    @PostMapping("/{roomId}/leave")
-    fun leaveRoom(
+    @PostMapping("/{roomId}/entries/{entryId}/delete")
+    fun deleteEntry(
         @PathVariable roomId: Long,
+        @PathVariable entryId: Long,
         @AuthenticationPrincipal principal: OAuth2User
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        roomService.leaveRoom(roomId, userId).awaitSingleOrNull()
-        "redirect:/"
+        val isAdmin = roomService.isAdminOfGuild(
+            roomService.getRoom(roomId, userId).awaitSingle().room.guildId,
+            userId
+        ).awaitSingle()
+        roomService.deleteEntry(entryId, userId, isAdmin).awaitSingleOrNull()
+        "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/entries/{entryId}/rename")
+    fun renameEntry(
+        @PathVariable roomId: Long,
+        @PathVariable entryId: Long,
+        exchange: ServerWebExchange,
+        @AuthenticationPrincipal principal: OAuth2User
+    ): Mono<String> = mono {
+        val userId =
+            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val formData = exchange.formData.awaitSingle()
+        val newName = formData.getFirst("newName")
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
+        roomService.renameEntry(entryId, userId, newName).awaitSingle()
+        "redirect:/rooms/$roomId"
     }
 
     @PostMapping("/{roomId}/delete")

@@ -11,29 +11,22 @@ data class Room(
     @Id val id: Long? = null,
     val guildId: Long,
     val name: String
-) {
-    fun addMember(userId: Long): RoomMember {
-        if (id == null) {
-            error("Room must be saved before adding members")
-        }
-        return RoomMember(roomId = id, userId = userId)
-    }
-}
+)
 
-@Table("ROOM_MEMBERS")
-data class RoomMember(
+@Table("ENTRIES")
+data class Entry(
     @Id val id: Long? = null,
     val roomId: Long,
-    val userId: Long
+    val userId: Long,
+    val name: String
 )
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {
     fun findByGuildId(guildId: Long): Flux<Room>
 }
 
-interface RoomMemberRepository : ReactiveCrudRepository<RoomMember, Long> {
-    fun findByRoomId(roomId: Long): Flux<RoomMember>
-    fun findByRoomIdAndUserId(roomId: Long, userId: Long): Mono<RoomMember>
-    fun findByUserId(userId: Long): Flux<RoomMember>
-    fun deleteByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Void>
+interface EntryRepository : ReactiveCrudRepository<Entry, Long> {
+    fun findByRoomId(roomId: Long): Flux<Entry>
+    fun findByUserId(userId: Long): Flux<Entry>
+    fun countByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Long>
 }
