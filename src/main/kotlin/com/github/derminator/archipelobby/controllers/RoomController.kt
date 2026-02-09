@@ -18,7 +18,7 @@ import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 
 @Controller
-@RequestMapping("/rooms")
+@RequestMapping("/rooms", "/rooms/")
 class RoomController(private val roomService: RoomService) {
     @GetMapping
     fun getRooms(
@@ -62,7 +62,7 @@ class RoomController(private val roomService: RoomService) {
         "redirect:/rooms/${room.id}"
     }
 
-    @GetMapping("/{roomId}")
+    @GetMapping("/{roomId}", "/{roomId}/")
     fun getRoom(
         @PathVariable roomId: Long,
         @AuthenticationPrincipal principal: OAuth2User,
