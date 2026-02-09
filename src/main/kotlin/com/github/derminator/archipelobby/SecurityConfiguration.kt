@@ -12,10 +12,8 @@ import org.springframework.security.web.server.SecurityWebFilterChain
 class SecurityConfiguration {
 
     @Bean
-    fun springSecurityFilterChain(
-        http: ServerHttpSecurity
-    ): SecurityWebFilterChain {
-        return http
+    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
+        http
             .authorizeExchange { exchange ->
                 exchange.pathMatchers("/", "/error", "*.css").permitAll()
                 exchange.anyExchange().authenticated()
@@ -23,5 +21,4 @@ class SecurityConfiguration {
             .oauth2Login(Customizer.withDefaults())
             .anonymous(Customizer.withDefaults())
             .build()
-    }
 }

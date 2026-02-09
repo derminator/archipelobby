@@ -10,10 +10,9 @@ import org.springframework.context.annotation.Configuration
 class DiscordBotConfiguration {
 
     @Bean
-    fun gatewayDiscordClient(@Value($$"${DISCORD_BOT_TOKEN}") token: String): GatewayDiscordClient {
-        return DiscordClientBuilder.create(token)
+    fun gatewayDiscordClient(@Value($$"${DISCORD_BOT_TOKEN}") token: String): GatewayDiscordClient =
+        DiscordClientBuilder.create(token)
             .build()
             .login()
             .block() ?: throw IllegalStateException("Failed to connect to Discord")
-    }
 }

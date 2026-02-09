@@ -24,22 +24,20 @@ class RoomController(private val roomService: RoomService) {
     fun getRooms(
         @AuthenticationPrincipal principal: OAuth2User?,
         model: Model
-    ): Mono<String> {
+    ): Mono<String> = mono {
         if (principal == null) {
-            return Mono.just("redirect:/")
+            return@mono "redirect:/"
         }
 
-        val userId = principal.name.toLongOrNull() ?: return Mono.just("redirect:/")
-        return Mono.zip(
-            roomService.getRoomsForUser(userId).collectList(),
-            roomService.getAdminGuilds(userId).collectList(),
-            roomService.getJoinableRooms(userId).collectList()
-        ).map { tuple ->
-            model.addAttribute("userRooms", tuple.t1)
-            model.addAttribute("adminGuilds", tuple.t2)
-            model.addAttribute("joinableRooms", tuple.t3)
-            "rooms"
-        }
+        val userId = principal.name.toLongOrNull() ?: return@mono "redirect:/"
+        val userRooms = roomService.getRoomsForUser(userId).collectList().awaitSingle()
+        val adminGuilds = roomService.getAdminGuilds(userId).collectList().awaitSingle()
+        val joinableRooms = roomService.getJoinableRooms(userId).collectList().awaitSingle()
+
+        model.addAttribute("userRooms", userRooms)
+        model.addAttribute("adminGuilds", adminGuilds)
+        model.addAttribute("joinableRooms", joinableRooms)
+        "rooms"
     }
 
     @PostMapping
