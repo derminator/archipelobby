@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Archipelobby</title>
@@ -11,11 +11,9 @@
 </header>
 <main>
     <h1>Welcome to Archipelobby</h1>
-    <div sec:authorize="isAuthenticated()">
-        <ul>
-            <li><a href="/rooms">Rooms</a></li>
-        </ul>
-    </div>
+    <ul>
+        <li><a href="/rooms">Rooms</a></li>
+    </ul>
 </main>
 </body>
 </html>
