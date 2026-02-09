@@ -48,8 +48,9 @@ class RoomService(
             val member = guid.getMemberById(userSnowflake).awaitSingleOrNull()
             if (member != null) {
                 roomRepository.findByGuildId(guid.id.asLong()).collect { room ->
+                    if (room.id == null) return@collect
                     val hasEntries =
-                        entryRepository.countByRoomIdAndUserId(room.id!!, userId).awaitSingle() > 0
+                        entryRepository.countByRoomIdAndUserId(room.id, userId).awaitSingle() > 0
                     if (!hasEntries) {
                         send(room)
                     }
@@ -70,7 +71,10 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
         }
         val room = roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
-        entryRepository.save(Entry(roomId = room.id!!, userId = userId, name = entryName)).awaitSingle()
+        if (room.id == null) {
+            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Room ID is null after saving")
+        }
+        entryRepository.save(Entry(roomId = room.id, userId = userId, name = entryName)).awaitSingle()
         room
     }
 
@@ -142,6 +146,9 @@ class RoomService(
         roomRepository.deleteById(roomId).awaitSingleOrNull()
     }
 
+    /**
+     * Retrieves room with entries; enforces membership or admin access
+     */
     fun getRoom(roomId: Long, userId: Long): Mono<RoomWithEntries> = mono {
         val room =
             roomRepository.findById(roomId).awaitSingleOrNull() ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
@@ -152,8 +159,9 @@ class RoomService(
         }
         val entries = entryRepository.findByRoomId(roomId)
             .flatMap { entry ->
+                if (entry.id == null) error("Entry ID is null after saving")
                 gatewayDiscordClient.getUserById(Snowflake.of(entry.userId))
-                    .map { EntryInfo(entry.id!!, entry.name, UserInfo(it.id.asLong(), it.username)) }
+                    .map { EntryInfo(entry.id, entry.name, UserInfo(it.id.asLong(), it.username)) }
             }
             .collectList()
             .awaitSingle()
