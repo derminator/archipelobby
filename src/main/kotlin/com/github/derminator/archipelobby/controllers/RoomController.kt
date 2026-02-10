@@ -70,7 +70,6 @@ class RoomController(private val roomService: RoomService) {
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
-        model.addAttribute("hasMembership", roomWithEntries.hasMembership)
         model.addAttribute("userId", userId)
         "room"
     }

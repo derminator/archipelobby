@@ -8,7 +8,7 @@
 <body>
 <header>
     <div th:replace="~{layout :: user-bar}"></div>
-    <a th:href="@{/}">Back to Index</a>
+    <a th:href="@{/rooms}">Back to Rooms</a>
 </header>
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
@@ -29,7 +29,7 @@
                   th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
                   th:if="${entry.user.id == userId}">
                 <label>
-                    Name
+                    Rename
                     <input name="newName" placeholder="New name" required type="text"/>
                 </label>
                 <input type="submit" value="Rename"/>
@@ -37,8 +37,8 @@
         </li>
     </ul>
 
-    <h3 th:if="${hasMembership}">Add Entry</h3>
-    <div th:if="${hasMembership}" th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+    <h3>Add Entry</h3>
+    <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
