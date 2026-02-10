@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${room.name}">Room Name</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+    <a th:href="@{/rooms}">Back to Rooms</a>
+</header>
+<main>
+    <h1 th:text="${room.name}">Room Name</h1>
+
+    <h2>Entries</h2>
+    <ul>
+        <li th:each="entry : ${entries}">
+            <strong th:text="${entry.name}">Entry Name</strong>
+            (<span th:text="${entry.user.username}">Username</span>)
+            <form method="post"
+                  style="display: inline;"
+                  th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
+                  th:if="${entry.user.id == userId or isAdmin}">
+                <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
+            </form>
+            <form method="post"
+                  style="display: inline;"
+                  th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
+                  th:if="${entry.user.id == userId}">
+                <label>
+                    Rename
+                    <input name="newName" placeholder="New name" required type="text"/>
+                </label>
+                <input type="submit" value="Rename"/>
+            </form>
+        </li>
+    </ul>
+
+    <h3>Add Entry</h3>
+    <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+
+    <div class="admin-section" th:if="${isAdmin}">
+        <h2>Admin Actions</h2>
+        <form method="post" th:action="@{/rooms/{id}/delete(id=${room.id})}">
+            <input onclick="return confirm('Are you sure?')" type="submit" value="Delete Room"/>
+        </form>
+    </div>
+</main>
+</body>
+</html>

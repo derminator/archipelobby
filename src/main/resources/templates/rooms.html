@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Rooms - Archipelobby</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+</header>
+<main>
+    <h1>Rooms</h1>
+    <div th:if="${not #lists.isEmpty(userRooms)}">
+        <h2>Your Rooms</h2>
+        <ul>
+            <li th:each="room : ${userRooms}">
+                <a th:href="@{/rooms/{id}(id=${room.id})}" th:text="${room.name}">Room Name</a>
+            </li>
+        </ul>
+    </div>
+
+    <div th:if="${not #lists.isEmpty(joinableRooms)}">
+        <h2>Join a Room</h2>
+        <ul>
+            <li th:each="room : ${joinableRooms}">
+                <a th:href="@{/rooms/{id}(id=${room.id})}" th:text="${room.name}">Room Name</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="admin-section" th:if="${not #lists.isEmpty(adminGuilds)}">
+        <h2>Create a Room</h2>
+        <form method="post" th:action="@{/rooms}">
+            <label for="guildId">Guild:</label>
+            <select id="guildId" name="guildId">
+                <option th:each="guild : ${adminGuilds}" th:text="${guild.name}" th:value="${guild.id}">Guild Name
+                </option>
+            </select>
+            <br/>
+            <label for="name">Room Name:</label>
+            <input id="name" name="name" required type="text"/>
+            <br/>
+            <label for="entryName">Your Entry Name:</label>
+            <input id="entryName" name="entryName" required type="text"/>
+            <br/>
+            <input type="submit" value="Create Room"/>
+        </form>
+    </div>
+</main>
+</body>
+</html>
