@@ -13,4 +13,15 @@
         <a th:href="@{/oauth2/authorization/discord}">Login with Discord</a>
     </div>
 </div>
+
+<form method="post"
+      style="display: inline;"
+      th:action="@{/rooms/{id}/entries(id=${roomId})}"
+      th:fragment="add-entry-form(roomId)">
+    <label>
+        Entry name:
+        <input name="entryName" placeholder="Entry name" required type="text"/>
+    </label>
+    <input type="submit" value="Add Entry"/>
+</form>
 </html>

@@ -22,13 +22,9 @@ import reactor.core.publisher.Mono
 class RoomController(private val roomService: RoomService) {
     @GetMapping
     fun getRooms(
-        @AuthenticationPrincipal principal: OAuth2User?,
+        @AuthenticationPrincipal principal: OAuth2User,
         model: Model
     ): Mono<String> = mono {
-        if (principal == null) {
-            return@mono "redirect:/"
-        }
-
         val userId = principal.name.toLongOrNull() ?: return@mono "redirect:/"
         val userRooms = roomService.getRoomsForUser(userId).collectList().awaitSingle()
         val adminGuilds = roomService.getAdminGuilds(userId).collectList().awaitSingle()
@@ -77,24 +73,6 @@ class RoomController(private val roomService: RoomService) {
         model.addAttribute("hasMembership", roomWithEntries.hasMembership)
         model.addAttribute("userId", userId)
         "room"
-    }
-
-    @PostMapping("/{roomId}/join")
-    fun joinRoom(
-        @PathVariable roomId: Long,
-        exchange: ServerWebExchange,
-        @AuthenticationPrincipal principal: OAuth2User
-    ): Mono<String> = mono {
-        val userId =
-            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val formData = exchange.formData.awaitSingle()
-        val entryName = formData.getFirst("entryName")
-            ?: throw ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Required form parameter 'entryName' is not present"
-            )
-        roomService.addEntry(roomId, userId, entryName).awaitSingle()
-        "redirect:/rooms/$roomId"
     }
 
     @PostMapping("/{roomId}/entries")

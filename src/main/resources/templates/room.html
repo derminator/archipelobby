@@ -38,13 +38,7 @@
     </ul>
 
     <h3 th:if="${hasMembership}">Add Entry</h3>
-    <form method="post" th:action="@{/rooms/{id}/entries(id=${room.id})}" th:if="${hasMembership}">
-        <label>
-            Name
-            <input name="entryName" placeholder="Entry name" required type="text"/>
-        </label>
-        <input type="submit" value="Add Entry"/>
-    </form>
+    <div th:if="${hasMembership}" th:replace="~{layout :: add-entry-form(${room.id})}"></div>
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
