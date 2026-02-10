@@ -2,7 +2,8 @@ CREATE TABLE ROOMS
 (
     id       BIGINT AUTO_INCREMENT PRIMARY KEY,
     guild_id BIGINT       NOT NULL,
-    name     VARCHAR(255) NOT NULL
+    name VARCHAR(255) NOT NULL,
+    UNIQUE (guild_id, name)
 );
 
 CREATE TABLE ENTRIES

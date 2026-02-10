@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Error - Archipelobby</title>
 </head>
 <body>
 <h1>An error occurred</h1>
-<p>Sorry, an unexpected error occurred. Please notify an administrator.</p>
+<p th:text="${errorMessage} ?: 'Sorry, an unexpected error occurred. Please notify an administrator.'"></p>
 <a href="/">Go back to Home</a>
 </body>
 </html>

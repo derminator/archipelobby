@@ -23,6 +23,7 @@ data class Entry(
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {
     fun findByGuildId(guildId: Long): Flux<Room>
+    fun existsByGuildIdAndName(guildId: Long, name: String): Mono<Boolean>
 }
 
 interface EntryRepository : ReactiveCrudRepository<Entry, Long> {

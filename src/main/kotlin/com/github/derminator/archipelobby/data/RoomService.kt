@@ -70,6 +70,12 @@ class RoomService(
         if (entryName.isBlank()) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
         }
+
+        val roomExists = roomRepository.existsByGuildIdAndName(guildId, name).awaitSingle()
+        if (roomExists) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "A room with this name already exists in this guild")
+        }
+
         val room = roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
         if (room.id == null) {
             throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Room ID is null after saving")

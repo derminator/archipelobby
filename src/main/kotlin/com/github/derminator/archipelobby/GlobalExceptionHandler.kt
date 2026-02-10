@@ -19,7 +19,12 @@ class GlobalExceptionHandler {
             is ResponseStatusException -> ex.statusCode
             else -> HttpStatus.INTERNAL_SERVER_ERROR
         }
+        val errorMessage = when (ex) {
+            is ResponseStatusException -> ex.reason ?: "An unexpected error occurred"
+            else -> "An unexpected error occurred"
+        }
         exchange.response.statusCode = status
+        exchange.attributes["errorMessage"] = errorMessage
         if (status == HttpStatus.NOT_FOUND) {
             "error/404"
         } else {
