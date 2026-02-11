@@ -60,7 +60,8 @@ class RoomService(
     }
 
     @Transactional
-    fun createRoom(guildId: Long, name: String, userId: Long, entryName: String): Mono<Room> = mono {
+    fun createRoom(guildId: Long, name: String, userId: Long, entryName: String, yamlFilePath: String): Mono<Room> =
+        mono {
         val userSnowflake = Snowflake.of(userId)
         val guid = gatewayDiscordClient.getGuildById(Snowflake.of(guildId)).awaitSingle()
         val member = guid.getMemberById(userSnowflake).awaitSingle()
@@ -80,7 +81,14 @@ class RoomService(
         if (room.id == null) {
             throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Room ID is null after saving")
         }
-        entryRepository.save(Entry(roomId = room.id, userId = userId, name = entryName)).awaitSingle()
+            entryRepository.save(
+                Entry(
+                    roomId = room.id,
+                    userId = userId,
+                    name = entryName,
+                    yamlFilePath = yamlFilePath
+                )
+            ).awaitSingle()
         room
     }
 
@@ -91,7 +99,7 @@ class RoomService(
     }
 
     @Transactional
-    fun addEntry(roomId: Long, userId: Long, entryName: String): Mono<Entry> = mono {
+    fun addEntry(roomId: Long, userId: Long, entryName: String, yamlFilePath: String): Mono<Entry> = mono {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId).awaitSingle()) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
@@ -106,7 +114,8 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
-        entryRepository.save(Entry(roomId = roomId, userId = userId, name = entryName)).awaitSingle()
+        entryRepository.save(Entry(roomId = roomId, userId = userId, name = entryName, yamlFilePath = yamlFilePath))
+            .awaitSingle()
     }
 
     @Transactional
@@ -186,6 +195,8 @@ class RoomService(
         val member = guid.getMemberById(Snowflake.of(userId)).awaitSingleOrNull() ?: return@mono false
         member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)
     }
+
+    fun getEntry(entryId: Long): Mono<Entry> = entryRepository.findById(entryId)
 }
 
 data class GuildInfo(val id: Long, val name: String)

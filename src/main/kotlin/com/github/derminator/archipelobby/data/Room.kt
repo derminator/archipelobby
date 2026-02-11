@@ -18,7 +18,8 @@ data class Entry(
     @Id val id: Long? = null,
     val roomId: Long,
     val userId: Long,
-    val name: String
+    val name: String,
+    val yamlFilePath: String
 )
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {

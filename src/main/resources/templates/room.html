@@ -14,10 +14,16 @@
     <h1 th:text="${room.name}">Room Name</h1>
 
     <h2>Entries</h2>
+    <a th:href="@{/rooms/{roomId}/download-all(roomId=${room.id})}">
+        <button type="button">Download All YAMLs</button>
+    </a>
     <ul>
         <li th:each="entry : ${entries}">
             <strong th:text="${entry.name}">Entry Name</strong>
             (<span th:text="${entry.user.username}">Username</span>)
+            <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.id},entryId=${entry.id})}">
+                <button type="button">Download YAML</button>
+            </a>
             <form method="post"
                   style="display: inline;"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
