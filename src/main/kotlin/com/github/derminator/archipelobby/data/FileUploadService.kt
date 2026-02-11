@@ -1,4 +1,4 @@
-package com.github.derminator.archipelobby
+package com.github.derminator.archipelobby.data
 
 import kotlinx.coroutines.reactor.mono
 import org.springframework.core.io.buffer.DataBufferUtils
@@ -90,7 +90,7 @@ class FileUploadService(
             val gamePattern = Regex("""(?:game|name):\s*([^\n]+)""", RegexOption.IGNORE_CASE)
             val match = gamePattern.find(content)
             match?.groupValues?.get(1)?.trim() ?: "Unknown"
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             "Unknown"
         }
     }

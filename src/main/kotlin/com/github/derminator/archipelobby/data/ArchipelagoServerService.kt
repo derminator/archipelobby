@@ -1,4 +1,4 @@
-package com.github.derminator.archipelobby
+package com.github.derminator.archipelobby.data
 
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
@@ -14,7 +14,6 @@ import java.util.concurrent.ConcurrentHashMap
 @Service
 class ArchipelagoServerService(
     private val roomRepository: RoomRepository,
-    private val yamlUploadRepository: YamlUploadRepository,
     private val gameManagementService: GameManagementService
 ) {
     private val uploadBasePath = Paths.get("uploads")
@@ -99,13 +98,4 @@ class ArchipelagoServerService(
         }.then()
     }
 
-    fun getServerStatus(roomId: Long): Mono<ServerStatus> = mono {
-        val isRunning = runningServers.containsKey(roomId)
-        val process = runningServers[roomId]
-        val isAlive = process?.isAlive ?: false
-
-        ServerStatus(isRunning, isAlive)
-    }
 }
-
-data class ServerStatus(val isRunning: Boolean, val isAlive: Boolean)

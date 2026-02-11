@@ -1,4 +1,4 @@
-package com.github.derminator.archipelobby
+package com.github.derminator.archipelobby.data
 
 import org.springframework.data.annotation.Id
 import org.springframework.data.relational.core.mapping.Table
@@ -51,10 +51,7 @@ data class SupportedGame(
     val addedAt: LocalDateTime = LocalDateTime.now()
 )
 
-interface ApWorldRepository : ReactiveCrudRepository<ApWorld, Long> {
-    fun findByRoomId(roomId: Long): Flux<ApWorld>
-    fun findByRoomIdAndWorldName(roomId: Long, worldName: String): Mono<ApWorld>
-}
+interface ApWorldRepository : ReactiveCrudRepository<ApWorld, Long>
 
 interface YamlUploadRepository : ReactiveCrudRepository<YamlUpload, Long> {
     fun findByRoomId(roomId: Long): Flux<YamlUpload>
@@ -62,8 +59,4 @@ interface YamlUploadRepository : ReactiveCrudRepository<YamlUpload, Long> {
     fun deleteByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Void>
 }
 
-interface SupportedGameRepository : ReactiveCrudRepository<SupportedGame, Long> {
-    fun findByRoomId(roomId: Long): Flux<SupportedGame>
-    fun findByRoomIdAndGameName(roomId: Long, gameName: String): Mono<SupportedGame>
-    fun deleteByRoomIdAndGameName(roomId: Long, gameName: String): Mono<Void>
-}
+interface SupportedGameRepository : ReactiveCrudRepository<SupportedGame, Long>
