@@ -31,7 +31,7 @@
 
     <div class="admin-section" th:if="${not #lists.isEmpty(adminGuilds)}">
         <h2>Create a Room</h2>
-        <form enctype="multipart/form-data" method="post" th:action="@{/rooms}">
+        <form method="post" th:action="@{/rooms}">
             <label for="guildId">Guild:</label>
             <select id="guildId" name="guildId">
                 <option th:each="guild : ${adminGuilds}" th:text="${guild.name}" th:value="${guild.id}">Guild Name
@@ -40,12 +40,6 @@
             <br/>
             <label for="name">Room Name:</label>
             <input id="name" name="name" required type="text"/>
-            <br/>
-            <label for="entryName">Your Entry Name:</label>
-            <input id="entryName" name="entryName" required type="text"/>
-            <br/>
-            <label for="yamlFile">YAML file:</label>
-            <input accept=".yaml,.yml" id="yamlFile" name="yamlFile" required type="file"/>
             <br/>
             <input type="submit" value="Create Room"/>
         </form>

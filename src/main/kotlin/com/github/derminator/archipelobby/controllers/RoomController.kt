@@ -53,46 +53,18 @@ class RoomController(private val roomService: RoomService) {
         exchange: ServerWebExchange,
         @AuthenticationPrincipal principal: OAuth2User
     ): Mono<String> = mono {
-        val multipartData = exchange.multipartData.awaitSingle()
-        val guildId = multipartData.getFirst("guildId")?.let { part ->
-            when (part) {
-                is FilePart -> null
-                else -> DataBufferUtils.join(part.content()).awaitSingle().toString(StandardCharsets.UTF_8)
-            }
-        }?.toLongOrNull() ?: throw ResponseStatusException(
+        val formData = exchange.formData.awaitSingle()
+        val guildId = formData.getFirst("guildId")?.toLongOrNull() ?: throw ResponseStatusException(
             HttpStatus.BAD_REQUEST,
             "Required form parameter 'guildId' is not present"
         )
 
-        val name = multipartData.getFirst("name")?.let { part ->
-            when (part) {
-                is FilePart -> null
-                else -> DataBufferUtils.join(part.content()).awaitSingle().toString(StandardCharsets.UTF_8)
-            }
-        } ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
-
-        val entryName = multipartData.getFirst("entryName")?.let { part ->
-            when (part) {
-                is FilePart -> null
-                else -> DataBufferUtils.join(part.content()).awaitSingle().toString(StandardCharsets.UTF_8)
-            }
-        } ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'entryName' is not present")
-
-        val yamlFile = multipartData.getFirst("yamlFile") as? FilePart
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required file 'yamlFile' is not present")
-
-        if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
-        }
+        val name = formData.getFirst("name")
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
 
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
-        val uploadsDir = Paths.get("uploads")
-        Files.createDirectories(uploadsDir)
-        val filePath = uploadsDir.resolve("${System.currentTimeMillis()}_${yamlFile.filename()}")
-        yamlFile.transferTo(filePath).awaitSingleOrNull()
-
-        val room = roomService.createRoom(guildId, name, userId, entryName, filePath.toString()).awaitSingle()
+        val room = roomService.createRoom(guildId, name, userId).awaitSingle()
         "redirect:/rooms/${room.id}"
     }
 

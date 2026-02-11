@@ -60,16 +60,12 @@ class RoomService(
     }
 
     @Transactional
-    fun createRoom(guildId: Long, name: String, userId: Long, entryName: String, yamlFilePath: String): Mono<Room> =
-        mono {
+    fun createRoom(guildId: Long, name: String, userId: Long): Mono<Room> = mono {
         val userSnowflake = Snowflake.of(userId)
         val guid = gatewayDiscordClient.getGuildById(Snowflake.of(guildId)).awaitSingle()
         val member = guid.getMemberById(userSnowflake).awaitSingle()
         if (!member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
-        }
-        if (entryName.isBlank()) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
         }
 
         val roomExists = roomRepository.existsByGuildIdAndName(guildId, name).awaitSingle()
@@ -77,19 +73,7 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "A room with this name already exists in this guild")
         }
 
-        val room = roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
-        if (room.id == null) {
-            throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Room ID is null after saving")
-        }
-            entryRepository.save(
-                Entry(
-                    roomId = room.id,
-                    userId = userId,
-                    name = entryName,
-                    yamlFilePath = yamlFilePath
-                )
-            ).awaitSingle()
-        room
+        roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
     }
 
     private fun isRoomJoinable(room: Room, userId: Long): Mono<Boolean> = mono {
