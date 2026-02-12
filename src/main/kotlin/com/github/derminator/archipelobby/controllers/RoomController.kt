@@ -4,6 +4,7 @@ import com.github.derminator.archipelobby.data.RoomService
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpHeaders
@@ -88,7 +89,8 @@ class RoomController(private val roomService: RoomService) {
     fun addEntry(
         @PathVariable roomId: Long,
         exchange: ServerWebExchange,
-        @AuthenticationPrincipal principal: OAuth2User
+        @AuthenticationPrincipal principal: OAuth2User,
+        @Value($$"${app.data-dir}") dataDir: String,
     ): Mono<String> = mono {
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
         val multipartData = exchange.multipartData.awaitSingle()
@@ -107,7 +109,7 @@ class RoomController(private val roomService: RoomService) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
         }
 
-        val uploadsDir = Paths.get("uploads")
+        val uploadsDir = Paths.get(dataDir, "uploads")
         Files.createDirectories(uploadsDir)
         val filePath = uploadsDir.resolve("${System.currentTimeMillis()}_${yamlFile.filename()}")
         yamlFile.transferTo(filePath).awaitSingleOrNull()
