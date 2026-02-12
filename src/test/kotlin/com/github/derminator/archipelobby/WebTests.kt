@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.*
@@ -29,13 +30,7 @@ import org.springframework.web.reactive.function.BodyInserters
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
-@SpringBootTest(
-    properties = [
-        "DISCORD_BOT_TOKEN=dummy",
-        "DISCORD_CLIENT_ID=dummy",
-        "DISCORD_CLIENT_SECRET=dummy"
-    ]
-)
+@SpringBootTest
 @EnableAutoConfiguration(
     exclude = [
         R2dbcAutoConfiguration::class,
@@ -170,18 +165,23 @@ class WebTests {
         val mockMember = mock(Member::class.java)
         `when`(mockGuild.getMemberById(Snowflake.of(123456789))).thenReturn(Mono.just(mockMember))
 
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("entryName", "Duplicate Name")
+        bodyBuilder.part("yamlFile", "test: data".toByteArray())
+            .filename("test.yaml")
+
         webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
             .mutateWith(csrf())
             .post().uri("/rooms/1/entries")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData("entryName", "Duplicate Name"))
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.CONFLICT)
     }
 
     @Test
     fun `renaming entry to duplicate name returns conflict`() {
-        val existingEntry = Entry(1, 1, 123456789, "Old Name")
+        val existingEntry = Entry(1, 1, 123456789, "Old Name", "uploads/test.yaml")
         `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
         `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
 
