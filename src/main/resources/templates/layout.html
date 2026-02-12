@@ -16,7 +16,7 @@
 
 <form method="post"
       enctype="multipart/form-data"
-      th:action="@{/rooms/{id}/entries(id=${roomId},{_csrf.parameterName}=${_csrf.token})}"
+      th:action="@{/rooms/{id}/entries(id=${roomId})}"
       th:fragment="add-entry-form(roomId)">
     <label>
         Entry name:
