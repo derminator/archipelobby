@@ -22,6 +22,9 @@ WORKDIR /app
 # Create a non-root user
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
+# Create data directory
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
 # Copy the jar from build stage
 COPY --from=build /app/build/libs/*.jar app.jar
 
@@ -32,4 +35,4 @@ USER appuser
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
