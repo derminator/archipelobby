@@ -14,7 +14,7 @@ import java.nio.file.Paths
 @Service
 @Profile("prod")
 class FileSystemUploadsService(
-    @Value("\${app.data-dir}") private val dataDir: String
+    @Value($$"${app.data-dir}") private val dataDir: String
 ) : UploadsService {
 
     private val uploadsDir by lazy { Paths.get(dataDir, "uploads") }
