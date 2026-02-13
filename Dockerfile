@@ -19,8 +19,8 @@ RUN gradle bootJar --no-daemon
 FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
-# Create a non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create a non-root user with predictable UID/GID
+RUN groupadd -r -g 1000 appuser && useradd -r -u 1000 -g appuser appuser
 
 # Create data directory
 RUN mkdir -p /data && chown -R appuser:appuser /data
