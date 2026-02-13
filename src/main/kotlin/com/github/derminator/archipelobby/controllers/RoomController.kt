@@ -6,7 +6,6 @@ import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.FileSystemResource
-import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -16,15 +15,11 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
-import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.zip.ZipEntry
@@ -85,25 +80,21 @@ class RoomController(private val roomService: RoomService) {
         "room"
     }
 
+    data class AddEntryForm(
+        val entryName: String,
+        val yamlFile: FilePart,
+    )
+
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,
-        exchange: ServerWebExchange,
         @AuthenticationPrincipal principal: OAuth2User,
         @Value($$"${app.data-dir}") dataDir: String,
+        @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val multipartData = exchange.multipartData.awaitSingle()
-
-        val entryName = multipartData.getFirst("entryName")?.let { part ->
-            when (part) {
-                is FilePart -> null
-                else -> DataBufferUtils.join(part.content()).awaitSingle().toString(StandardCharsets.UTF_8)
-            }
-        } ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'entryName' is not present")
-
-        val yamlFile = multipartData.getFirst("yamlFile") as? FilePart
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required file 'yamlFile' is not present")
+        val entryName = form.entryName.trim()
+        val yamlFile = form.yamlFile
 
         if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
