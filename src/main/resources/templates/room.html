@@ -8,10 +8,13 @@
 <body>
 <header>
     <div th:replace="~{layout :: user-bar}"></div>
-    <a th:href="@{/rooms}">Back to Rooms</a>
+    <a th:href="@{/rooms}">Back to Rooms</a> | <a th:href="@{/help}">📚 Help</a>
 </header>
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
+    <p>Status: <strong th:text="${room.state}">WAITING_FOR_PLAYERS</strong></p>
+    <p th:if="${room.serverAddress != null}">Server Address: <strong
+            th:text="${room.serverAddress}">localhost:38281</strong></p>
 
     <h2>Entries</h2>
     <a th:href="@{/rooms/{roomId}/download-all(roomId=${room.id})}">
@@ -46,10 +49,165 @@
     <h3>Add Entry</h3>
     <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
 
+    <!-- Supported Games Section -->
+    <h2>Supported Games</h2>
+    <div th:if="${not #lists.isEmpty(games)}">
+        <table border="1">
+            <thead>
+            <tr>
+                <th>Game Name</th>
+                <th>Core Verified</th>
+                <th>Setup Guide</th>
+                <th>YAML Form</th>
+                <th th:if="${isAdmin}">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="game : ${games}">
+                <td th:text="${game.gameName}">Game Name</td>
+                <td th:text="${game.isCoreVerified ? 'Yes' : 'No'}">No</td>
+                <td>
+                    <a target="_blank" th:href="${game.setupGuideUrl}" th:if="${game.setupGuideUrl != null}">Setup
+                        Guide</a>
+                    <span th:if="${game.setupGuideUrl == null}">-</span>
+                </td>
+                <td>
+                    <a target="_blank" th:href="${game.yamlFormUrl}" th:if="${game.yamlFormUrl != null}">YAML
+                        Generator</a>
+                    <span th:if="${game.yamlFormUrl == null}">-</span>
+                </td>
+                <td th:if="${isAdmin}">
+                    <form method="post" style="display: inline;"
+                          th:action="@{/rooms/{roomId}/games/{gameId}/delete(roomId=${room.id}, gameId=${game.id})}">
+                        <input onclick="return confirm('Remove this game?')" type="submit" value="Remove"/>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <p th:if="${#lists.isEmpty(games)}">No games added yet.</p>
+
+    <!-- Add Game Form (Admin Only) -->
+    <div th:if="${isAdmin and room.state.toString() == 'WAITING_FOR_PLAYERS'}">
+        <h3>Add Supported Game</h3>
+        <form method="post" th:action="@{/rooms/{id}/games/add(id=${room.id})}">
+            <label for="gameName">Game Name:</label>
+            <input id="gameName" name="gameName" required type="text"/><br/>
+
+            <label for="isCoreVerified">Core Verified:</label>
+            <input id="isCoreVerified" name="isCoreVerified" type="checkbox"/><br/>
+
+            <label for="setupGuideUrl">Setup Guide URL:</label>
+            <input id="setupGuideUrl" name="setupGuideUrl" type="url"/><br/>
+
+            <label for="yamlFormUrl">YAML Form URL:</label>
+            <input id="yamlFormUrl" name="yamlFormUrl" type="url"/><br/>
+
+            <label for="requiresApworld">Requires APWorld:</label>
+            <input id="requiresApworld" name="requiresApworld" type="checkbox"/><br/>
+
+            <label for="apworldId">APWorld (if applicable):</label>
+            <select id="apworldId" name="apworldId">
+                <option value="">None</option>
+                <option th:each="apworld : ${apWorlds}" th:text="${apworld.worldName}" th:value="${apworld.id}">World
+                </option>
+            </select><br/>
+
+            <input type="submit" value="Add Game"/>
+        </form>
+    </div>
+
+    <!-- YAML Uploads Section -->
+    <h2>Player YAMLs</h2>
+    <div th:if="${not #lists.isEmpty(yamlUploads)}">
+        <ul>
+            <li th:each="upload : ${yamlUploads}">
+                <strong th:text="${upload.username}">Username</strong>:
+                <span th:text="${upload.yaml.gameName}">Game</span>
+                (<span th:text="${upload.yaml.fileName}">filename.yaml</span>)
+            </li>
+        </ul>
+    </div>
+    <p th:if="${#lists.isEmpty(yamlUploads)}">No YAMLs uploaded yet.</p>
+
+    <!-- Upload YAML Form (Members Only) -->
+    <div th:if="${isMember and room.state.toString() == 'WAITING_FOR_PLAYERS'}">
+        <h3 th:text="${userYaml != null ? 'Replace Your YAML' : 'Upload Your YAML'}">Upload Your YAML</h3>
+        <p th:if="${userYaml != null}">
+            Current upload: <strong th:text="${userYaml.fileName}">file.yaml</strong> for <strong
+                th:text="${userYaml.gameName}">Game</strong>
+        </p>
+        <form enctype="multipart/form-data" method="post" th:action="@{/rooms/{id}/yaml/upload(id=${room.id})}">
+            <label for="yamlFile">Choose YAML file:</label>
+            <input accept=".yaml,.yml" id="yamlFile" name="file" required type="file"/><br/>
+            <input type="submit" value="Upload YAML"/>
+        </form>
+        <form method="post" style="margin-top: 10px;" th:action="@{/rooms/{id}/yaml/delete(id=${room.id})}"
+              th:if="${userYaml != null}">
+            <input onclick="return confirm('Delete your YAML upload?')" type="submit" value="Delete My YAML"/>
+        </form>
+    </div>
+
+    <!-- APWorld Files Section -->
+    <h2>Custom APWorld Files</h2>
+    <div th:if="${not #lists.isEmpty(apWorlds)}">
+        <ul>
+            <li th:each="apworld : ${apWorlds}">
+                <strong th:text="${apworld.worldName}">World Name</strong>
+                (<span th:text="${apworld.fileName}">file.apworld</span>)
+                <form method="post" style="display: inline;"
+                      th:action="@{/rooms/{roomId}/apworld/{apworldId}/delete(roomId=${room.id}, apworldId=${apworld.id})}"
+                      th:if="${isAdmin}">
+                    <input onclick="return confirm('Delete this APWorld?')" type="submit" value="Delete"/>
+                </form>
+            </li>
+        </ul>
+    </div>
+    <p th:if="${#lists.isEmpty(apWorlds)}">No custom worlds uploaded.</p>
+
+    <!-- Upload APWorld Form (Admin Only) -->
+    <div th:if="${isAdmin and room.state.toString() == 'WAITING_FOR_PLAYERS'}">
+        <h3>Upload Custom APWorld</h3>
+        <form enctype="multipart/form-data" method="post" th:action="@{/rooms/{id}/apworld/upload(id=${room.id})}">
+            <label for="apworldFile">Choose .apworld file:</label>
+            <input accept=".apworld" id="apworldFile" name="file" required type="file"/><br/>
+            <input type="submit" value="Upload APWorld"/>
+        </form>
+    </div>
+
+    <!-- Game Control (Admin Only) -->
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
+
+        <!-- Start game (generates multiworld and starts server) -->
+        <form method="post" style="margin-bottom: 10px;" th:action="@{/rooms/{id}/games/start(id=${room.id})}"
+              th:if="${room.state.toString() == 'WAITING_FOR_PLAYERS'}">
+            <input onclick="return confirm('Start the game? This will generate the multiworld and start the server. Make sure all players have uploaded their YAMLs!')"
+                   type="submit" value="Start Game & Server"/>
+        </form>
+
+        <!-- Server controls for GENERATING/RUNNING states -->
+        <div th:if="${room.state.toString() == 'GENERATING'}">
+            <p><em>Server is being generated...</em></p>
+            <form method="post" style="margin-bottom: 10px;"
+                  th:action="@{/rooms/{roomId}/server/start(roomId=${room.id})}">
+                <input type="submit" value="Start Server Manually"/>
+            </form>
+        </div>
+
+        <div th:if="${room.state.toString() == 'RUNNING'}">
+            <form method="post" style="margin-bottom: 10px;"
+                  th:action="@{/rooms/{roomId}/server/stop(roomId=${room.id})}">
+                <input onclick="return confirm('Stop the server? Players will be disconnected.')" type="submit"
+                       value="Stop Server"/>
+            </form>
+        </div>
+
+        <!-- Delete room -->
         <form method="post" th:action="@{/rooms/{id}/delete(id=${room.id})}">
-            <input onclick="return confirm('Are you sure?')" type="submit" value="Delete Room"/>
+            <input onclick="return confirm('Are you sure? This will delete the room and all uploads!')" type="submit"
+                   value="Delete Room"/>
         </form>
     </div>
 </main>

@@ -10,7 +10,9 @@ import reactor.core.publisher.Mono
 data class Room(
     @Id val id: Long? = null,
     val guildId: Long,
-    val name: String
+    val name: String,
+    val state: RoomState = RoomState.WAITING_FOR_PLAYERS,
+    val serverAddress: String? = null
 )
 
 @Table("ENTRIES")

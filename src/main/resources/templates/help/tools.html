@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Useful Tools - Archipelago Lobby</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header>
+    <p><a th:href="@{/}">Home</a> | <a th:href="@{/help}">Help</a></p>
+</header>
+<main>
+    <h1>Useful Archipelago Tools</h1>
+
+    <h2>Hints System</h2>
+    <p>Hints help you find where your items are located when you're stuck.</p>
+    <h3>How to Use Hints:</h3>
+    <ul>
+        <li>Type <code>!hint &lt;item&gt;</code> into a text client to find out where one of your items is</li>
+        <li>A hint costs points (usually 10% of the total points)</li>
+        <li>You earn 1 point for each check you complete</li>
+        <li>Type <code>!hint</code> (without an item) to see how many points you have</li>
+    </ul>
+    <h3>Need More Points?</h3>
+    <p>
+        Try a hint game like <a href="https://archipelago.gg/tutorial/Sudoku/setup_en" target="_blank">Sudoku</a> for a
+        free hint!
+    </p>
+
+    <h2>Trackers</h2>
+    <p>Trackers show what locations you can reach based on your current items. They're invaluable when you think you're
+        stuck.</p>
+
+    <h3>1. PopTracker (Visual/Map-Based)</h3>
+    <ul>
+        <li><strong>What it does:</strong> Shows an auto-updating map of your game with accessible locations</li>
+        <li><strong>Pros:</strong> Visual, easy to use, shows exactly where to go</li>
+        <li><strong>Cons:</strong> Requires a game-specific pack (not available for all games)</li>
+        <li><strong>Available Packs:</strong> <a
+                href="https://archipelago.miraheze.org/wiki/Category:Games_with_PopTracker" target="_blank">
+            See games with PopTracker support
+        </a></li>
+    </ul>
+
+    <h3>2. Universal Tracker (Text-Based)</h3>
+    <ul>
+        <li><strong>What it does:</strong> Uses the randomizer itself to show accessible locations for ANY game</li>
+        <li><strong>Pros:</strong> Works with any game, provides routing information</li>
+        <li><strong>Cons:</strong> Text-based, less specific than PopTracker, requires additional setup</li>
+    </ul>
+
+    <h4>Universal Tracker Setup:</h4>
+    <ol>
+        <li>Download the <a href="https://github.com/FarisTheAncient/Archipelago/releases?q=Tracker" target="_blank">
+            Universal Tracker APWorld
+        </a></li>
+        <li><a href="https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds" target="_blank">
+            Install it like a custom game
+        </a></li>
+        <li>Download and install all custom worlds present in your game (even if they aren't your game)</li>
+        <li>Download all YAMLs for the game from your room. Save them as separate files in <code>C:\ProgramData\Archipelago\Players</code>
+        </li>
+        <li>Open the Universal Tracker from the Archipelago Launcher</li>
+        <li>Connect to your slot on the server</li>
+        <li>Use <code>/help</code> to see available commands</li>
+    </ol>
+
+    <h2>Other Useful Commands</h2>
+    <ul>
+        <li><code>!hint</code> - Check your hint points</li>
+        <li><code>!hint &lt;item&gt;</code> - Get a hint for a specific item</li>
+        <li><code>!remaining</code> - See how many checks you have left</li>
+        <li><code>!status</code> - Check your goal completion status</li>
+        <li><code>!help</code> - See all available commands</li>
+    </ul>
+
+    <h2>Additional Resources</h2>
+    <ul>
+        <li><a href="https://archipelago.miraheze.org/wiki/PopTracker" target="_blank">PopTracker Wiki</a></li>
+        <li><a href="https://github.com/FarisTheAncient/Archipelago" target="_blank">Universal Tracker GitHub</a></li>
+        <li><a th:href="@{/help}">Back to Help Index</a></li>
+        <li><a th:href="@{/help/setup}">Setup Guide</a></li>
+    </ul>
+</main>
+</body>
+</html>

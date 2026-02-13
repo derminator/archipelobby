@@ -162,6 +162,7 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
         val isAdmin = isAdminOfGuild(room.guildId, userId).awaitSingle()
+        val isMember = entryRepository.countByRoomIdAndUserId(roomId, userId).awaitSingle() > 0
         val entries = entryRepository.findByRoomId(roomId)
             .flatMap { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
@@ -170,7 +171,7 @@ class RoomService(
             }
             .collectList()
             .awaitSingle()
-        RoomWithEntries(room, entries, isAdmin)
+        RoomWithEntries(room, entries, isAdmin, isMember)
     }
 
     fun isAdminOfGuild(guildId: Long, userId: Long): Mono<Boolean> = mono {
@@ -189,5 +190,6 @@ data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
     val entries: List<EntryInfo>,
-    val isAdmin: Boolean
+    val isAdmin: Boolean,
+    val isMember: Boolean
 )

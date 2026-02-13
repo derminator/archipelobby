@@ -1,9 +1,6 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.data.Entry
-import com.github.derminator.archipelobby.data.EntryRepository
-import com.github.derminator.archipelobby.data.Room
-import com.github.derminator.archipelobby.data.RoomRepository
+import com.github.derminator.archipelobby.data.*
 import discord4j.common.util.Snowflake
 import discord4j.core.GatewayDiscordClient
 import discord4j.core.`object`.entity.Guild
@@ -46,6 +43,15 @@ class WebTests {
 
     @MockitoBean
     lateinit var entryRepository: EntryRepository
+
+    @MockitoBean
+    lateinit var yamlUploadRepository: YamlUploadRepository
+
+    @MockitoBean
+    lateinit var apWorldRepository: ApWorldRepository
+
+    @MockitoBean
+    lateinit var supportedGameRepository: SupportedGameRepository
 
     @Autowired
     lateinit var context: ApplicationContext
@@ -147,7 +153,7 @@ class WebTests {
 
     @Test
     fun `non-existent page redirects to login for unauthenticated user`() {
-        // Since we didn't permit the non-existent path, it should redirect to login first
+        // Since we didn't permit the non-existent path, it should redirect to log in first
         webTestClient.get().uri("/this-page-does-not-exist")
             .header("Accept", "text/html")
             .exchange()

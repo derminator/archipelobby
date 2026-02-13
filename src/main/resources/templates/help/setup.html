@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Setup Guide - Archipelago Lobby</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header>
+    <p><a th:href="@{/}">Home</a> | <a th:href="@{/help}">Help</a></p>
+</header>
+<main>
+    <h1>Archipelago Setup Guide</h1>
+
+    <h2>Installation</h2>
+    <ol>
+        <li>
+            <strong>Install Archipelago Software</strong><br/>
+            <a href="https://archipelago.gg/tutorial/Archipelago/setup_en#installing-the-archipelago-software"
+               target="_blank">
+                Download and install the latest version of the Archipelago Software
+            </a>
+        </li>
+        <li>
+            <strong>Install Custom Worlds (if needed)</strong><br/>
+            If you're playing a community-supported game (not <a href="https://archipelago.gg/games" target="_blank">core-verified</a>),
+            you'll need to install the game's APWorld file:
+            <ul>
+                <li>Download the .apworld file from the room's "Custom APWorld Files" section</li>
+                <li><a href="https://archipelago.gg/tutorial/Archipelago/setup_en#playing-with-custom-worlds"
+                       target="_blank">
+                    Follow the installation instructions
+                </a></li>
+            </ul>
+        </li>
+        <li>
+            <strong>Follow Game-Specific Setup</strong><br/>
+            Each game has its own setup requirements:
+            <ul>
+                <li>For <strong>core-verified games</strong>: Find setup instructions at
+                    <a href="https://archipelago.gg/games" target="_blank">https://archipelago.gg/games</a>
+                </li>
+                <li>For <strong>community-supported games</strong>:
+                    <ul>
+                        <li>Check the room's "Supported Games" list for setup guide links</li>
+                        <li>Alternatively, open the .apworld file with 7-ZIP and look for a <code>docs</code> directory
+                        </li>
+                        <li>Or check the game's Discord channel (link in the supported games list)</li>
+                    </ul>
+                </li>
+            </ul>
+            <strong>Note:</strong> The server address and patch files (if applicable) will be provided in the room once
+            the game starts.
+        </li>
+        <li>
+            <strong>Connect to the Server</strong><br/>
+            Once the game has started:
+            <ul>
+                <li>Use your game-specific method to connect (usually a text client that connects to an emulator or a
+                    mod for PC games)
+                </li>
+                <li>Make sure you're connected to both the server (logged into your slot) AND the game</li>
+                <li><strong>Important:</strong> Don't use the link on the Archipelago webpage to connect. If you keep
+                    joining as "viewing", close all Archipelago windows and try again.
+                </li>
+            </ul>
+        </li>
+    </ol>
+
+    <h2>Troubleshooting</h2>
+    <ul>
+        <li><strong>Can't find setup instructions?</strong> Check the .apworld file itself (it's a ZIP file), look for a
+            docs folder
+        </li>
+        <li><strong>Joining as "viewing"?</strong> Close all Archipelago windows and reconnect</li>
+        <li><strong>Connection issues?</strong> Verify you're using the correct server address from the room page</li>
+        <li><strong>Items not appearing?</strong> Make sure you're connected to both the server AND your game client
+        </li>
+    </ul>
+
+    <h2>Additional Resources</h2>
+    <ul>
+        <li><a href="https://archipelago.gg/tutorial/Archipelago/setup_en" target="_blank">Official Archipelago Setup
+            Guide</a></li>
+        <li><a th:href="@{/help/glossary}">Archipelago Glossary</a></li>
+        <li><a th:href="@{/help/tools}">Useful Tools</a></li>
+    </ul>
+</main>
+</body>
+</html>

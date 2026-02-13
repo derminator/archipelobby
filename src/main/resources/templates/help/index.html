@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Help - Archipelago Lobby</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header>
+    <p><a th:href="@{/}">Home</a></p>
+</header>
+<main>
+    <h1>Archipelago Help Guide</h1>
+
+    <nav>
+        <ul>
+            <li><a th:href="@{/help/setup}">Setup Guide</a></li>
+            <li><a th:href="@{/help/glossary}">Commonly Used Terms</a></li>
+            <li><a th:href="@{/help/tools}">Useful Tools</a></li>
+            <li><a href="https://archipelago.gg/" target="_blank">Archipelago Official Website</a></li>
+        </ul>
+    </nav>
+
+    <h2>What is Archipelago?</h2>
+    <p>
+        <a href="https://archipelago.gg/" target="_blank">Archipelago</a> is a multi-game randomizer system that
+        connects
+        items and locations across different games, creating a collaborative multiplayer experience where finding items
+        in your game may help other players progress in theirs.
+    </p>
+
+    <h2>How to Play</h2>
+    <p>Archipelago games on this site are asynchronous, so you don't need to be present at a specific time. Here's the
+        general process:</p>
+
+    <h3>Before the Game Starts:</h3>
+    <ol>
+        <li>Join a room for the game you want to play</li>
+        <li>Pick a <a href="https://archipelago.gg/games" target="_blank">supported game</a> from the room's list</li>
+        <li>Generate a YAML file for your chosen game with your desired randomizer settings (use the YAML Generator link
+            for your game)
+        </li>
+        <li>Upload your YAML file to the room</li>
+        <li>Wait for the room admin to start the game</li>
+    </ol>
+
+    <h3>Once the Game Starts:</h3>
+    <ol>
+        <li>The room will display the server address</li>
+        <li>Follow the <a th:href="@{/help/setup}">setup guide</a> for your specific game</li>
+        <li>Connect to the server using your game's client</li>
+        <li>Play and have fun!</li>
+    </ol>
+
+    <h2>Quick Links</h2>
+    <ul>
+        <li><a th:href="@{/help/setup}">Complete Setup Guide</a></li>
+        <li><a th:href="@{/help/glossary}">Glossary of Terms</a></li>
+        <li><a th:href="@{/help/tools}">Useful Tools (Hints, Trackers, etc.)</a></li>
+        <li><a href="https://archipelago.gg/games" target="_blank">List of Core-Verified Games</a></li>
+        <li><a href="https://archipelago.gg/tutorial/Archipelago/setup_en" target="_blank">Official Archipelago
+            Setup</a></li>
+    </ul>
+</main>
+</body>
+</html>

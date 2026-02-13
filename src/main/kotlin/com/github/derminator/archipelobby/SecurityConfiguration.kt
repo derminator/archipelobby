@@ -15,7 +15,7 @@ class SecurityConfiguration {
     fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
         http
             .authorizeExchange { exchange ->
-                exchange.pathMatchers("/", "/error", "*.css").permitAll()
+                exchange.pathMatchers("/", "/error", "*.css", "/help", "/help/*").permitAll()
                 exchange.anyExchange().authenticated()
             }
             .oauth2Login(Customizer.withDefaults())
