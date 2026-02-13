@@ -138,7 +138,7 @@ src/main/kotlin/
 ## Database
 
 The application uses an embedded H2 database with R2DBC. The database schema is initialized from
-`src/main/resources/schema.sql` and includes:
+`src/main/resources/V1__InitialDb.sql` and includes:
 
 - `ROOMS`: Stores room information (guild ID, name)
 - `ENTRIES`: Stores YAML file entries (room ID, user ID, name, file path)

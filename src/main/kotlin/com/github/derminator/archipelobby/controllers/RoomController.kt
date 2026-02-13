@@ -1,11 +1,10 @@
 package com.github.derminator.archipelobby.controllers
 
 import com.github.derminator.archipelobby.data.RoomService
+import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
-import org.springframework.beans.factory.annotation.Value
-import org.springframework.core.io.FileSystemResource
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -20,14 +19,15 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
-import java.nio.file.Files
-import java.nio.file.Paths
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @Controller
 @RequestMapping("/rooms", "/rooms/")
-class RoomController(private val roomService: RoomService) {
+class RoomController(
+    private val roomService: RoomService,
+    private val uploadsService: UploadsService
+) {
     @GetMapping
     fun getRooms(
         @AuthenticationPrincipal principal: OAuth2User,
@@ -89,7 +89,6 @@ class RoomController(private val roomService: RoomService) {
     fun addEntry(
         @PathVariable roomId: Long,
         @AuthenticationPrincipal principal: OAuth2User,
-        @Value($$"${app.data-dir}") dataDir: String,
         @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
@@ -100,12 +99,9 @@ class RoomController(private val roomService: RoomService) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
         }
 
-        val uploadsDir = Paths.get(dataDir, "uploads")
-        Files.createDirectories(uploadsDir)
-        val filePath = uploadsDir.resolve("${System.currentTimeMillis()}_${yamlFile.filename()}")
-        yamlFile.transferTo(filePath).awaitSingleOrNull()
+        val filePath = uploadsService.saveFile(yamlFile)
 
-        roomService.addEntry(roomId, userId, entryName, filePath.toString()).awaitSingle()
+        roomService.addEntry(roomId, userId, entryName, filePath).awaitSingle()
         "redirect:/rooms/$roomId"
     }
 
@@ -145,7 +141,7 @@ class RoomController(private val roomService: RoomService) {
     fun downloadEntry(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
-    ): Mono<ResponseEntity<FileSystemResource>> = mono {
+    ): Mono<ResponseEntity<ByteArray>> = mono {
         val entry = roomService.getEntry(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
@@ -153,18 +149,18 @@ class RoomController(private val roomService: RoomService) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Entry does not belong to this room")
         }
 
-        val filePath = Paths.get(entry.yamlFilePath)
-        if (!Files.exists(filePath)) {
+        val fileExists = uploadsService.fileExists(entry.yamlFilePath)
+        if (!fileExists) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found")
         }
 
-        val resource = FileSystemResource(filePath)
+        val fileContent = uploadsService.getFile(entry.yamlFilePath)
         val filename = "${entry.name}.yaml"
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             .contentType(MediaType.parseMediaType("application/x-yaml"))
-            .body(resource)
+            .body(fileContent)
     }
 
     @GetMapping("/{roomId}/download-all")
@@ -179,13 +175,12 @@ class RoomController(private val roomService: RoomService) {
         ZipOutputStream(byteArrayOutputStream).use { zipOut ->
             for (entryInfo in roomWithEntries.entries) {
                 val entry = roomService.getEntry(entryInfo.id).awaitSingleOrNull() ?: continue
-                val filePath = Paths.get(entry.yamlFilePath)
-                if (Files.exists(filePath)) {
+                val fileExists = uploadsService.fileExists(entry.yamlFilePath)
+                if (fileExists) {
+                    val fileContent = uploadsService.getFile(entry.yamlFilePath)
                     val zipEntry = ZipEntry("${entry.name}.yaml")
                     zipOut.putNextEntry(zipEntry)
-                    Files.newInputStream(filePath).use { input ->
-                        input.copyTo(zipOut)
-                    }
+                    zipOut.write(fileContent)
                     zipOut.closeEntry()
                 }
             }
