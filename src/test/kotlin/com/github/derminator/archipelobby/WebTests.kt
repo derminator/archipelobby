@@ -233,4 +233,33 @@ class WebTests {
                 assert(!body.contains("Create a Room"))
             }
     }
+
+    @Test
+    fun `rooms page is accessible with form login`() {
+        val userId = 123456789L
+        `when`(discordService.getGuildsForUser(userId)).thenReturn(Flux.empty())
+        `when`(discordService.getAdminGuildsForUser(userId)).thenReturn(Flux.empty())
+        `when`(entryRepository.findByUserId(userId)).thenReturn(Flux.empty())
+
+        webTestClient.mutateWith(mockUser("123456789"))
+            .get().uri("/rooms")
+            .exchange()
+            .expectStatus().isOk
+    }
+
+    @Test
+    fun `room detail page is accessible with form login`() {
+        val userId = 123456789L
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(userId, 123)).thenReturn(Mono.just(true))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(Mono.just(false))
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+
+        webTestClient.mutateWith(mockUser("123456789"))
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+    }
 }

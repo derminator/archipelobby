@@ -10,8 +10,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -19,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
+import java.security.Principal
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -30,7 +29,7 @@ class RoomController(
 ) {
     @GetMapping
     fun getRooms(
-        @AuthenticationPrincipal principal: OAuth2User,
+        principal: Principal,
         model: Model
     ): Mono<String> = mono {
         val userId = principal.name.toLongOrNull() ?: return@mono "redirect:/"
@@ -47,7 +46,7 @@ class RoomController(
     @PostMapping
     fun createRoom(
         exchange: ServerWebExchange,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: Principal
     ): Mono<String> = mono {
         val formData = exchange.formData.awaitSingle()
         val guildId = formData.getFirst("guildId")?.toLongOrNull() ?: throw ResponseStatusException(
@@ -67,7 +66,7 @@ class RoomController(
     @GetMapping("/{roomId}", "/{roomId}/")
     fun getRoom(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User,
+        principal: Principal,
         model: Model
     ): Mono<String> = mono {
         val userId =
@@ -88,7 +87,7 @@ class RoomController(
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User,
+        principal: Principal,
         @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
@@ -109,7 +108,7 @@ class RoomController(
     fun deleteEntry(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: Principal
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
@@ -126,7 +125,7 @@ class RoomController(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
         exchange: ServerWebExchange,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: Principal
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
@@ -166,7 +165,7 @@ class RoomController(
     @GetMapping("/{roomId}/download-all")
     fun downloadAllYamls(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: Principal
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
         val roomWithEntries = roomService.getRoom(roomId, userId).awaitSingle()
@@ -198,7 +197,7 @@ class RoomController(
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: Principal
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
