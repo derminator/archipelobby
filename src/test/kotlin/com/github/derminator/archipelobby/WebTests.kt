@@ -4,15 +4,13 @@ import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
-import discord4j.common.util.Snowflake
-import discord4j.core.GatewayDiscordClient
-import discord4j.core.`object`.entity.Guild
-import discord4j.core.`object`.entity.Member
-import discord4j.rest.util.PermissionSet
+import com.github.derminator.archipelobby.discord.DiscordService
+import com.github.derminator.archipelobby.discord.GuildInfo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
-import org.mockito.Mockito.*
+import org.mockito.Mockito.anyString
+import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
@@ -40,7 +38,7 @@ import reactor.core.publisher.Mono
 class WebTests {
 
     @MockitoBean
-    lateinit var gatewayDiscordClient: GatewayDiscordClient
+    lateinit var discordService: DiscordService
 
     @MockitoBean
     lateinit var roomRepository: RoomRepository
@@ -61,7 +59,11 @@ class WebTests {
 
     @BeforeEach
     fun setup() {
-        `when`(gatewayDiscordClient.guilds).thenReturn(Flux.empty())
+        `when`(discordService.getGuildsForUser(anyLong())).thenReturn(Flux.empty())
+        `when`(discordService.getAdminGuildsForUser(anyLong())).thenReturn(Flux.empty())
+        `when`(discordService.isMemberOfAnyGuild(anyLong())).thenReturn(Mono.just(true))
+        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(Mono.just(true))
+        `when`(discordService.isAdminOfGuild(anyLong(), anyLong())).thenReturn(Mono.just(false))
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
 
@@ -153,18 +155,14 @@ class WebTests {
             .header("Accept", "text/html")
             .exchange()
             .expectStatus().is3xxRedirection
-            .expectHeader().valueMatches("Location", ".*/oauth2/authorization/discord")
+            .expectHeader().valueMatches("Location", ".*/login")
     }
 
     @Test
     fun `adding entry with duplicate name returns conflict`() {
         `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
         `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(1, 123, "Test Room")))
-
-        val mockGuild = mock(Guild::class.java)
-        `when`(gatewayDiscordClient.getGuildById(Snowflake.of(123))).thenReturn(Mono.just(mockGuild))
-        val mockMember = mock(Member::class.java)
-        `when`(mockGuild.getMemberById(Snowflake.of(123456789))).thenReturn(Mono.just(mockMember))
+        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(Mono.just(true))
 
         val bodyBuilder = MultipartBodyBuilder()
         bodyBuilder.part("entryName", "Duplicate Name")
@@ -198,34 +196,15 @@ class WebTests {
     @Test
     fun `rooms page is accessible for user who is not admin in all joined guilds`() {
         val userId = 123456789L
-        val userSnowflake = Snowflake.of(userId)
 
-        val guild1 = mock(Guild::class.java)
-        `when`(guild1.id).thenReturn(Snowflake.of(1))
-        `when`(guild1.name).thenReturn("Guild 1")
-
-        val guild2 = mock(Guild::class.java)
-        `when`(guild2.id).thenReturn(Snowflake.of(2))
-        `when`(guild2.name).thenReturn("Guild 2")
-
-        // Bot is also in a guild the user is NOT in
-        val guild3 = mock(Guild::class.java)
-        `when`(guild3.id).thenReturn(Snowflake.of(3))
-        `when`(guild3.name).thenReturn("Guild 3")
-
-        `when`(gatewayDiscordClient.guilds).thenReturn(Flux.just(guild1, guild2, guild3))
+        `when`(discordService.getGuildsForUser(userId)).thenReturn(
+            Flux.just(
+                GuildInfo(1, "Guild 1"),
+                GuildInfo(2, "Guild 2")
+            )
+        )
+        `when`(discordService.getAdminGuildsForUser(userId)).thenReturn(Flux.empty())
         `when`(roomRepository.findByGuildId(anyLong())).thenReturn(Flux.empty())
-
-        val member1 = mock(Member::class.java)
-        `when`(guild1.getMemberById(userSnowflake)).thenReturn(Mono.just(member1))
-        `when`(member1.basePermissions).thenReturn(Mono.just(PermissionSet.none()))
-
-        val member2 = mock(Member::class.java)
-        `when`(guild2.getMemberById(userSnowflake)).thenReturn(Mono.just(member2))
-        `when`(member2.basePermissions).thenReturn(Mono.just(PermissionSet.none()))
-
-        // Guild 3 returns error when getting member (user not in guild)
-        `when`(guild3.getMemberById(userSnowflake)).thenReturn(Mono.error(RuntimeException("404 Not Found")))
 
         webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
             .get().uri("/rooms")

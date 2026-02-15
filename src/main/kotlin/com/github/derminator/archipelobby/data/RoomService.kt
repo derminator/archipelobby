@@ -1,8 +1,8 @@
 package com.github.derminator.archipelobby.data
 
-import discord4j.common.util.Snowflake
-import discord4j.core.GatewayDiscordClient
-import discord4j.rest.util.Permission
+import com.github.derminator.archipelobby.discord.DiscordService
+import com.github.derminator.archipelobby.discord.GuildInfo
+import com.github.derminator.archipelobby.discord.UserInfo
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -19,7 +19,7 @@ import reactor.core.publisher.Mono
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
-    private val gatewayDiscordClient: GatewayDiscordClient
+    private val discordService: DiscordService
 ) {
 
     fun getRoomsForUser(userId: Long): Flux<Room> = flux {
@@ -32,32 +32,17 @@ class RoomService(
             }
     }
 
-    fun getAdminGuilds(userId: Long): Flux<GuildInfo> = flux {
-        val userSnowflake = Snowflake.of(userId)
-        gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake)
-                .onErrorResume { Mono.empty() }
-                .awaitSingleOrNull()
-            if (member != null && member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
-                send(GuildInfo(guid.id.asLong(), guid.name))
-            }
-        }
-    }
+    fun getAdminGuilds(userId: Long): Flux<GuildInfo> =
+        discordService.getAdminGuildsForUser(userId)
 
     fun getJoinableRooms(userId: Long): Flux<Room> = flux {
-        val userSnowflake = Snowflake.of(userId)
-        gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake)
-                .onErrorResume { Mono.empty() }
-                .awaitSingleOrNull()
-            if (member != null) {
-                roomRepository.findByGuildId(guid.id.asLong()).collect { room ->
-                    if (room.id == null) return@collect
-                    val hasEntries =
-                        entryRepository.countByRoomIdAndUserId(room.id, userId).awaitSingle() > 0
-                    if (!hasEntries) {
-                        send(room)
-                    }
+        discordService.getGuildsForUser(userId).collect { guild ->
+            roomRepository.findByGuildId(guild.id).collect { room ->
+                if (room.id == null) return@collect
+                val hasEntries =
+                    entryRepository.countByRoomIdAndUserId(room.id, userId).awaitSingle() > 0
+                if (!hasEntries) {
+                    send(room)
                 }
             }
         }
@@ -65,10 +50,7 @@ class RoomService(
 
     @Transactional
     fun createRoom(guildId: Long, name: String, userId: Long): Mono<Room> = mono {
-        val userSnowflake = Snowflake.of(userId)
-        val guid = gatewayDiscordClient.getGuildById(Snowflake.of(guildId)).awaitSingle()
-        val member = guid.getMemberById(userSnowflake).awaitSingle()
-        if (!member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
+        if (!discordService.isAdminOfGuild(userId, guildId).awaitSingle()) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
 
@@ -80,11 +62,8 @@ class RoomService(
         roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
     }
 
-    private fun isRoomJoinable(room: Room, userId: Long): Mono<Boolean> = mono {
-        val guild = gatewayDiscordClient.getGuildById(Snowflake.of(room.guildId)).awaitSingle()
-        val member = guild.getMemberById(Snowflake.of(userId)).awaitSingleOrNull()
-        member != null
-    }
+    private fun isRoomJoinable(room: Room, userId: Long): Mono<Boolean> =
+        discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
     fun addEntry(roomId: Long, userId: Long, entryName: String, yamlFilePath: String): Mono<Entry> = mono {
@@ -147,9 +126,7 @@ class RoomService(
     @Transactional
     fun deleteRoom(roomId: Long, userId: Long): Mono<Void> = mono {
         val room = roomRepository.findById(roomId).awaitSingle()
-        val guild = gatewayDiscordClient.getGuildById(Snowflake.of(room.guildId)).awaitSingle()
-        val member = guild.getMemberById(Snowflake.of(userId)).awaitSingle()
-        val isAdmin = member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)
+        val isAdmin = discordService.isAdminOfGuild(userId, room.guildId).awaitSingle()
         if (!isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
@@ -169,26 +146,20 @@ class RoomService(
         val entries = entryRepository.findByRoomId(roomId)
             .flatMap { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
-                gatewayDiscordClient.getUserById(Snowflake.of(entry.userId))
-                    .map { EntryInfo(entry.id, entry.name, UserInfo(it.id.asLong(), it.username)) }
+                discordService.getUserInfo(entry.userId)
+                    .map { EntryInfo(entry.id, entry.name, it) }
             }
             .collectList()
             .awaitSingle()
         RoomWithEntries(room, entries, isAdmin)
     }
 
-    fun isAdminOfGuild(guildId: Long, userId: Long): Mono<Boolean> = mono {
-        val guid = gatewayDiscordClient.getGuildById(Snowflake.of(guildId)).awaitSingleOrNull()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-        val member = guid.getMemberById(Snowflake.of(userId)).awaitSingleOrNull() ?: return@mono false
-        member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)
-    }
+    fun isAdminOfGuild(guildId: Long, userId: Long): Mono<Boolean> =
+        discordService.isAdminOfGuild(userId, guildId)
 
     fun getEntry(entryId: Long): Mono<Entry> = entryRepository.findById(entryId)
 }
 
-data class GuildInfo(val id: Long, val name: String)
-data class UserInfo(val id: Long, val username: String)
 data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
