@@ -102,6 +102,20 @@ class WebTests {
     }
 
     @Test
+    fun `index page shows username when authenticated with form login`() {
+        webTestClient.mutateWith(mockUser("DevUser"))
+            .get().uri("/")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("Logged in as:"))
+                assert(body.contains("DevUser"))
+            }
+    }
+
+    @Test
     fun `non-existent page shows 404 for authenticated user`() {
         webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
             .get().uri("/this-page-does-not-exist")
