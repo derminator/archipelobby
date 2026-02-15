@@ -35,7 +35,9 @@ class RoomService(
     fun getAdminGuilds(userId: Long): Flux<GuildInfo> = flux {
         val userSnowflake = Snowflake.of(userId)
         gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake).awaitSingleOrNull()
+            val member = guid.getMemberById(userSnowflake)
+                .onErrorResume { Mono.empty() }
+                .awaitSingleOrNull()
             if (member != null && member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
                 send(GuildInfo(guid.id.asLong(), guid.name))
             }
@@ -45,7 +47,9 @@ class RoomService(
     fun getJoinableRooms(userId: Long): Flux<Room> = flux {
         val userSnowflake = Snowflake.of(userId)
         gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake).awaitSingleOrNull()
+            val member = guid.getMemberById(userSnowflake)
+                .onErrorResume { Mono.empty() }
+                .awaitSingleOrNull()
             if (member != null) {
                 roomRepository.findByGuildId(guid.id.asLong()).collect { room ->
                     if (room.id == null) return@collect

@@ -8,6 +8,7 @@ import discord4j.common.util.Snowflake
 import discord4j.core.GatewayDiscordClient
 import discord4j.core.`object`.entity.Guild
 import discord4j.core.`object`.entity.Member
+import discord4j.rest.util.PermissionSet
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
@@ -192,5 +193,51 @@ class WebTests {
             .body(BodyInserters.fromFormData("newName", "Duplicate Name"))
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+    }
+
+    @Test
+    fun `rooms page is accessible for user who is not admin in all joined guilds`() {
+        val userId = 123456789L
+        val userSnowflake = Snowflake.of(userId)
+
+        val guild1 = mock(Guild::class.java)
+        `when`(guild1.id).thenReturn(Snowflake.of(1))
+        `when`(guild1.name).thenReturn("Guild 1")
+
+        val guild2 = mock(Guild::class.java)
+        `when`(guild2.id).thenReturn(Snowflake.of(2))
+        `when`(guild2.name).thenReturn("Guild 2")
+
+        // Bot is also in a guild the user is NOT in
+        val guild3 = mock(Guild::class.java)
+        `when`(guild3.id).thenReturn(Snowflake.of(3))
+        `when`(guild3.name).thenReturn("Guild 3")
+
+        `when`(gatewayDiscordClient.guilds).thenReturn(Flux.just(guild1, guild2, guild3))
+        `when`(roomRepository.findByGuildId(anyLong())).thenReturn(Flux.empty())
+
+        val member1 = mock(Member::class.java)
+        `when`(guild1.getMemberById(userSnowflake)).thenReturn(Mono.just(member1))
+        `when`(member1.basePermissions).thenReturn(Mono.just(PermissionSet.none()))
+
+        val member2 = mock(Member::class.java)
+        `when`(guild2.getMemberById(userSnowflake)).thenReturn(Mono.just(member2))
+        `when`(member2.basePermissions).thenReturn(Mono.just(PermissionSet.none()))
+
+        // Guild 3 returns error when getting member (user not in guild)
+        `when`(guild3.getMemberById(userSnowflake)).thenReturn(Mono.error(RuntimeException("404 Not Found")))
+
+        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+            .get().uri("/rooms")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(!body!!.contains("Guild 1"))
+                assert(!body.contains("Guild 2"))
+                assert(!body.contains("Guild 3"))
+                assert(!body.contains("Create a Room"))
+            }
     }
 }
