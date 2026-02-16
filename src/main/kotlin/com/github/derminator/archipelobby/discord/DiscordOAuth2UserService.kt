@@ -1,6 +1,6 @@
 package com.github.derminator.archipelobby.discord
 
-import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.springframework.context.annotation.Profile
 import org.springframework.security.oauth2.client.userinfo.DefaultReactiveOAuth2UserService
@@ -23,7 +23,7 @@ class DiscordOAuth2UserService(
             OAuth2Error("missing_id", "User ID is missing or invalid from Discord response", null)
         )
 
-        val isMember = discordService.isMemberOfAnyGuild(userId).awaitSingle()
+        val isMember = discordService.isMemberOfAnyGuild(userId)
 
         if (!isMember) {
             throw OAuth2AuthenticationException(

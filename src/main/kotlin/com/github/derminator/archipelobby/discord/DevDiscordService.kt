@@ -1,9 +1,9 @@
 package com.github.derminator.archipelobby.discord
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 
 @Component
 @ConfigurationProperties(prefix = "archipelobby.discord.dev")
@@ -27,26 +27,24 @@ class DevDiscordService(
         UserInfo(parts[0].toLong(), parts[1])
     }
 
-    override fun getGuildsForUser(userId: Long): Flux<GuildInfo> =
-        Flux.fromIterable(parseGuilds())
+    override suspend fun getGuildsForUser(userId: Long): Flow<GuildInfo> =
+        parseGuilds().asFlow()
 
-    override fun getAdminGuildsForUser(userId: Long): Flux<GuildInfo> =
-        Flux.fromIterable(parseGuilds().filter { properties.adminGuilds.contains(it.id) })
+    override suspend fun getAdminGuildsForUser(userId: Long): Flow<GuildInfo> =
+        parseGuilds().filter { properties.adminGuilds.contains(it.id) }.asFlow()
 
-    override fun isMemberOfAnyGuild(userId: Long): Mono<Boolean> =
-        Mono.just(parseGuilds().isNotEmpty())
+    override suspend fun isMemberOfAnyGuild(userId: Long): Boolean =
+        parseGuilds().isNotEmpty()
 
-    override fun isMemberOfGuild(userId: Long, guildId: Long): Mono<Boolean> =
-        Mono.just(parseGuilds().any { it.id == guildId })
+    override suspend fun isMemberOfGuild(userId: Long, guildId: Long): Boolean =
+        parseGuilds().any { it.id == guildId }
 
-    override fun isAdminOfGuild(userId: Long, guildId: Long): Mono<Boolean> =
-        Mono.just(properties.adminGuilds.contains(guildId))
+    override suspend fun isAdminOfGuild(userId: Long, guildId: Long): Boolean =
+        properties.adminGuilds.contains(guildId)
 
-    override fun getUserInfo(userId: Long): Mono<UserInfo> =
-        Mono.justOrEmpty(parseUsers().find { it.id == userId })
-            .switchIfEmpty(Mono.just(UserInfo(userId, "DevUser_$userId")))
+    override suspend fun getUserInfo(userId: Long): UserInfo =
+        parseUsers().find { it.id == userId } ?: UserInfo(userId, "DevUser_$userId")
 
-    override fun getGuildInfo(guildId: Long): Mono<GuildInfo> =
-        Mono.justOrEmpty(parseGuilds().find { it.id == guildId })
-            .switchIfEmpty(Mono.just(GuildInfo(guildId, "DevGuild_$guildId")))
+    override suspend fun getGuildInfo(guildId: Long): GuildInfo =
+        parseGuilds().find { it.id == guildId } ?: GuildInfo(guildId, "DevGuild_$guildId")
 }

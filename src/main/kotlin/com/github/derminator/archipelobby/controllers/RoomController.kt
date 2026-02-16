@@ -2,8 +2,8 @@ package com.github.derminator.archipelobby.controllers
 
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.storage.UploadsService
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -33,9 +33,9 @@ class RoomController(
         model: Model
     ): Mono<String> = mono {
         val userId = principal.name.toLongOrNull() ?: return@mono "redirect:/"
-        val userRooms = roomService.getRoomsForUser(userId).collectList().awaitSingle()
-        val adminGuilds = roomService.getAdminGuilds(userId).collectList().awaitSingle()
-        val joinableRooms = roomService.getJoinableRooms(userId).collectList().awaitSingle()
+        val userRooms = roomService.getRoomsForUser(userId)
+        val adminGuilds = roomService.getAdminGuilds(userId).toList()
+        val joinableRooms = roomService.getJoinableRooms(userId)
 
         model.addAttribute("userRooms", userRooms)
         model.addAttribute("adminGuilds", adminGuilds)
@@ -59,7 +59,7 @@ class RoomController(
 
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
 
-        val room = roomService.createRoom(guildId, name, userId).awaitSingle()
+        val room = roomService.createRoom(guildId, name, userId)
         "redirect:/rooms/${room.id}"
     }
 
@@ -71,7 +71,7 @@ class RoomController(
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val roomWithEntries = roomService.getRoom(roomId, userId).awaitSingle()
+        val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
@@ -100,7 +100,7 @@ class RoomController(
 
         val filePath = uploadsService.saveFile(yamlFile)
 
-        roomService.addEntry(roomId, userId, entryName, filePath).awaitSingle()
+        roomService.addEntry(roomId, userId, entryName, filePath)
         "redirect:/rooms/$roomId"
     }
 
@@ -113,10 +113,10 @@ class RoomController(
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
         val isAdmin = roomService.isAdminOfGuild(
-            roomService.getRoom(roomId, userId).awaitSingle().room.guildId,
+            roomService.getRoom(roomId, userId).room.guildId,
             userId
-        ).awaitSingle()
-        roomService.deleteEntry(entryId, userId, isAdmin).awaitSingleOrNull()
+        )
+        roomService.deleteEntry(entryId, userId, isAdmin)
         "redirect:/rooms/$roomId"
     }
 
@@ -132,7 +132,7 @@ class RoomController(
         val formData = exchange.formData.awaitSingle()
         val newName = formData.getFirst("newName")
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
-        roomService.renameEntry(entryId, userId, newName).awaitSingle()
+        roomService.renameEntry(entryId, userId, newName)
         "redirect:/rooms/$roomId"
     }
 
@@ -141,7 +141,7 @@ class RoomController(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
     ): Mono<ResponseEntity<ByteArray>> = mono {
-        val entry = roomService.getEntry(entryId).awaitSingleOrNull()
+        val entry = roomService.getEntry(entryId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
         if (entry.roomId != roomId) {
@@ -168,12 +168,12 @@ class RoomController(
         principal: Principal
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val roomWithEntries = roomService.getRoom(roomId, userId).awaitSingle()
+        val roomWithEntries = roomService.getRoom(roomId, userId)
 
         val byteArrayOutputStream = ByteArrayOutputStream()
         ZipOutputStream(byteArrayOutputStream).use { zipOut ->
             for (entryInfo in roomWithEntries.entries) {
-                val entry = roomService.getEntry(entryInfo.id).awaitSingleOrNull() ?: continue
+                val entry = roomService.getEntry(entryInfo.id) ?: continue
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
@@ -201,7 +201,7 @@ class RoomController(
     ): Mono<String> = mono {
         val userId =
             principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        roomService.deleteRoom(roomId, userId).awaitSingleOrNull()
+        roomService.deleteRoom(roomId, userId)
         "redirect:/"
     }
 }

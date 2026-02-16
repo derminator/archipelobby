@@ -1,16 +1,15 @@
 package com.github.derminator.archipelobby.discord
 
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
+import kotlinx.coroutines.flow.Flow
 
 interface DiscordService {
-    fun getGuildsForUser(userId: Long): Flux<GuildInfo>
-    fun getAdminGuildsForUser(userId: Long): Flux<GuildInfo>
-    fun isMemberOfAnyGuild(userId: Long): Mono<Boolean>
-    fun isMemberOfGuild(userId: Long, guildId: Long): Mono<Boolean>
-    fun isAdminOfGuild(userId: Long, guildId: Long): Mono<Boolean>
-    fun getUserInfo(userId: Long): Mono<UserInfo>
-    fun getGuildInfo(guildId: Long): Mono<GuildInfo>
+    suspend fun getGuildsForUser(userId: Long): Flow<GuildInfo>
+    suspend fun getAdminGuildsForUser(userId: Long): Flow<GuildInfo>
+    suspend fun isMemberOfAnyGuild(userId: Long): Boolean
+    suspend fun isMemberOfGuild(userId: Long, guildId: Long): Boolean
+    suspend fun isAdminOfGuild(userId: Long, guildId: Long): Boolean
+    suspend fun getUserInfo(userId: Long): UserInfo
+    suspend fun getGuildInfo(guildId: Long): GuildInfo
 }
 
 data class GuildInfo(val id: Long, val name: String)
