@@ -17,11 +17,12 @@ class DiscordOAuth2UserService(
     private val discordService: DiscordService
 ) : DefaultReactiveOAuth2UserService() {
 
+    /**
+     * Authenticates user; enforces guild membership; returns user
+     */
     override fun loadUser(userRequest: OAuth2UserRequest): Mono<OAuth2User> = mono {
         val user = super.loadUser(userRequest).awaitSingle()
-        val userId = user.name?.toLongOrNull() ?: throw OAuth2AuthenticationException(
-            OAuth2Error("missing_id", "User ID is missing or invalid from Discord response", null)
-        )
+        val userId = user.name.toLong()
 
         val isMember = discordService.isMemberOfAnyGuild(userId)
 
