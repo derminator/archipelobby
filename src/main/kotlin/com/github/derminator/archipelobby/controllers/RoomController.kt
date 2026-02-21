@@ -1,17 +1,16 @@
 package com.github.derminator.archipelobby.controllers
 
 import com.github.derminator.archipelobby.data.RoomService
+import com.github.derminator.archipelobby.security.DiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
-import kotlinx.coroutines.reactor.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
-import org.springframework.security.core.annotation.AuthenticationPrincipal
-import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -30,13 +29,13 @@ class RoomController(
 ) {
     @GetMapping
     fun getRooms(
-        @AuthenticationPrincipal principal: OAuth2User,
+        principal: DiscordPrincipal,
         model: Model
     ): Mono<String> = mono {
-        val userId = principal.name.toLongOrNull() ?: return@mono "redirect:/"
-        val userRooms = roomService.getRoomsForUser(userId).collectList().awaitSingle()
-        val adminGuilds = roomService.getAdminGuilds(userId).collectList().awaitSingle()
-        val joinableRooms = roomService.getJoinableRooms(userId).collectList().awaitSingle()
+        val userId = principal.userId
+        val userRooms = roomService.getRoomsForUser(userId)
+        val adminGuilds = roomService.getAdminGuilds(userId).toList()
+        val joinableRooms = roomService.getJoinableRooms(userId)
 
         model.addAttribute("userRooms", userRooms)
         model.addAttribute("adminGuilds", adminGuilds)
@@ -47,7 +46,7 @@ class RoomController(
     @PostMapping
     fun createRoom(
         exchange: ServerWebExchange,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: DiscordPrincipal
     ): Mono<String> = mono {
         val formData = exchange.formData.awaitSingle()
         val guildId = formData.getFirst("guildId")?.toLongOrNull() ?: throw ResponseStatusException(
@@ -58,21 +57,20 @@ class RoomController(
         val name = formData.getFirst("name")
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
 
-        val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val userId = principal.userId
 
-        val room = roomService.createRoom(guildId, name, userId).awaitSingle()
+        val room = roomService.createRoom(guildId, name, userId)
         "redirect:/rooms/${room.id}"
     }
 
     @GetMapping("/{roomId}", "/{roomId}/")
     fun getRoom(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User,
+        principal: DiscordPrincipal,
         model: Model
     ): Mono<String> = mono {
-        val userId =
-            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val roomWithEntries = roomService.getRoom(roomId, userId).awaitSingle()
+        val userId = principal.userId
+        val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
@@ -88,10 +86,10 @@ class RoomController(
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User,
+        principal: DiscordPrincipal,
         @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
-        val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val userId = principal.userId
         val entryName = form.entryName.trim()
         val yamlFile = form.yamlFile
 
@@ -101,7 +99,7 @@ class RoomController(
 
         val filePath = uploadsService.saveFile(yamlFile)
 
-        roomService.addEntry(roomId, userId, entryName, filePath).awaitSingle()
+        roomService.addEntry(roomId, userId, entryName, filePath)
         "redirect:/rooms/$roomId"
     }
 
@@ -109,15 +107,14 @@ class RoomController(
     fun deleteEntry(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: DiscordPrincipal
     ): Mono<String> = mono {
-        val userId =
-            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val userId = principal.userId
         val isAdmin = roomService.isAdminOfGuild(
-            roomService.getRoom(roomId, userId).awaitSingle().room.guildId,
+            roomService.getRoom(roomId, userId).room.guildId,
             userId
-        ).awaitSingle()
-        roomService.deleteEntry(entryId, userId, isAdmin).awaitSingleOrNull()
+        )
+        roomService.deleteEntry(entryId, userId, isAdmin)
         "redirect:/rooms/$roomId"
     }
 
@@ -126,14 +123,13 @@ class RoomController(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
         exchange: ServerWebExchange,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: DiscordPrincipal
     ): Mono<String> = mono {
-        val userId =
-            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
+        val userId = principal.userId
         val formData = exchange.formData.awaitSingle()
         val newName = formData.getFirst("newName")
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
-        roomService.renameEntry(entryId, userId, newName).awaitSingle()
+        roomService.renameEntry(entryId, userId, newName)
         "redirect:/rooms/$roomId"
     }
 
@@ -142,7 +138,7 @@ class RoomController(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
     ): Mono<ResponseEntity<ByteArray>> = mono {
-        val entry = roomService.getEntry(entryId).awaitSingleOrNull()
+        val entry = roomService.getEntry(entryId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
         if (entry.roomId != roomId) {
@@ -166,15 +162,15 @@ class RoomController(
     @GetMapping("/{roomId}/download-all")
     fun downloadAllYamls(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: DiscordPrincipal
     ): Mono<ResponseEntity<ByteArray>> = mono {
-        val userId = principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        val roomWithEntries = roomService.getRoom(roomId, userId).awaitSingle()
+        val userId = principal.userId
+        val roomWithEntries = roomService.getRoom(roomId, userId)
 
         val byteArrayOutputStream = ByteArrayOutputStream()
         ZipOutputStream(byteArrayOutputStream).use { zipOut ->
             for (entryInfo in roomWithEntries.entries) {
-                val entry = roomService.getEntry(entryInfo.id).awaitSingleOrNull() ?: continue
+                val entry = roomService.getEntry(entryInfo.id) ?: continue
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
@@ -198,11 +194,10 @@ class RoomController(
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,
-        @AuthenticationPrincipal principal: OAuth2User
+        principal: DiscordPrincipal
     ): Mono<String> = mono {
-        val userId =
-            principal.name.toLongOrNull() ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED)
-        roomService.deleteRoom(roomId, userId).awaitSingleOrNull()
+        val userId = principal.userId
+        roomService.deleteRoom(roomId, userId)
         "redirect:/"
     }
 }

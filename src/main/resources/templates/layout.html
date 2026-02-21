@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <div th:fragment="user-bar">
     <div sec:authorize="isAuthenticated()">
-        Logged in as: <span sec:authentication="principal.attributes['username']">User</span>
+        Logged in as: <span th:text="${#authentication.principal.username}">User</span>
         |
         <form th:action="@{/logout}" method="post" style="display: inline;">
             <input type="submit" value="Logout"
