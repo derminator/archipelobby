@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 class DevDiscordProperties {
     var guilds: List<String> = emptyList() // Format: "id:name"
     var adminGuilds: List<Long> = emptyList()
-    var users: List<String> = emptyList() // Format: "id:username"
+    var users: List<String> = emptyList()
 }
 
 class DevDiscordService(
@@ -23,8 +23,7 @@ class DevDiscordService(
     }
 
     private fun parseUsers(): List<UserInfo> = properties.users.map {
-        val parts = it.split(":", limit = 2)
-        UserInfo(parts[0].toLong(), parts[1])
+        UserInfo(it.toLong(), "DevUser_$it")
     }
 
     override suspend fun getGuildsForUser(userId: Long): Flow<GuildInfo> =

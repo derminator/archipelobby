@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby.security
 
+import org.springframework.security.core.Authentication
 import java.security.Principal
 
 /**
@@ -12,3 +13,10 @@ data class DiscordPrincipal(
 ) : Principal {
     override fun getName(): String = userId.toString()
 }
+
+val Principal.asDiscordPrincipal: DiscordPrincipal
+    get() {
+        if (this is DiscordPrincipal) return this
+        if (this is Authentication && this.principal is DiscordPrincipal) return this.principal as DiscordPrincipal
+        throw IllegalStateException("Principal is not a DiscordPrincipal: ${this::class.simpleName}")
+    }

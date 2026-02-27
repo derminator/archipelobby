@@ -6,6 +6,7 @@ import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
+import com.github.derminator.archipelobby.security.DiscordPrincipal
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -22,8 +23,8 @@ import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.*
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -54,11 +55,7 @@ class WebTests {
 
     lateinit var webTestClient: WebTestClient
 
-    private val testUser = DefaultOAuth2User(
-        listOf(SimpleGrantedAuthority("ROLE_USER")),
-        mapOf("id" to "123456789", "username" to "TestUser"),
-        "id"
-    )
+    private val testPrincipal = DiscordPrincipal(123456789L, "TestUser")
 
     @BeforeEach
     fun setup() = runBlocking {
@@ -91,7 +88,15 @@ class WebTests {
 
     @Test
     fun `index page shows username when authenticated`() {
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/")
             .exchange()
             .expectStatus().isOk
@@ -106,7 +111,16 @@ class WebTests {
 
     @Test
     fun `index page shows username when authenticated with form login`() {
-        webTestClient.mutateWith(mockUser("DevUser"))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    DiscordPrincipal(
+                        987654321L,
+                        "DevUser"
+                    ), null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/")
             .exchange()
             .expectStatus().isOk
@@ -120,7 +134,15 @@ class WebTests {
 
     @Test
     fun `non-existent page shows 404 for authenticated user`() {
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/this-page-does-not-exist")
             .header("Accept", "text/html")
             .exchange()
@@ -135,7 +157,15 @@ class WebTests {
 
     @Test
     fun `bad request shows generic error page`() {
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .mutateWith(csrf())
             .post().uri("/rooms")
             // guildId and name are missing, should trigger 400 Bad Request
@@ -153,7 +183,15 @@ class WebTests {
     fun `internal server error shows generic error page`() {
         `when`(roomRepository.findById(anyLong())).thenThrow(RuntimeException("Test exception"))
 
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/rooms/123")
             .header("Accept", "text/html")
             .exchange()
@@ -167,7 +205,7 @@ class WebTests {
 
     @Test
     fun `non-existent page redirects to login for unauthenticated user`() {
-        // Since we didn't permit the non-existent path, it should redirect to login first
+        // Since we didn't permit the non-existent path, it should redirect to log in first
         webTestClient.get().uri("/this-page-does-not-exist")
             .header("Accept", "text/html")
             .exchange()
@@ -186,7 +224,15 @@ class WebTests {
         bodyBuilder.part("yamlFile", "test: data".toByteArray())
             .filename("test.yaml")
 
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .mutateWith(csrf())
             .post().uri("/rooms/1/entries")
             .contentType(MediaType.MULTIPART_FORM_DATA)
@@ -201,7 +247,15 @@ class WebTests {
         `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
         `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
 
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .mutateWith(csrf())
             .post().uri("/rooms/1/entries/1/rename")
             .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -223,7 +277,15 @@ class WebTests {
         `when`(discordService.getAdminGuildsForUser(userId)).thenReturn(emptyFlow())
         `when`(roomRepository.findByGuildId(anyLong())).thenReturn(Flux.empty())
 
-        webTestClient.mutateWith(mockOAuth2Login().oauth2User(testUser))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/rooms")
             .exchange()
             .expectStatus().isOk
@@ -244,7 +306,15 @@ class WebTests {
         `when`(discordService.getAdminGuildsForUser(userId)).thenReturn(emptyFlow())
         `when`(entryRepository.findByUserId(userId)).thenReturn(Flux.empty())
 
-        webTestClient.mutateWith(mockUser("123456789"))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/rooms")
             .exchange()
             .expectStatus().isOk
@@ -260,7 +330,15 @@ class WebTests {
         `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
 
-        webTestClient.mutateWith(mockUser("123456789"))
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
             .get().uri("/rooms/$roomId")
             .exchange()
             .expectStatus().isOk

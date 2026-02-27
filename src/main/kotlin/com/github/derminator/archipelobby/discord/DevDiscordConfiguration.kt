@@ -8,19 +8,20 @@ import org.springframework.security.core.userdetails.User
 
 @Configuration
 @Profile("!discord")
-class DevDiscordConfiguration {
+class DevDiscordConfiguration(
+    private val properties: DevDiscordProperties
+) {
     @Bean
     fun discordService(properties: DevDiscordProperties): DiscordService =
         DevDiscordService(properties)
 
     @Bean
-    fun userDetailsService(): MapReactiveUserDetailsService {
-        @Suppress("DEPRECATION")
-        val user = User.withDefaultPasswordEncoder()
-            .username("123456789")
-            .password("password")
-            .roles("USER")
-            .build()
-        return MapReactiveUserDetailsService(user)
-    }
+    fun userDetailsService(): MapReactiveUserDetailsService =
+        MapReactiveUserDetailsService(properties.users.map {
+            @Suppress("DEPRECATION")
+            User.withDefaultPasswordEncoder()
+                .username(it)
+                .password("password")
+                .build()
+        })
 }

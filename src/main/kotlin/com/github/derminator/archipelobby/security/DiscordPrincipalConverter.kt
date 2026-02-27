@@ -44,12 +44,7 @@ class DiscordPrincipalConverter : WebFilter {
                     }
                 }
 
-                else -> {
-                    // Fallback: try to parse name as user ID
-                    val userId = authentication.name.toLongOrNull() ?: 0L
-                    val username = "User_$userId"
-                    DiscordPrincipal(userId, username)
-                }
+                else -> null
             }
 
             if (principal != null) {
@@ -60,16 +55,21 @@ class DiscordPrincipalConverter : WebFilter {
                     authentication.authorities
                 )
 
-                chain.filter(exchange)
-                    .contextWrite(
-                        ReactiveSecurityContextHolder.withSecurityContext(
-                            Mono.just(
-                                ReactiveSecurityContextHolder.getContext().awaitSingle().apply {
-                                    this.authentication = newAuth
-                                })
+                // If it's already a UsernamePasswordAuthenticationToken with DiscordPrincipal, avoid double wrap
+                if (authentication is UsernamePasswordAuthenticationToken && authentication.principal is DiscordPrincipal) {
+                    chain.filter(exchange).awaitSingleOrNull()
+                } else {
+                    chain.filter(exchange)
+                        .contextWrite(
+                            ReactiveSecurityContextHolder.withSecurityContext(
+                                Mono.just(
+                                    ReactiveSecurityContextHolder.getContext().awaitSingle().apply {
+                                        this.authentication = newAuth
+                                    })
+                            )
                         )
-                    )
-                    .awaitSingleOrNull()
+                        .awaitSingleOrNull()
+                }
             } else {
                 chain.filter(exchange).awaitSingleOrNull()
             }

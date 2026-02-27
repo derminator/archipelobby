@@ -1,7 +1,7 @@
 package com.github.derminator.archipelobby.controllers
 
 import com.github.derminator.archipelobby.data.RoomService
-import com.github.derminator.archipelobby.security.DiscordPrincipal
+import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitSingle
@@ -11,7 +11,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
-import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -19,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
+import java.security.Principal
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -30,10 +30,10 @@ class RoomController(
 ) {
     @GetMapping
     fun getRooms(
-        @AuthenticationPrincipal principal: DiscordPrincipal,
+        principal: Principal,
         model: Model
     ): Mono<String> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         val userRooms = roomService.getRoomsForUser(userId)
         val adminGuilds = roomService.getAdminGuilds(userId).toList()
         val joinableRooms = roomService.getJoinableRooms(userId)
@@ -47,7 +47,7 @@ class RoomController(
     @PostMapping
     fun createRoom(
         exchange: ServerWebExchange,
-        principal: DiscordPrincipal
+        principal: Principal
     ): Mono<String> = mono {
         val formData = exchange.formData.awaitSingle()
         val guildId = formData.getFirst("guildId")?.toLongOrNull() ?: throw ResponseStatusException(
@@ -58,7 +58,7 @@ class RoomController(
         val name = formData.getFirst("name")
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
 
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
 
         val room = roomService.createRoom(guildId, name, userId)
         "redirect:/rooms/${room.id}"
@@ -67,10 +67,10 @@ class RoomController(
     @GetMapping("/{roomId}", "/{roomId}/")
     fun getRoom(
         @PathVariable roomId: Long,
-        principal: DiscordPrincipal,
+        principal: Principal,
         model: Model
     ): Mono<String> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries)
@@ -87,10 +87,10 @@ class RoomController(
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,
-        principal: DiscordPrincipal,
+        principal: Principal,
         @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         val entryName = form.entryName.trim()
         val yamlFile = form.yamlFile
 
@@ -108,9 +108,9 @@ class RoomController(
     fun deleteEntry(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
-        principal: DiscordPrincipal
+        principal: Principal
     ): Mono<String> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         val isAdmin = roomService.isAdminOfGuild(
             roomService.getRoom(roomId, userId).room.guildId,
             userId
@@ -124,9 +124,9 @@ class RoomController(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
         exchange: ServerWebExchange,
-        principal: DiscordPrincipal
+        principal: Principal
     ): Mono<String> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         val formData = exchange.formData.awaitSingle()
         val newName = formData.getFirst("newName")
             ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
@@ -163,9 +163,9 @@ class RoomController(
     @GetMapping("/{roomId}/download-all")
     fun downloadAllYamls(
         @PathVariable roomId: Long,
-        principal: DiscordPrincipal
+        principal: Principal
     ): Mono<ResponseEntity<ByteArray>> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
 
         val byteArrayOutputStream = ByteArrayOutputStream()
@@ -195,9 +195,9 @@ class RoomController(
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,
-        principal: DiscordPrincipal
+        principal: Principal
     ): Mono<String> = mono {
-        val userId = principal.userId
+        val userId = principal.asDiscordPrincipal.userId
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
     }
