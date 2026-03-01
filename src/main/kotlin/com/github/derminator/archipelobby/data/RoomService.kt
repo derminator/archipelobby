@@ -74,6 +74,9 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
         }
 
+        // Validate YAML file
+        extractNameFromYaml(uploadsService.getFile(yamlFilePath))
+
         return entryRepository.save(
             Entry(
                 roomId = roomId,
@@ -121,7 +124,7 @@ class RoomService(
             .toList()
             .map { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
-                val name = extractNameFromYaml(uploadsService.getFile(entry.yamlFilePath)) ?: entry.yamlFilePath
+                val name = extractNameFromYaml(uploadsService.getFile(entry.yamlFilePath))
                 EntryInfo(entry.id, name, discordService.getUserInfo(entry.userId))
             }
         return RoomWithEntries(room, entries, isAdmin)
@@ -132,13 +135,12 @@ class RoomService(
 
     suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
 
-    private fun extractNameFromYaml(content: ByteArray): String? {
-        return try {
-            val data = Yaml().load<Any>(content.inputStream())
-            if (data is Map<*, *>) data["name"]?.toString()?.trim()?.takeIf { it.isNotBlank() } else null
-        } catch (_: Exception) {
-            null
+    private fun extractNameFromYaml(content: ByteArray): String {
+        val trimmedName = Yaml().load<PlayerYaml>(content.inputStream()).name.trim()
+        if (trimmedName.isEmpty()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid YAML file: name is empty")
         }
+        return trimmedName
     }
 }
 
