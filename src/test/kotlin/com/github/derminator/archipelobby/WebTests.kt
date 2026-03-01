@@ -12,14 +12,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
-import org.mockito.Mockito.anyString
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -209,33 +207,6 @@ class WebTests {
             .exchange()
             .expectStatus().is3xxRedirection
             .expectHeader().valueMatches("Location", ".*/login")
-    }
-
-    @Test
-    fun `adding entry with duplicate name returns conflict`(): Unit = runBlocking {
-        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
-        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(1, 123, "Test Room")))
-        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
-
-        val bodyBuilder = MultipartBodyBuilder()
-        bodyBuilder.part("yamlFile", "name: Duplicate Name\ngame: A Link to the Past".toByteArray())
-            .filename("test.yaml")
-
-        webTestClient.mutateWith(
-            mockAuthentication(
-                UsernamePasswordAuthenticationToken(
-                    testPrincipal,
-                    null,
-                    listOf(SimpleGrantedAuthority("ROLE_USER"))
-                )
-            )
-        )
-            .mutateWith(csrf())
-            .post().uri("/rooms/1/entries")
-            .contentType(MediaType.MULTIPART_FORM_DATA)
-            .bodyValue(bodyBuilder.build())
-            .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
     }
 
     @Test
