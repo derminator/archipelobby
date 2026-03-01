@@ -22,8 +22,8 @@ class DevDiscordService(
         GuildInfo(parts[0].toLong(), parts[1])
     }
 
-    private fun parseUsers(): List<UserInfo> = properties.users.map {
-        UserInfo(it.toLong(), "DevUser_$it")
+    private fun parseUsers(): List<UserInfo> = properties.users.mapIndexed { index, it ->
+        UserInfo(index.toLong(), it)
     }
 
     override suspend fun getGuildsForUser(userId: Long): Flow<GuildInfo> =
@@ -42,8 +42,8 @@ class DevDiscordService(
         properties.adminGuilds.contains(guildId)
 
     override suspend fun getUserInfo(userId: Long): UserInfo =
-        parseUsers().find { it.id == userId } ?: UserInfo(userId, "DevUser_$userId")
+        parseUsers().single { it.id == userId }
 
     override suspend fun getGuildInfo(guildId: Long): GuildInfo =
-        parseGuilds().find { it.id == guildId } ?: GuildInfo(guildId, "DevGuild_$guildId")
+        parseGuilds().single { it.id == guildId }
 }

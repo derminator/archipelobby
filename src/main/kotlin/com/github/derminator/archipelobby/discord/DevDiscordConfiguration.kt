@@ -12,7 +12,7 @@ class DevDiscordConfiguration(
     private val properties: DevDiscordProperties
 ) {
     @Bean
-    fun discordService(properties: DevDiscordProperties): DiscordService =
+    fun discordService(): DiscordService =
         DevDiscordService(properties)
 
     @Bean
