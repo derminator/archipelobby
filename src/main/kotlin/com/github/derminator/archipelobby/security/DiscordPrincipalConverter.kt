@@ -1,9 +1,12 @@
 package com.github.derminator.archipelobby.security
 
+import com.github.derminator.archipelobby.discord.DevDiscordProperties
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
+import org.springframework.context.annotation.Profile
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken
 import org.springframework.stereotype.Component
@@ -13,39 +16,15 @@ import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
 /**
- * Converts standard Spring Security authentication objects into our custom DiscordPrincipal.
- * Works for both OAuth2 authentication (discord profile) and form login (dev mode).
+ * Common base for converting standard Spring Security authentication objects into our custom DiscordPrincipal.
  */
-@Component
-class DiscordPrincipalConverter : WebFilter {
+abstract class AbstractDiscordPrincipalConverter : WebFilter {
 
     override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> = mono {
         val authentication = ReactiveSecurityContextHolder.getContext().awaitSingleOrNull()?.authentication
 
         if (authentication != null && authentication.isAuthenticated) {
-            val principal = when (authentication) {
-                is OAuth2AuthenticationToken -> {
-                    // OAuth2 (discord profile): extract user ID and username
-                    val oauth2User = authentication.principal ?: return@mono null
-                    val userId = oauth2User.name.toLong()
-                    val username = oauth2User.attributes["username"] as? String ?: "Unknown"
-                    DiscordPrincipal(userId, username)
-                }
-
-                is UsernamePasswordAuthenticationToken -> {
-                    // Dev mode (form login): username is the user ID
-                    val name = authentication.name
-                    val userId = name.toLongOrNull()
-                    if (userId != null) {
-                        val username = "DevUser_$userId"
-                        DiscordPrincipal(userId, username)
-                    } else {
-                        null
-                    }
-                }
-
-                else -> null
-            }
+            val principal = getPrincipal(authentication)
 
             if (principal != null) {
                 // Create new authentication with DiscordPrincipal
@@ -77,5 +56,43 @@ class DiscordPrincipalConverter : WebFilter {
             chain.filter(exchange).awaitSingleOrNull()
         }
         null
+    }
+
+    abstract fun getPrincipal(authentication: Authentication): DiscordPrincipal?
+}
+
+/**
+ * Handles OAuth2 authentication from Discord.
+ */
+@Component
+@Profile("discord")
+class RealDiscordPrincipalConverter : AbstractDiscordPrincipalConverter() {
+    override fun getPrincipal(authentication: Authentication): DiscordPrincipal? {
+        if (authentication !is OAuth2AuthenticationToken) return null
+
+        val oauth2User = authentication.principal ?: return null
+        val userId = oauth2User.name.toLong()
+        val username = oauth2User.attributes["username"] as? String ?: "Unknown"
+        return DiscordPrincipal(userId, username)
+    }
+}
+
+/**
+ * Handles form login for dev mode.
+ * Uses DevDiscordProperties to match usernames to their index-based IDs.
+ */
+@Component
+@Profile("!discord")
+class DevDiscordPrincipalConverter(private val properties: DevDiscordProperties) : AbstractDiscordPrincipalConverter() {
+    override fun getPrincipal(authentication: Authentication): DiscordPrincipal? {
+        if (authentication !is UsernamePasswordAuthenticationToken) return null
+        if (authentication.principal is DiscordPrincipal) return null // Already converted
+
+        val username = authentication.name
+        val userIndex = properties.users.indexOf(username)
+        if (userIndex != -1) {
+            return DiscordPrincipal(userIndex.toLong(), username)
+        }
+        return null
     }
 }
