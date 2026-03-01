@@ -3,7 +3,7 @@ package com.github.derminator.archipelobby.data
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
-import com.github.derminator.archipelobby.storage.UploadsService
+import com.github.derminator.archipelobby.game.GameService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
@@ -13,14 +13,14 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
-import org.yaml.snakeyaml.Yaml
 
 @Service
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
+    private val apworldRepository: ApworldRepository,
     private val discordService: DiscordService,
-    private val uploadsService: UploadsService
+    private val gameService: GameService
 ) {
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
@@ -68,23 +68,63 @@ class RoomService(
         discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    suspend fun addEntry(roomId: Long, userId: Long, yamlFilePath: String): Entry {
+    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
         }
 
-        // Validate YAML file
-        extractNameFromYaml(uploadsService.getFile(yamlFilePath))
+        if (entryName.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
+        }
+
+        val nameExists = entryRepository.existsByRoomIdAndName(roomId, entryName).awaitSingle()
+        if (nameExists) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
+        }
+
+        validateGameForRoom(roomId, game)
 
         return entryRepository.save(
             Entry(
                 roomId = roomId,
                 userId = userId,
+                name = entryName,
+                game = game,
                 yamlFilePath = yamlFilePath
             )
-        )
-            .awaitSingle()
+        ).awaitSingle()
+    }
+
+    private suspend fun validateGameForRoom(roomId: Long, gameName: String) {
+        if (gameService.isBuiltinGame(gameName)) return
+        val apworldExists = apworldRepository.existsByRoomIdAndGameName(roomId, gameName).awaitSingle()
+        if (!apworldExists) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "'$gameName' is not a built-in Archipelago game. Upload an .apworld file for it first."
+            )
+        }
+    }
+
+    @Transactional
+    suspend fun addApworld(roomId: Long, userId: Long, gameName: String, filePath: String): Apworld {
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!isRoomJoinable(room, userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
+        }
+
+        val apworldExists = apworldRepository.existsByRoomIdAndGameName(roomId, gameName).awaitSingle()
+        if (apworldExists) {
+            throw ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "An .apworld for '$gameName' has already been uploaded to this room"
+            )
+        }
+
+        return apworldRepository.save(
+            Apworld(roomId = roomId, userId = userId, gameName = gameName, filePath = filePath)
+        ).awaitSingle()
     }
 
     @Transactional
@@ -100,6 +140,32 @@ class RoomService(
     }
 
     @Transactional
+    suspend fun renameEntry(entryId: Long, userId: Long, newName: String): Entry {
+        val entry = entryRepository.findById(entryId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+
+        if (entry.userId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot rename another user's entry")
+        }
+
+        if (newName.isBlank()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
+        }
+
+        if (entry.name != newName) {
+            val nameExists = entryRepository.existsByRoomIdAndName(entry.roomId, newName).awaitSingle()
+            if (nameExists) {
+                throw ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "An entry with this name already exists in this room"
+                )
+            }
+        }
+
+        return entryRepository.save(entry.copy(name = newName)).awaitSingle()
+    }
+
+    @Transactional
     suspend fun deleteRoom(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingle()
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
@@ -110,7 +176,7 @@ class RoomService(
     }
 
     /**
-     * Retrieves room with entries; enforces membership or admin access
+     * Retrieves room with entries and apworlds; enforces membership or admin access
      */
     suspend fun getRoom(roomId: Long, userId: Long): RoomWithEntries {
         val room =
@@ -124,29 +190,29 @@ class RoomService(
             .toList()
             .map { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
-                val name = extractNameFromYaml(uploadsService.getFile(entry.yamlFilePath))
-                EntryInfo(entry.id, name, discordService.getUserInfo(entry.userId))
+                EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId))
             }
-        return RoomWithEntries(room, entries, isAdmin)
+        val apworlds = apworldRepository.findByRoomId(roomId)
+            .asFlow()
+            .toList()
+            .map { apworld ->
+                if (apworld.id == null) error("Apworld ID is null after saving")
+                ApworldInfo(apworld.id, apworld.gameName, discordService.getUserInfo(apworld.userId))
+            }
+        return RoomWithEntries(room, entries, apworlds, isAdmin)
     }
 
     suspend fun isAdminOfGuild(guildId: Long, userId: Long): Boolean =
         discordService.isAdminOfGuild(userId, guildId)
 
     suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
-
-    private fun extractNameFromYaml(content: ByteArray): String {
-        val trimmedName = Yaml().load<PlayerYaml>(content.inputStream()).name.trim()
-        if (trimmedName.isEmpty()) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid YAML file: name is empty")
-        }
-        return trimmedName
-    }
 }
 
-data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
+data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
+data class ApworldInfo(val id: Long, val gameName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
     val entries: List<EntryInfo>,
+    val apworlds: List<ApworldInfo>,
     val isAdmin: Boolean
 )

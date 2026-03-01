@@ -18,7 +18,18 @@ data class Entry(
     @Id val id: Long? = null,
     val roomId: Long,
     val userId: Long,
+    val name: String,
+    val game: String,
     val yamlFilePath: String
+)
+
+@Table("APWORLDS")
+data class Apworld(
+    @Id val id: Long? = null,
+    val roomId: Long,
+    val userId: Long,
+    val gameName: String,
+    val filePath: String
 )
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {
@@ -30,4 +41,10 @@ interface EntryRepository : ReactiveCrudRepository<Entry, Long> {
     fun findByRoomId(roomId: Long): Flux<Entry>
     fun findByUserId(userId: Long): Flux<Entry>
     fun countByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Long>
+    fun existsByRoomIdAndName(roomId: Long, name: String): Mono<Boolean>
+}
+
+interface ApworldRepository : ReactiveCrudRepository<Apworld, Long> {
+    fun findByRoomId(roomId: Long): Flux<Apworld>
+    fun existsByRoomIdAndGameName(roomId: Long, gameName: String): Mono<Boolean>
 }

@@ -1,5 +1,7 @@
 package com.github.derminator.archipelobby
 
+import com.github.derminator.archipelobby.data.ApworldRepository
+import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
@@ -12,12 +14,14 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -46,6 +50,9 @@ class WebTests {
     @MockitoBean
     lateinit var entryRepository: EntryRepository
 
+    @MockitoBean
+    lateinit var apworldRepository: ApworldRepository
+
     @Autowired
     lateinit var context: ApplicationContext
 
@@ -62,6 +69,8 @@ class WebTests {
         `when`(discordService.isAdminOfGuild(anyLong(), anyLong())).thenReturn(false)
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
+        `when`(apworldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
+        `when`(apworldRepository.existsByRoomIdAndGameName(anyLong(), anyString())).thenReturn(Mono.just(false))
 
         webTestClient = WebTestClient.bindToApplicationContext(context)
             .apply(springSecurity())
@@ -233,9 +242,12 @@ class WebTests {
     }
 
     @Test
-    fun `adding entry without name in YAML returns bad request`() {
+    fun `adding entry with missing game field returns bad request`(): Unit = runBlocking {
+        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(1, 123, "Test Room")))
+        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
+
         val bodyBuilder = MultipartBodyBuilder()
-        bodyBuilder.part("yamlFile", "game: A Link to the Past".toByteArray())
+        bodyBuilder.part("yamlFile", "name: Player\nsettings: {}".toByteArray())
             .filename("test.yaml")
 
         webTestClient.mutateWith(
@@ -252,7 +264,58 @@ class WebTests {
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .bodyValue(bodyBuilder.build())
             .exchange()
-            .expectStatus().isBadRequest
+            .expectStatus().isEqualTo(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    fun `adding entry with non-builtin game and no apworld returns bad request`(): Unit = runBlocking {
+        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(false))
+        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(1, 123, "Test Room")))
+        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
+        `when`(apworldRepository.existsByRoomIdAndGameName(anyLong(), anyString())).thenReturn(Mono.just(false))
+
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("yamlFile", "game: 'My Custom Game'\nname: Player".toByteArray())
+            .filename("test.yaml")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/1/entries")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
+            .exchange()
+            .expectStatus().isEqualTo(HttpStatus.BAD_REQUEST)
+    }
+
+    @Test
+    fun `renaming entry to duplicate name returns conflict`(): Unit = runBlocking {
+        val existingEntry = Entry(1, 1, 0, "Old Name", "A Link to the Past", "uploads/test.yaml")
+        `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
+        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/1/entries/1/rename")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .bodyValue("name=Duplicate+Name")
+            .exchange()
+            .expectStatus().isEqualTo(HttpStatus.NOT_FOUND)
     }
 
     @Test

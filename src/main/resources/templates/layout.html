@@ -23,4 +23,15 @@
     </label>
     <input type="submit" value="Add Entry"/>
 </form>
+
+<form method="post"
+      enctype="multipart/form-data"
+      th:action="@{/rooms/{id}/apworlds(id=${roomId})}"
+      th:fragment="add-apworld-form(roomId)">
+    <label>
+        .apworld file:
+        <input accept=".apworld" name="apworldFile" required type="file"/>
+    </label>
+    <input type="submit" value="Upload .apworld"/>
+</form>
 </html>

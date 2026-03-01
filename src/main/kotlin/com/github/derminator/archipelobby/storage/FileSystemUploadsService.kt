@@ -30,6 +30,13 @@ class FileSystemUploadsService(
         return filePath.toString()
     }
 
+    override suspend fun saveFileBytes(filename: String, bytes: ByteArray): String =
+        withContext(Dispatchers.IO) {
+            val filePath = uploadsDir.resolve("${System.currentTimeMillis()}_$filename")
+            Files.write(filePath, bytes)
+            filePath.toString()
+        }
+
     override suspend fun getFile(filePath: String): ByteArray = withContext(Dispatchers.IO) {
         val path = Paths.get(filePath)
         if (Files.exists(path)) {
