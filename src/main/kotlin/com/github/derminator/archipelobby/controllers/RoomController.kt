@@ -23,7 +23,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 @Controller
-@RequestMapping("/rooms", "/rooms/")
+@RequestMapping("/rooms")
 class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService
@@ -64,7 +64,7 @@ class RoomController(
         "redirect:/rooms/${room.id}"
     }
 
-    @GetMapping("/{roomId}", "/{roomId}/")
+    @GetMapping("/{roomId}")
     fun getRoom(
         @PathVariable roomId: Long,
         principal: Principal,
