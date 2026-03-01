@@ -17,6 +17,9 @@ data class DiscordPrincipal(
 val Principal.asDiscordPrincipal: DiscordPrincipal
     get() {
         if (this is DiscordPrincipal) return this
-        if (this is Authentication && this.principal is DiscordPrincipal) return this.principal as DiscordPrincipal
+        if (this is Authentication) {
+            val principalValue = this.principal
+            if (principalValue is DiscordPrincipal) return principalValue
+        }
         throw IllegalStateException("Principal is not a DiscordPrincipal: ${this::class.simpleName}")
     }
