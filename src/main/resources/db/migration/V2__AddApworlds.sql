@@ -1,0 +1,13 @@
+CREATE TABLE APWORLDS
+(
+    id        BIGINT AUTO_INCREMENT PRIMARY KEY,
+    room_id   BIGINT       NOT NULL,
+    user_id   BIGINT       NOT NULL,
+    game_name VARCHAR(255) NOT NULL,
+    file_path VARCHAR(500) NOT NULL,
+    FOREIGN KEY (room_id) REFERENCES ROOMS (id) ON DELETE CASCADE,
+    UNIQUE (room_id, game_name)
+);
+
+ALTER TABLE ENTRIES
+    ADD COLUMN game VARCHAR(255) NOT NULL DEFAULT '';

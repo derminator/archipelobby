@@ -27,6 +27,12 @@ class InMemoryUploadsService : UploadsService {
         return fileName
     }
 
+    override suspend fun saveFileBytes(filename: String, bytes: ByteArray): String {
+        val fileName = "${System.currentTimeMillis()}_$filename"
+        storage[fileName] = bytes
+        return fileName
+    }
+
     override suspend fun getFile(filePath: String): ByteArray {
         return storage[filePath] ?: throw NoSuchFileException(java.io.File(filePath))
     }
