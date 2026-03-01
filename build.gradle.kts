@@ -68,6 +68,22 @@ kotlin {
     }
 }
 
+graalvmNative {
+    metadataRepository {
+        enabled.set(true)
+    }
+    binaries {
+        named("main") {
+            imageName.set("archipelobby")
+            mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
+            buildArgs.addAll(
+                "--enable-url-protocols=https",
+                "-H:+ReportExceptionStackTraces",
+            )
+        }
+    }
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 }
