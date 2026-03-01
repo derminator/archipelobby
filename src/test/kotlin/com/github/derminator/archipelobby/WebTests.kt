@@ -55,7 +55,7 @@ class WebTests {
 
     lateinit var webTestClient: WebTestClient
 
-    private val testPrincipal = DiscordPrincipal(123456789L, "TestUser")
+    private val testPrincipal = DiscordPrincipal(0L, "admin")
 
     @BeforeEach
     fun setup() = runBlocking {
@@ -104,7 +104,7 @@ class WebTests {
                 val body = response.responseBody
                 assert(body != null)
                 assert(body!!.contains("Logged in as:"))
-                assert(body.contains("TestUser"))
+                assert(body.contains("admin"))
                 assert(body.contains("Logout"))
             }
     }
@@ -115,8 +115,8 @@ class WebTests {
             mockAuthentication(
                 UsernamePasswordAuthenticationToken(
                     DiscordPrincipal(
-                        987654321L,
-                        "DevUser"
+                        0L,
+                        "admin"
                     ), null, listOf(SimpleGrantedAuthority("ROLE_USER"))
                 )
             )
@@ -128,7 +128,7 @@ class WebTests {
                 val body = response.responseBody
                 assert(body != null)
                 assert(body!!.contains("Logged in as:"))
-                assert(body.contains("DevUser"))
+                assert(body.contains("admin"))
             }
     }
 
@@ -243,7 +243,7 @@ class WebTests {
 
     @Test
     fun `renaming entry to duplicate name returns conflict`() {
-        val existingEntry = Entry(1, 1, 123456789, "Old Name", "uploads/test.yaml")
+        val existingEntry = Entry(1, 1, 0, "Old Name", "uploads/test.yaml")
         `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
         `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
 
@@ -266,7 +266,7 @@ class WebTests {
 
     @Test
     fun `rooms page is accessible for user who is not admin in all joined guilds`(): Unit = runBlocking {
-        val userId = 123456789L
+        val userId = 0L
 
         `when`(discordService.getGuildsForUser(userId)).thenReturn(
             flowOf(
@@ -301,7 +301,7 @@ class WebTests {
 
     @Test
     fun `rooms page is accessible with form login`(): Unit = runBlocking {
-        val userId = 123456789L
+        val userId = 0L
         `when`(discordService.getGuildsForUser(userId)).thenReturn(emptyFlow())
         `when`(discordService.getAdminGuildsForUser(userId)).thenReturn(emptyFlow())
         `when`(entryRepository.findByUserId(userId)).thenReturn(Flux.empty())
@@ -322,7 +322,7 @@ class WebTests {
 
     @Test
     fun `room detail page is accessible with form login`(): Unit = runBlocking {
-        val userId = 123456789L
+        val userId = 0L
         val roomId = 1L
         val room = Room(roomId, 123, "Test Room")
         `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
