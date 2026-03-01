@@ -1,70 +1,55 @@
 package com.github.derminator.archipelobby.data
 
-import discord4j.common.util.Snowflake
-import discord4j.core.GatewayDiscordClient
-import discord4j.rest.util.Permission
+import com.github.derminator.archipelobby.discord.DiscordService
+import com.github.derminator.archipelobby.discord.GuildInfo
+import com.github.derminator.archipelobby.discord.UserInfo
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
-import kotlinx.coroutines.reactive.collect
 import kotlinx.coroutines.reactor.awaitSingleOrNull
-import kotlinx.coroutines.reactor.flux
-import kotlinx.coroutines.reactor.mono
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
-import reactor.core.publisher.Flux
-import reactor.core.publisher.Mono
 
 @Service
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
-    private val gatewayDiscordClient: GatewayDiscordClient
+    private val discordService: DiscordService
 ) {
 
-    fun getRoomsForUser(userId: Long): Flux<Room> = flux {
-        entryRepository.findByUserId(userId)
+    suspend fun getRoomsForUser(userId: Long): List<Room> {
+        return entryRepository.findByUserId(userId)
             .map { it.roomId }
             .distinct()
-            .collect {
-                val room = roomRepository.findById(it).awaitSingle()
-                send(room)
-            }
+            .asFlow()
+            .toList()
+            .map { roomRepository.findById(it).awaitSingle() }
     }
 
-    fun getAdminGuilds(userId: Long): Flux<GuildInfo> = flux {
-        val userSnowflake = Snowflake.of(userId)
-        gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake).awaitSingleOrNull()
-            if (member != null && member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
-                send(GuildInfo(guid.id.asLong(), guid.name))
-            }
-        }
-    }
+    suspend fun getAdminGuilds(userId: Long): Flow<GuildInfo> =
+        discordService.getAdminGuildsForUser(userId)
 
-    fun getJoinableRooms(userId: Long): Flux<Room> = flux {
-        val userSnowflake = Snowflake.of(userId)
-        gatewayDiscordClient.guilds.collect { guid ->
-            val member = guid.getMemberById(userSnowflake).awaitSingleOrNull()
-            if (member != null) {
-                roomRepository.findByGuildId(guid.id.asLong()).collect { room ->
-                    if (room.id == null) return@collect
-                    val hasEntries =
-                        entryRepository.countByRoomIdAndUserId(room.id, userId).awaitSingle() > 0
-                    if (!hasEntries) {
-                        send(room)
-                    }
+    suspend fun getJoinableRooms(userId: Long): List<Room> {
+        val result = mutableListOf<Room>()
+        discordService.getGuildsForUser(userId).collect { guild ->
+            roomRepository.findByGuildId(guild.id).asFlow().collect { room ->
+                if (room.id == null) return@collect
+                val hasEntries =
+                    entryRepository.countByRoomIdAndUserId(room.id, userId).awaitSingle() > 0
+                if (!hasEntries) {
+                    result.add(room)
                 }
             }
         }
+        return result
     }
 
     @Transactional
-    fun createRoom(guildId: Long, name: String, userId: Long): Mono<Room> = mono {
-        val userSnowflake = Snowflake.of(userId)
-        val guid = gatewayDiscordClient.getGuildById(Snowflake.of(guildId)).awaitSingle()
-        val member = guid.getMemberById(userSnowflake).awaitSingle()
-        if (!member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)) {
+    suspend fun createRoom(guildId: Long, name: String, userId: Long): Room {
+        if (!discordService.isAdminOfGuild(userId, guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
 
@@ -73,19 +58,16 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "A room with this name already exists in this guild")
         }
 
-        roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
+        return roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
     }
 
-    private fun isRoomJoinable(room: Room, userId: Long): Mono<Boolean> = mono {
-        val guild = gatewayDiscordClient.getGuildById(Snowflake.of(room.guildId)).awaitSingle()
-        val member = guild.getMemberById(Snowflake.of(userId)).awaitSingleOrNull()
-        member != null
-    }
+    private suspend fun isRoomJoinable(room: Room, userId: Long): Boolean =
+        discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    fun addEntry(roomId: Long, userId: Long, entryName: String, yamlFilePath: String): Mono<Entry> = mono {
+    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, yamlFilePath: String): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
-        if (!isRoomJoinable(room, userId).awaitSingle()) {
+        if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
         }
 
@@ -98,12 +80,19 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
-        entryRepository.save(Entry(roomId = roomId, userId = userId, name = entryName, yamlFilePath = yamlFilePath))
+        return entryRepository.save(
+            Entry(
+                roomId = roomId,
+                userId = userId,
+                name = entryName,
+                yamlFilePath = yamlFilePath
+            )
+        )
             .awaitSingle()
     }
 
     @Transactional
-    fun deleteEntry(entryId: Long, userId: Long, isAdmin: Boolean): Mono<Void> = mono {
+    suspend fun deleteEntry(entryId: Long, userId: Long, isAdmin: Boolean) {
         val entry = entryRepository.findById(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
@@ -115,7 +104,7 @@ class RoomService(
     }
 
     @Transactional
-    fun renameEntry(entryId: Long, userId: Long, newName: String): Mono<Entry> = mono {
+    suspend fun renameEntry(entryId: Long, userId: Long, newName: String): Entry {
         val entry = entryRepository.findById(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
@@ -137,15 +126,13 @@ class RoomService(
             }
         }
 
-        entryRepository.save(entry.copy(name = newName)).awaitSingle()
+        return entryRepository.save(entry.copy(name = newName)).awaitSingle()
     }
 
     @Transactional
-    fun deleteRoom(roomId: Long, userId: Long): Mono<Void> = mono {
+    suspend fun deleteRoom(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingle()
-        val guild = gatewayDiscordClient.getGuildById(Snowflake.of(room.guildId)).awaitSingle()
-        val member = guild.getMemberById(Snowflake.of(userId)).awaitSingle()
-        val isAdmin = member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)
+        val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
         if (!isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
@@ -155,36 +142,29 @@ class RoomService(
     /**
      * Retrieves room with entries; enforces membership or admin access
      */
-    fun getRoom(roomId: Long, userId: Long): Mono<RoomWithEntries> = mono {
+    suspend fun getRoom(roomId: Long, userId: Long): RoomWithEntries {
         val room =
             roomRepository.findById(roomId).awaitSingleOrNull() ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-        if (!isRoomJoinable(room, userId).awaitSingle()) {
+        if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
-        val isAdmin = isAdminOfGuild(room.guildId, userId).awaitSingle()
+        val isAdmin = isAdminOfGuild(room.guildId, userId)
         val entries = entryRepository.findByRoomId(roomId)
-            .flatMap { entry ->
+            .asFlow()
+            .toList()
+            .map { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
-                gatewayDiscordClient.getUserById(Snowflake.of(entry.userId))
-                    .map { EntryInfo(entry.id, entry.name, UserInfo(it.id.asLong(), it.username)) }
+                EntryInfo(entry.id, entry.name, discordService.getUserInfo(entry.userId))
             }
-            .collectList()
-            .awaitSingle()
-        RoomWithEntries(room, entries, isAdmin)
+        return RoomWithEntries(room, entries, isAdmin)
     }
 
-    fun isAdminOfGuild(guildId: Long, userId: Long): Mono<Boolean> = mono {
-        val guid = gatewayDiscordClient.getGuildById(Snowflake.of(guildId)).awaitSingleOrNull()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
-        val member = guid.getMemberById(Snowflake.of(userId)).awaitSingleOrNull() ?: return@mono false
-        member.basePermissions.awaitSingle().contains(Permission.ADMINISTRATOR)
-    }
+    suspend fun isAdminOfGuild(guildId: Long, userId: Long): Boolean =
+        discordService.isAdminOfGuild(userId, guildId)
 
-    fun getEntry(entryId: Long): Mono<Entry> = entryRepository.findById(entryId)
+    suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
 }
 
-data class GuildInfo(val id: Long, val name: String)
-data class UserInfo(val id: Long, val username: String)
 data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
