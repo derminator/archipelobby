@@ -100,9 +100,9 @@ class RoomController(
         val filePath = uploadsService.saveFile(yamlFile)
         try {
             val fileContent = uploadsService.getFile(filePath)
-            val entryName = extractNameFromYaml(fileContent)
+            extractNameFromYaml(fileContent)
                 ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "YAML file must contain a 'name' field")
-            roomService.addEntry(roomId, userId, entryName, filePath)
+            roomService.addEntry(roomId, userId, filePath)
         } catch (e: Exception) {
             uploadsService.deleteFile(filePath)
             throw e
@@ -157,7 +157,7 @@ class RoomController(
         }
 
         val fileContent = uploadsService.getFile(entry.yamlFilePath)
-        val filename = "${entry.name}.yaml"
+        val filename = "${extractNameFromYaml(fileContent) ?: "entry"}.yaml"
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
@@ -180,7 +180,7 @@ class RoomController(
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                    val zipEntry = ZipEntry("${entry.name}.yaml")
+                    val zipEntry = ZipEntry("${extractNameFromYaml(fileContent) ?: "entry"}.yaml")
                     zipOut.putNextEntry(zipEntry)
                     zipOut.write(fileContent)
                     zipOut.closeEntry()

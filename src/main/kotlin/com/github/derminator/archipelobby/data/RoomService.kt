@@ -3,6 +3,7 @@ package com.github.derminator.archipelobby.data
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
+import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
@@ -12,12 +13,14 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import org.yaml.snakeyaml.Yaml
 
 @Service
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
-    private val discordService: DiscordService
+    private val discordService: DiscordService,
+    private val uploadsService: UploadsService
 ) {
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
@@ -65,26 +68,16 @@ class RoomService(
         discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, yamlFilePath: String): Entry {
+    suspend fun addEntry(roomId: Long, userId: Long, yamlFilePath: String): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
-        }
-
-        if (entryName.isBlank()) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
-        }
-
-        val nameExists = entryRepository.existsByRoomIdAndName(roomId, entryName).awaitSingle()
-        if (nameExists) {
-            throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
         return entryRepository.save(
             Entry(
                 roomId = roomId,
                 userId = userId,
-                name = entryName,
                 yamlFilePath = yamlFilePath
             )
         )
@@ -128,7 +121,8 @@ class RoomService(
             .toList()
             .map { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
-                EntryInfo(entry.id, entry.name, discordService.getUserInfo(entry.userId))
+                val name = extractNameFromYaml(uploadsService.getFile(entry.yamlFilePath)) ?: entry.yamlFilePath
+                EntryInfo(entry.id, name, discordService.getUserInfo(entry.userId))
             }
         return RoomWithEntries(room, entries, isAdmin)
     }
@@ -137,6 +131,15 @@ class RoomService(
         discordService.isAdminOfGuild(userId, guildId)
 
     suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
+
+    private fun extractNameFromYaml(content: ByteArray): String? {
+        return try {
+            val data = Yaml().load<Any>(content.inputStream())
+            if (data is Map<*, *>) data["name"]?.toString()?.trim()?.takeIf { it.isNotBlank() } else null
+        } catch (_: Exception) {
+            null
+        }
+    }
 }
 
 data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
