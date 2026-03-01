@@ -21,6 +21,7 @@ import java.io.ByteArrayOutputStream
 import java.security.Principal
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import org.yaml.snakeyaml.Yaml
 
 @Controller
 @RequestMapping("/rooms")
@@ -80,7 +81,6 @@ class RoomController(
     }
 
     data class AddEntryForm(
-        val entryName: String,
         val yamlFile: FilePart,
     )
 
@@ -91,7 +91,6 @@ class RoomController(
         @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val entryName = form.entryName.trim()
         val yamlFile = form.yamlFile
 
         if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
@@ -99,9 +98,30 @@ class RoomController(
         }
 
         val filePath = uploadsService.saveFile(yamlFile)
-
-        roomService.addEntry(roomId, userId, entryName, filePath)
+        try {
+            val fileContent = uploadsService.getFile(filePath)
+            val entryName = extractNameFromYaml(fileContent)
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "YAML file must contain a 'name' field")
+            roomService.addEntry(roomId, userId, entryName, filePath)
+        } catch (e: Exception) {
+            uploadsService.deleteFile(filePath)
+            throw e
+        }
         "redirect:/rooms/$roomId"
+    }
+
+    private fun extractNameFromYaml(content: ByteArray): String? {
+        return try {
+            val yaml = Yaml()
+            val data = yaml.load<Any>(content.inputStream())
+            if (data is Map<*, *>) {
+                data["name"]?.toString()?.trim()?.takeIf { it.isNotBlank() }
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     @PostMapping("/{roomId}/entries/{entryId}/delete")
@@ -116,21 +136,6 @@ class RoomController(
             userId
         )
         roomService.deleteEntry(entryId, userId, isAdmin)
-        "redirect:/rooms/$roomId"
-    }
-
-    @PostMapping("/{roomId}/entries/{entryId}/rename")
-    fun renameEntry(
-        @PathVariable roomId: Long,
-        @PathVariable entryId: Long,
-        exchange: ServerWebExchange,
-        principal: Principal
-    ): Mono<String> = mono {
-        val userId = principal.asDiscordPrincipal.userId
-        val formData = exchange.formData.awaitSingle()
-        val newName = formData.getFirst("newName")
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
-        roomService.renameEntry(entryId, userId, newName)
         "redirect:/rooms/$roomId"
     }
 

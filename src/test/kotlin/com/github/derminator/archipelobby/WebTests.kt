@@ -1,6 +1,5 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
@@ -29,7 +28,6 @@ import org.springframework.security.test.web.reactive.server.SecurityMockServerC
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import org.springframework.web.reactive.function.BodyInserters
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
@@ -220,8 +218,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
 
         val bodyBuilder = MultipartBodyBuilder()
-        bodyBuilder.part("entryName", "Duplicate Name")
-        bodyBuilder.part("yamlFile", "test: data".toByteArray())
+        bodyBuilder.part("yamlFile", "name: Duplicate Name\ngame: A Link to the Past".toByteArray())
             .filename("test.yaml")
 
         webTestClient.mutateWith(
@@ -242,10 +239,10 @@ class WebTests {
     }
 
     @Test
-    fun `renaming entry to duplicate name returns conflict`() {
-        val existingEntry = Entry(1, 1, 0, "Old Name", "uploads/test.yaml")
-        `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
-        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
+    fun `adding entry without name in YAML returns bad request`() {
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("yamlFile", "game: A Link to the Past".toByteArray())
+            .filename("test.yaml")
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -257,11 +254,11 @@ class WebTests {
             )
         )
             .mutateWith(csrf())
-            .post().uri("/rooms/1/entries/1/rename")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData("newName", "Duplicate Name"))
+            .post().uri("/rooms/1/entries")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
             .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+            .expectStatus().isBadRequest
     }
 
     @Test
