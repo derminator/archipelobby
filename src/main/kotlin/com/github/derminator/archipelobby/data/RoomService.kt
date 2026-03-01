@@ -104,32 +104,6 @@ class RoomService(
     }
 
     @Transactional
-    suspend fun renameEntry(entryId: Long, userId: Long, newName: String): Entry {
-        val entry = entryRepository.findById(entryId).awaitSingleOrNull()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
-
-        if (entry.userId != userId) {
-            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot rename another user's entry")
-        }
-
-        if (newName.isBlank()) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
-        }
-
-        if (entry.name != newName) {
-            val nameExists = entryRepository.existsByRoomIdAndName(entry.roomId, newName).awaitSingle()
-            if (nameExists) {
-                throw ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "An entry with this name already exists in this room"
-                )
-            }
-        }
-
-        return entryRepository.save(entry.copy(name = newName)).awaitSingle()
-    }
-
-    @Transactional
     suspend fun deleteRoom(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingle()
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
