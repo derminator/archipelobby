@@ -210,6 +210,29 @@ class WebTests {
     }
 
     @Test
+    fun `adding entry with invalid YAML returns bad request`() {
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("yamlFile", "{invalid yaml".toByteArray())
+            .filename("test.yaml")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/1/entries")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
+            .exchange()
+            .expectStatus().isBadRequest
+    }
+
+    @Test
     fun `adding entry without name in YAML returns bad request`() {
         val bodyBuilder = MultipartBodyBuilder()
         bodyBuilder.part("yamlFile", "game: A Link to the Past".toByteArray())
