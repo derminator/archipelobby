@@ -1,5 +1,5 @@
-# JVM build stage
-FROM gradle:9.2-jdk21 AS jvm-build
+# Build stage
+FROM gradle:9.2-jdk21 AS build
 WORKDIR /app
 COPY . ./
 RUN gradle bootJar --no-daemon
@@ -10,23 +10,8 @@ WORKDIR /app
 COPY . ./
 RUN ./gradlew nativeCompile --no-daemon
 
-# JVM run stage
-FROM eclipse-temurin:21-jre-jammy AS jvm
-
-WORKDIR /app
-
-RUN groupadd -r -g 1000 appuser && useradd -r -u 1000 -g appuser appuser
-RUN mkdir -p /data && chown -R appuser:appuser /data
-
-COPY --from=jvm-build /app/build/libs/*.jar app.jar
-RUN chown -R appuser:appuser /app
-
-USER appuser
-EXPOSE 8080
-ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
-
-# Native run stage (default)
-FROM debian:bookworm-slim
+# Native run stage (opt-in: docker build --target native .)
+FROM debian:bookworm-slim AS native
 
 WORKDIR /app
 
@@ -39,3 +24,18 @@ RUN chown appuser:appuser /app/archipelobby
 USER appuser
 EXPOSE 8080
 ENTRYPOINT ["./archipelobby", "--spring.profiles.active=prod"]
+
+# JVM run stage (default: docker build .)
+FROM eclipse-temurin:21-jre-jammy
+
+WORKDIR /app
+
+RUN groupadd -r -g 1000 appuser && useradd -r -u 1000 -g appuser appuser
+RUN mkdir -p /data && chown -R appuser:appuser /data
+
+COPY --from=build /app/build/libs/*.jar app.jar
+RUN chown -R appuser:appuser /app
+
+USER appuser
+EXPOSE 8080
+ENTRYPOINT ["java", "-Dspring.profiles.active=prod", "-jar", "app.jar"]
