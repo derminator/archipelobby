@@ -30,16 +30,6 @@
                   th:if="${entry.user.id == userId or isAdmin}">
                 <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
             </form>
-            <form method="post"
-                  style="display: inline;"
-                  th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
-                  th:if="${entry.user.id == userId}">
-                <label>
-                    Rename
-                    <input name="newName" placeholder="New name" required type="text"/>
-                </label>
-                <input type="submit" value="Rename"/>
-            </form>
         </li>
     </ul>
 

@@ -20,10 +20,6 @@
       th:action="@{/rooms/{id}/entries(id=${roomId})}"
       th:fragment="add-entry-form(roomId)">
     <label>
-        Entry name:
-        <input name="entryName" placeholder="Entry name" required type="text"/>
-    </label>
-    <label>
         YAML file:
         <input accept=".yaml,.yml" name="yamlFile" required type="file"/>
     </label>

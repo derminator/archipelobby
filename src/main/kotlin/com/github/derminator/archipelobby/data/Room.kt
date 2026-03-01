@@ -18,7 +18,6 @@ data class Entry(
     @Id val id: Long? = null,
     val roomId: Long,
     val userId: Long,
-    val name: String,
     val yamlFilePath: String
 )
 
@@ -31,5 +30,4 @@ interface EntryRepository : ReactiveCrudRepository<Entry, Long> {
     fun findByRoomId(roomId: Long): Flux<Entry>
     fun findByUserId(userId: Long): Flux<Entry>
     fun countByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Long>
-    fun existsByRoomIdAndName(roomId: Long, name: String): Mono<Boolean>
 }

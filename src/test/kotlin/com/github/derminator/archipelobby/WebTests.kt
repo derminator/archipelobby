@@ -1,6 +1,5 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
@@ -13,14 +12,12 @@ import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyLong
-import org.mockito.Mockito.anyString
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -29,7 +26,6 @@ import org.springframework.security.test.web.reactive.server.SecurityMockServerC
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
-import org.springframework.web.reactive.function.BodyInserters
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 
@@ -214,14 +210,9 @@ class WebTests {
     }
 
     @Test
-    fun `adding entry with duplicate name returns conflict`(): Unit = runBlocking {
-        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
-        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(1, 123, "Test Room")))
-        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
-
+    fun `adding entry with invalid YAML returns bad request`() {
         val bodyBuilder = MultipartBodyBuilder()
-        bodyBuilder.part("entryName", "Duplicate Name")
-        bodyBuilder.part("yamlFile", "test: data".toByteArray())
+        bodyBuilder.part("yamlFile", "{invalid yaml".toByteArray())
             .filename("test.yaml")
 
         webTestClient.mutateWith(
@@ -238,14 +229,14 @@ class WebTests {
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .bodyValue(bodyBuilder.build())
             .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+            .expectStatus().isBadRequest
     }
 
     @Test
-    fun `renaming entry to duplicate name returns conflict`() {
-        val existingEntry = Entry(1, 1, 0, "Old Name", "uploads/test.yaml")
-        `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
-        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
+    fun `adding entry without name in YAML returns bad request`() {
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("yamlFile", "game: A Link to the Past".toByteArray())
+            .filename("test.yaml")
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -257,11 +248,11 @@ class WebTests {
             )
         )
             .mutateWith(csrf())
-            .post().uri("/rooms/1/entries/1/rename")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData("newName", "Duplicate Name"))
+            .post().uri("/rooms/1/entries")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
             .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+            .expectStatus().isBadRequest
     }
 
     @Test
