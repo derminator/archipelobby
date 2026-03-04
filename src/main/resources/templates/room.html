@@ -13,6 +13,18 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
+    <h2>Uploaded .apworlds</h2>
+    <p th:if="${apworlds.isEmpty()}">No .apworld files uploaded yet. Upload one below if you need a non-standard game.</p>
+    <ul th:unless="${apworlds.isEmpty()}">
+        <li th:each="apworld : ${apworlds}">
+            <strong th:text="${apworld.gameName}">Game Name</strong>
+            (uploaded by <span th:text="${apworld.user.username}">Username</span>)
+        </li>
+    </ul>
+
+    <h3>Upload .apworld</h3>
+    <div th:replace="~{layout :: add-apworld-form(${room.id})}"></div>
+
     <h2>Entries</h2>
     <a th:href="@{/rooms/{roomId}/download-all(roomId=${room.id})}">
         <button type="button">Download All YAMLs</button>
@@ -20,6 +32,7 @@
     <ul>
         <li th:each="entry : ${entries}">
             <strong th:text="${entry.name}">Entry Name</strong>
+            &mdash; <em th:text="${entry.game}">Game</em>
             (<span th:text="${entry.user.username}">Username</span>)
             <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.id},entryId=${entry.id})}">
                 <button type="button">Download YAML</button>
@@ -29,16 +42,6 @@
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
                   th:if="${entry.user.id == userId or isAdmin}">
                 <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
-            </form>
-            <form method="post"
-                  style="display: inline;"
-                  th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
-                  th:if="${entry.user.id == userId}">
-                <label>
-                    Rename
-                    <input name="newName" placeholder="New name" required type="text"/>
-                </label>
-                <input type="submit" value="Rename"/>
             </form>
         </li>
     </ul>

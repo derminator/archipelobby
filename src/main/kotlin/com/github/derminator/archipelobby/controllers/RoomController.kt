@@ -1,6 +1,7 @@
 package com.github.derminator.archipelobby.controllers
 
 import com.github.derminator.archipelobby.data.RoomService
+import com.github.derminator.archipelobby.game.GameService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.toList
@@ -21,12 +22,14 @@ import java.io.ByteArrayOutputStream
 import java.security.Principal
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import org.yaml.snakeyaml.Yaml
 
 @Controller
 @RequestMapping("/rooms")
 class RoomController(
     private val roomService: RoomService,
-    private val uploadsService: UploadsService
+    private val uploadsService: UploadsService,
+    private val gameService: GameService
 ) {
     @GetMapping
     fun getRooms(
@@ -74,33 +77,78 @@ class RoomController(
         val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries)
+        model.addAttribute("apworlds", roomWithEntries.apworlds)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
         "room"
     }
 
-    data class AddEntryForm(
-        val entryName: String,
-        val yamlFile: FilePart,
-    )
-
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,
         principal: Principal,
-        @ModelAttribute form: AddEntryForm,
+        exchange: ServerWebExchange,
     ): Mono<String> = mono {
-        val userId = principal.asDiscordPrincipal.userId
-        val entryName = form.entryName.trim()
-        val yamlFile = form.yamlFile
+        val multipart = exchange.multipartData.awaitSingle()
 
-        if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
+        val yamlFilePart = multipart["yamlFile"]?.firstOrNull() as? FilePart
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "YAML file is required")
+
+        if (!yamlFilePart.filename().endsWith(".yaml") && !yamlFilePart.filename().endsWith(".yml")) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
         }
 
-        val filePath = uploadsService.saveFile(yamlFile)
+        val yamlBytes = readBytes(yamlFilePart)
 
-        roomService.addEntry(roomId, userId, entryName, filePath)
+        val games = try {
+            gameService.parseGamesFromYaml(yamlBytes)
+        } catch (e: IllegalArgumentException) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.message)
+        }
+
+        val entryName = extractNameFromYaml(yamlBytes)
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "YAML file must contain a 'name' field")
+
+        // For entries with multiple games, record all as comma-separated
+        val game = games.joinToString(", ")
+
+        val userId = principal.asDiscordPrincipal.userId
+        val filePath = uploadsService.saveFileBytes(yamlFilePart.filename(), yamlBytes)
+        try {
+            roomService.addEntry(roomId, userId, entryName, game, filePath)
+        } catch (e: Exception) {
+            uploadsService.deleteFile(filePath)
+            throw e
+        }
+        "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/apworlds")
+    fun addApworld(
+        @PathVariable roomId: Long,
+        principal: Principal,
+        exchange: ServerWebExchange,
+    ): Mono<String> = mono {
+        val multipart = exchange.multipartData.awaitSingle()
+
+        val apworldFilePart = multipart["apworldFile"]?.firstOrNull() as? FilePart
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "apworld file is required")
+
+        if (!apworldFilePart.filename().endsWith(".apworld")) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be an .apworld file")
+        }
+
+        val apworldBytes = readBytes(apworldFilePart)
+
+        val gameName = try {
+            gameService.extractGameNameFromApworld(apworldBytes)
+        } catch (e: IllegalArgumentException) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.message)
+        }
+
+        val userId = principal.asDiscordPrincipal.userId
+        val filePath = uploadsService.saveFileBytes(apworldFilePart.filename(), apworldBytes)
+        roomService.addApworld(roomId, userId, gameName, filePath)
         "redirect:/rooms/$roomId"
     }
 
@@ -116,21 +164,6 @@ class RoomController(
             userId
         )
         roomService.deleteEntry(entryId, userId, isAdmin)
-        "redirect:/rooms/$roomId"
-    }
-
-    @PostMapping("/{roomId}/entries/{entryId}/rename")
-    fun renameEntry(
-        @PathVariable roomId: Long,
-        @PathVariable entryId: Long,
-        exchange: ServerWebExchange,
-        principal: Principal
-    ): Mono<String> = mono {
-        val userId = principal.asDiscordPrincipal.userId
-        val formData = exchange.formData.awaitSingle()
-        val newName = formData.getFirst("newName")
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
-        roomService.renameEntry(entryId, userId, newName)
         "redirect:/rooms/$roomId"
     }
 
@@ -152,7 +185,7 @@ class RoomController(
         }
 
         val fileContent = uploadsService.getFile(entry.yamlFilePath)
-        val filename = "${entry.name}.yaml"
+        val filename = "${extractNameFromYaml(fileContent) ?: "entry"}.yaml"
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
@@ -175,7 +208,7 @@ class RoomController(
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                    val zipEntry = ZipEntry("${entry.name}.yaml")
+                    val zipEntry = ZipEntry("${extractNameFromYaml(fileContent) ?: "entry"}.yaml")
                     zipOut.putNextEntry(zipEntry)
                     zipOut.write(fileContent)
                     zipOut.closeEntry()
@@ -200,5 +233,29 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
+    }
+
+    private fun extractNameFromYaml(content: ByteArray): String? {
+        return try {
+            val yaml = Yaml()
+            val data = yaml.load<Any>(content.inputStream())
+            if (data is Map<*, *>) {
+                data["name"]?.toString()?.trim()?.takeIf { it.isNotBlank() }
+            } else {
+                null
+            }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    private suspend fun readBytes(filePart: FilePart): ByteArray {
+        val output = ByteArrayOutputStream()
+        filePart.content().collectList().awaitSingle().forEach { dataBuffer ->
+            val bytes = ByteArray(dataBuffer.readableByteCount())
+            dataBuffer.read(bytes)
+            output.write(bytes)
+        }
+        return output.toByteArray()
     }
 }
