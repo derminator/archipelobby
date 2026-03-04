@@ -6,6 +6,7 @@ import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.web.filter.reactive.UrlHandlerFilter
 import org.springframework.web.server.WebFilter
+import reactor.core.publisher.Mono
 
 @Configuration
 class WebFluxConfiguration {
@@ -20,4 +21,14 @@ class WebFluxConfiguration {
     fun trailingSlashHandler(): WebFilter = UrlHandlerFilter
         .trailingSlashHandler("/**").mutateRequest()
         .build()
+
+    @Bean
+    fun permissionsPolicyFilter(): WebFilter = WebFilter { exchange, chain ->
+        chain.filter(exchange).then(Mono.fromRunnable {
+            exchange.response.headers.set(
+                "Permissions-Policy",
+                "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+            )
+        })
+    }
 }
