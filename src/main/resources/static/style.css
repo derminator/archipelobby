@@ -48,7 +48,7 @@ form {
     margin: 15px 0;
 }
 
-form:not([style*="display: inline"]) {
+form:not(.inline-form) {
     background-color: #f8f9fa;
     padding: 20px;
     border-radius: 6px;
@@ -102,17 +102,17 @@ button:hover {
 }
 
 /* Inline form styling for entry actions */
-form[style*="display: inline"] {
+.inline-form {
     margin-left: 10px;
 }
 
-form[style*="display: inline"] label {
+.inline-form label {
     display: inline;
     margin-right: 5px;
     font-weight: normal;
 }
 
-form[style*="display: inline"] input[type="text"] {
+.inline-form input[type="text"] {
     width: 150px;
     max-width: none;
     display: inline;
@@ -120,9 +120,19 @@ form[style*="display: inline"] input[type="text"] {
     padding: 6px 10px;
 }
 
-form[style*="display: inline"] input[type="submit"] {
+.inline-form input[type="submit"] {
     padding: 6px 12px;
     font-size: 13px;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: #3498db;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+    font-size: inherit;
 }
 
 /* List styling */
