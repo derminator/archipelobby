@@ -13,6 +13,12 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
+    <div th:if="${isGenerated}" style="border: 2px solid #c0392b; background: #fdf3f2; padding: 1em; margin-bottom: 1em; border-radius: 4px;">
+        <strong>This room is locked.</strong>
+        The game has been generated and entries cannot be modified.
+        An admin can delete the generated world below to re-open entry editing.
+    </div>
+
     <h2>Uploaded .apworlds</h2>
     <p th:if="${apworlds.isEmpty()}">No .apworld files uploaded yet. Upload one below if you need a non-standard game.</p>
     <ul th:unless="${apworlds.isEmpty()}">
@@ -22,8 +28,10 @@
         </li>
     </ul>
 
-    <h3>Upload .apworld</h3>
-    <div th:replace="~{layout :: add-apworld-form(${room.id})}"></div>
+    <div th:unless="${isGenerated}">
+        <h3>Upload .apworld</h3>
+        <div th:replace="~{layout :: add-apworld-form(${room.id})}"></div>
+    </div>
 
     <h2>Entries</h2>
     <a th:href="@{/rooms/{roomId}/download-all(roomId=${room.id})}">
@@ -40,17 +48,38 @@
             <form method="post"
                   style="display: inline;"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
-                  th:if="${entry.user.id == userId or isAdmin}">
+                  th:if="${(entry.user.id == userId or isAdmin) and !isGenerated}">
                 <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
             </form>
         </li>
     </ul>
 
-    <h3>Add Entry</h3>
-    <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+    <div th:unless="${isGenerated}">
+        <h3>Add Entry</h3>
+        <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+    </div>
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
+
+        <form th:unless="${isGenerated}"
+              method="post"
+              th:action="@{/rooms/{id}/generate(id=${room.id})}">
+            <input onclick="return confirm('Generate the game? Entries will be locked until the generated world is deleted.')"
+                   type="submit" value="Generate Game"/>
+        </form>
+
+        <div th:if="${isGenerated}">
+            <a th:href="@{/rooms/{id}/download-world(id=${room.id})}">
+                <button type="button">Download Generated World</button>
+            </a>
+            <form method="post"
+                  th:action="@{/rooms/{id}/delete-generated-world(id=${room.id})}">
+                <input onclick="return confirm('Delete the generated world? Entries will be unlocked for editing.')"
+                       type="submit" value="Delete Generated World"/>
+            </form>
+        </div>
+
         <form method="post" th:action="@{/rooms/{id}/delete(id=${room.id})}">
             <input onclick="return confirm('Are you sure?')" type="submit" value="Delete Room"/>
         </form>

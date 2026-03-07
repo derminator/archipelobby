@@ -4,15 +4,21 @@ import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.game.GameService
+import com.github.derminator.archipelobby.generation.GenerationService
+import com.github.derminator.archipelobby.storage.UploadsService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.withContext
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import java.nio.file.Files
+import kotlin.io.path.writeBytes
 
 @Service
 class RoomService(
@@ -20,7 +26,9 @@ class RoomService(
     private val entryRepository: EntryRepository,
     private val apworldRepository: ApworldRepository,
     private val discordService: DiscordService,
-    private val gameService: GameService
+    private val gameService: GameService,
+    private val uploadsService: UploadsService,
+    private val generationService: GenerationService
 ) {
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
@@ -67,8 +75,21 @@ class RoomService(
     private suspend fun isRoomJoinable(room: Room, userId: Long): Boolean =
         discordService.isMemberOfGuild(userId, room.guildId)
 
+    private suspend fun checkRoomNotLocked(roomId: Long) {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (room.generatedWorldPath != null) {
+            throw ResponseStatusException(
+                HttpStatus.FORBIDDEN,
+                "This room is locked: the game has already been generated. Ask an admin to delete the generated world to re-open entry editing."
+            )
+        }
+    }
+
     @Transactional
     suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String): Entry {
+        checkRoomNotLocked(roomId)
+
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
@@ -132,6 +153,8 @@ class RoomService(
         val entry = entryRepository.findById(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
+        checkRoomNotLocked(entry.roomId)
+
         if (entry.userId != userId && !isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's entry")
         }
@@ -143,6 +166,8 @@ class RoomService(
     suspend fun renameEntry(entryId: Long, userId: Long, newName: String): Entry {
         val entry = entryRepository.findById(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+
+        checkRoomNotLocked(entry.roomId)
 
         if (entry.userId != userId) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot rename another user's entry")
@@ -173,6 +198,81 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
         roomRepository.deleteById(roomId).awaitSingleOrNull()
+    }
+
+    /**
+     * Generates the Archipelago world for the room using the GraalPy Truffle bridge.
+     * Only admins can generate. Locks the room after generation.
+     */
+    @Transactional
+    suspend fun generateWorld(roomId: Long, userId: Long): Room {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can generate the game")
+        }
+
+        if (room.generatedWorldPath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "A world has already been generated for this room")
+        }
+
+        val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
+        if (entries.isEmpty()) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot generate a world with no entries")
+        }
+
+        val playerFilesDir = withContext(Dispatchers.IO) { Files.createTempDirectory("archipelobby-yamls-") }
+        val outputDir = withContext(Dispatchers.IO) { Files.createTempDirectory("archipelobby-output-") }
+
+        try {
+            // Write all YAML entries to the temp player files directory
+            withContext(Dispatchers.IO) {
+                for (entry in entries) {
+                    val yamlBytes = uploadsService.getFile(entry.yamlFilePath)
+                    playerFilesDir.resolve("${entry.name}.yaml").writeBytes(yamlBytes)
+                }
+            }
+
+            // Run the generator via GraalPy Truffle bridge
+            val generatedFile = withContext(Dispatchers.IO) {
+                generationService.generate(playerFilesDir, outputDir)
+            }
+
+            // Store the generated package in the uploads storage
+            val storedPath = withContext(Dispatchers.IO) {
+                uploadsService.saveFileBytes(generatedFile.fileName.toString(), generatedFile.toFile().readBytes())
+            }
+
+            return roomRepository.save(room.copy(generatedWorldPath = storedPath)).awaitSingle()
+        } finally {
+            // Clean up temp directories
+            withContext(Dispatchers.IO) {
+                playerFilesDir.toFile().deleteRecursively()
+                outputDir.toFile().deleteRecursively()
+            }
+        }
+    }
+
+    /**
+     * Deletes the generated world for the room, unlocking entry editing.
+     * Only admins can delete the generated world.
+     */
+    @Transactional
+    suspend fun deleteGeneratedWorld(roomId: Long, userId: Long): Room {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can delete the generated world")
+        }
+
+        if (room.generatedWorldPath == null) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated world exists for this room")
+        }
+
+        uploadsService.deleteFile(room.generatedWorldPath)
+        return roomRepository.save(room.copy(generatedWorldPath = null)).awaitSingle()
     }
 
     /**
@@ -215,4 +315,6 @@ data class RoomWithEntries(
     val entries: List<EntryInfo>,
     val apworlds: List<ApworldInfo>,
     val isAdmin: Boolean
-)
+) {
+    val isGenerated: Boolean get() = room.generatedWorldPath != null
+}

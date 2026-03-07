@@ -79,6 +79,7 @@ class RoomController(
         model.addAttribute("entries", roomWithEntries.entries)
         model.addAttribute("apworlds", roomWithEntries.apworlds)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
+        model.addAttribute("isGenerated", roomWithEntries.isGenerated)
         model.addAttribute("userId", userId)
         "room"
     }
@@ -223,6 +224,47 @@ class RoomController(
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(zipBytes)
+    }
+
+    @PostMapping("/{roomId}/generate")
+    fun generateGame(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.generateWorld(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/delete-generated-world")
+    fun deleteGeneratedWorld(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.deleteGeneratedWorld(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @GetMapping("/{roomId}/download-world")
+    fun downloadWorld(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<ResponseEntity<ByteArray>> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val roomWithEntries = roomService.getRoom(roomId, userId)
+        if (!roomWithEntries.isAdmin) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can download the generated world")
+        }
+        val path = roomWithEntries.room.generatedWorldPath
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated world exists for this room")
+        val bytes = uploadsService.getFile(path)
+        val filename = "${roomWithEntries.room.name}.archipelago"
+
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(bytes)
     }
 
     @PostMapping("/{roomId}/delete")

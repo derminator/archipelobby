@@ -1,0 +1,1 @@
+ALTER TABLE ROOMS ADD COLUMN generated_world_path VARCHAR(500) NULL;
