@@ -2,10 +2,10 @@ package com.github.derminator.archipelobby
 
 import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryInfo
-import com.github.derminator.archipelobby.data.GuildInfo
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomWithEntries
-import com.github.derminator.archipelobby.data.UserInfo
+import com.github.derminator.archipelobby.discord.GuildInfo
+import com.github.derminator.archipelobby.discord.UserInfo
 import org.springframework.aot.hint.MemberCategory
 import org.springframework.aot.hint.RuntimeHints
 import org.springframework.aot.hint.RuntimeHintsRegistrar
