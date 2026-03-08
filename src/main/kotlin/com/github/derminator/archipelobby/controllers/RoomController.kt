@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby.controllers
 
+import com.github.derminator.archipelobby.data.PlayerYaml
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.game.GameService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
@@ -14,10 +15,17 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import tools.jackson.databind.DeserializationFeature
+import tools.jackson.databind.exc.MismatchedInputException
+import tools.jackson.dataformat.yaml.YAMLMapper
+import tools.jackson.module.kotlin.KotlinModule
 import java.io.ByteArrayOutputStream
 import java.security.Principal
 import java.util.zip.ZipEntry
@@ -30,6 +38,24 @@ class RoomController(
     private val uploadsService: UploadsService,
     private val gameService: GameService
 ) {
+    private val yamlMapper = YAMLMapper.builder()
+        .addModule(KotlinModule.Builder().build())
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build()
+
+    fun parsePlayerYaml(yamlBytes: ByteArray): PlayerYaml {
+        val playerYaml = try {
+            yamlMapper.readValue(yamlBytes, PlayerYaml::class.java)
+        } catch (e: MismatchedInputException) {
+            throw IllegalArgumentException("YAML file must contain 'name' and 'game' fields", e)
+        } catch (e: Exception) {
+            throw IllegalArgumentException("Invalid YAML: ${e.message}", e)
+        }
+        if (playerYaml.name.isBlank()) throw IllegalArgumentException("YAML file must contain a 'name' field")
+        if (playerYaml.game.isBlank()) throw IllegalArgumentException("YAML file must contain a 'game' field")
+        return playerYaml
+    }
+
     @GetMapping
     fun getRooms(
         principal: Principal,
@@ -100,7 +126,7 @@ class RoomController(
         val yamlBytes = readBytes(yamlFilePart)
 
         val playerYaml = try {
-            gameService.parsePlayerYaml(yamlBytes)
+            parsePlayerYaml(yamlBytes)
         } catch (e: IllegalArgumentException) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.message)
         }

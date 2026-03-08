@@ -1,10 +1,5 @@
 package com.github.derminator.archipelobby.game
 
-import tools.jackson.databind.DeserializationFeature
-import tools.jackson.databind.exc.MismatchedInputException
-import tools.jackson.dataformat.yaml.YAMLMapper
-import tools.jackson.module.kotlin.KotlinModule
-import com.github.derminator.archipelobby.data.PlayerYaml
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.io.ByteArrayOutputStream
@@ -16,24 +11,6 @@ import java.util.zip.ZipInputStream
 class GameService(
     @Value($$"${app.archipelago-dir:archipelago}") private val archipelagoDir: String
 ) {
-
-    private val yamlMapper = YAMLMapper.builder()
-        .addModule(KotlinModule.Builder().build())
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .build()
-
-    fun parsePlayerYaml(yamlBytes: ByteArray): PlayerYaml {
-        val playerYaml = try {
-            yamlMapper.readValue(yamlBytes, PlayerYaml::class.java)
-        } catch (e: MismatchedInputException) {
-            throw IllegalArgumentException("YAML file must contain 'name' and 'game' fields", e)
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid YAML: ${e.message}", e)
-        }
-        if (playerYaml.name.isBlank()) throw IllegalArgumentException("YAML file must contain a 'name' field")
-        if (playerYaml.game.isBlank()) throw IllegalArgumentException("YAML file must contain a 'game' field")
-        return playerYaml
-    }
 
     val builtinGames: Set<String> by lazy { loadBuiltinGames() }
 
