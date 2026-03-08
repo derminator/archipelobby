@@ -22,7 +22,6 @@ import java.io.ByteArrayOutputStream
 import java.security.Principal
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
-import org.yaml.snakeyaml.Yaml
 
 @Controller
 @RequestMapping("/rooms")
@@ -185,7 +184,7 @@ class RoomController(
         }
 
         val fileContent = uploadsService.getFile(entry.yamlFilePath)
-        val filename = "${extractNameFromYaml(fileContent) ?: "entry"}.yaml"
+        val filename = "${entry.name}.yaml"
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
@@ -208,7 +207,7 @@ class RoomController(
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                    val zipEntry = ZipEntry("${extractNameFromYaml(fileContent) ?: "entry"}.yaml")
+                    val zipEntry = ZipEntry("${entry.name}.yaml")
                     zipOut.putNextEntry(zipEntry)
                     zipOut.write(fileContent)
                     zipOut.closeEntry()
@@ -233,20 +232,6 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
-    }
-
-    private fun extractNameFromYaml(content: ByteArray): String? {
-        return try {
-            val yaml = Yaml()
-            val data = yaml.load<Any>(content.inputStream())
-            if (data is Map<*, *>) {
-                data["name"]?.toString()?.trim()?.takeIf { it.isNotBlank() }
-            } else {
-                null
-            }
-        } catch (_: Exception) {
-            null
-        }
     }
 
     private suspend fun readBytes(filePart: FilePart): ByteArray {

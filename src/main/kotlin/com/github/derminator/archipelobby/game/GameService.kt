@@ -2,9 +2,6 @@ package com.github.derminator.archipelobby.game
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import org.yaml.snakeyaml.LoaderOptions
-import org.yaml.snakeyaml.Yaml
-import org.yaml.snakeyaml.constructor.SafeConstructor
 import java.io.ByteArrayOutputStream
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -12,7 +9,7 @@ import java.util.zip.ZipInputStream
 
 @Service
 class GameService(
-    @Value("\${app.archipelago-dir:archipelago}") private val archipelagoDir: String
+    @Value($$"${app.archipelago-dir:archipelago}") private val archipelagoDir: String
 ) {
 
     val builtinGames: Set<String> by lazy { loadBuiltinGames() }
@@ -23,22 +20,15 @@ class GameService(
             val games = extractGamesFromWorldsDir(worldsDir)
             if (games.isNotEmpty()) return games
         }
-        return javaClass.getResourceAsStream("/archipelago-builtin-games.txt")
-            ?.bufferedReader()
-            ?.readLines()
-            ?.filter { it.isNotBlank() && !it.startsWith("#") }
-            ?.toSet()
-            ?: emptySet()
+        error("Archipelago directory '$archipelagoDir' does not exist or is not a directory")
     }
 
-    private fun extractGamesFromWorldsDir(worldsDir: java.nio.file.Path): Set<String> {
-        val games = mutableSetOf<String>()
+    private fun extractGamesFromWorldsDir(worldsDir: java.nio.file.Path): Set<String> = buildSet {
         Files.list(worldsDir)
             .filter { Files.isDirectory(it) && !it.fileName.toString().startsWith("_") }
             .forEach { worldDir ->
-                extractGameNameFromWorldDir(worldDir)?.let { games.add(it) }
+                extractGameNameFromWorldDir(worldDir)?.let { add(it) }
             }
-        return games
     }
 
     private fun extractGameNameFromWorldDir(worldDir: java.nio.file.Path): String? {
@@ -51,9 +41,11 @@ class GameService(
 
     /**
      * Extract a game name from a literal string assignment, e.g.:
+     * ```
      *   game = "A Link to the Past"
      *   game: str = "A Link to the Past"
      *   game: ClassVar[str] = "A Link to the Past"
+     * ```
      */
     internal fun extractGameNameFromPython(content: String): String? {
         val literal = Regex(
@@ -85,28 +77,6 @@ class GameService(
             .filter { it != null }
             .findFirst()
             .orElse(null)
-    }
-
-    /**
-     * Extract the game name(s) from an Archipelago YAML file.
-     * The 'game' field can be a plain string or a weighted map of game names.
-     */
-    @Suppress("UNCHECKED_CAST")
-    fun parseGamesFromYaml(yamlBytes: ByteArray): List<String> {
-        val loaderOptions = LoaderOptions().apply {
-            codePointLimit = 5 * 1024 * 1024
-        }
-        val yaml = Yaml(SafeConstructor(loaderOptions))
-        val data: Map<String, Any> = try {
-            yaml.load(yamlBytes.inputStream())
-        } catch (e: Exception) {
-            throw IllegalArgumentException("Invalid YAML: ${e.message}")
-        }
-        return when (val game = data["game"]) {
-            is String -> listOf(game)
-            is Map<*, *> -> (game as Map<String, Any>).keys.map { it.toString() }
-            else -> throw IllegalArgumentException("YAML is missing a valid 'game' field")
-        }
     }
 
     /**
