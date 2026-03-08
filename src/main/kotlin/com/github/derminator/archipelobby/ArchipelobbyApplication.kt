@@ -1,8 +1,8 @@
 package com.github.derminator.archipelobby
 
-import org.springframework.aot.hint.annotation.ImportRuntimeHints
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
+import org.springframework.context.annotation.ImportRuntimeHints
 
 @SpringBootApplication
 @ImportRuntimeHints(ArchipelobbyRuntimeHints::class)

@@ -9,6 +9,7 @@ import com.github.derminator.archipelobby.discord.UserInfo
 import org.springframework.aot.hint.MemberCategory
 import org.springframework.aot.hint.RuntimeHints
 import org.springframework.aot.hint.RuntimeHintsRegistrar
+import org.springframework.aot.hint.registerType
 
 class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
 
@@ -24,19 +25,37 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
         hints.resources().registerPattern("static/*")
 
         // Application data classes used with R2DBC mapping and Jackson
-        hints.reflection().registerType(Room::class.java, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
-        hints.reflection().registerType(Entry::class.java, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
-        hints.reflection().registerType(RoomWithEntries::class.java, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
-        hints.reflection().registerType(EntryInfo::class.java, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
-        hints.reflection().registerType(GuildInfo::class.java, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
-        hints.reflection().registerType(UserInfo::class.java, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
+        hints.reflection().registerType<Room>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+        )
+        hints.reflection().registerType<Entry>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+        )
+        hints.reflection().registerType<RoomWithEntries>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+        )
+        hints.reflection().registerType<EntryInfo>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+        )
+        hints.reflection().registerType<GuildInfo>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+        )
+        hints.reflection().registerType<UserInfo>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+        )
 
         // Discord4J JSON model classes require reflection for Jackson deserialization.
         // These are registered via the reflect-config.json in META-INF/native-image.
-        registerDiscord4jJsonModels(hints)
+        registerDiscord4jJsonModels(hints, classLoader)
     }
 
-    private fun registerDiscord4jJsonModels(hints: RuntimeHints) {
+    private fun registerDiscord4jJsonModels(hints: RuntimeHints, classLoader: ClassLoader?) {
         // Discord4J uses Immutables-generated classes for all Discord API payloads.
         // The builder pattern means each ImmutableXxxData and ImmutableXxxData.Builder
         // needs reflective access. The most commonly used types are listed here;
@@ -58,7 +77,10 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
         for (className in discord4jClasses) {
             try {
                 val clazz = classLoader?.loadClass(className) ?: Class.forName(className)
-                hints.reflection().registerType(clazz, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS)
+                hints.reflection().registerType(
+                    clazz, MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+                    MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+                )
             } catch (_: ClassNotFoundException) {
                 // Class not on classpath — skip
             }
