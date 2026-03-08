@@ -1,6 +1,7 @@
 # Build stage
 FROM ghcr.io/graalvm/native-image-community:21 AS build
 WORKDIR /app
+RUN microdnf install -y findutils
 COPY . ./
 RUN ./gradlew nativeCompile --no-daemon
 
