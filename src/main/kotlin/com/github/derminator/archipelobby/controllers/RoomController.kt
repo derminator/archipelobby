@@ -99,17 +99,14 @@ class RoomController(
 
         val yamlBytes = readBytes(yamlFilePart)
 
-        val games = try {
-            gameService.parseGamesFromYaml(yamlBytes)
+        val playerYaml = try {
+            gameService.parsePlayerYaml(yamlBytes)
         } catch (e: IllegalArgumentException) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, e.message)
         }
 
-        val entryName = extractNameFromYaml(yamlBytes)
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "YAML file must contain a 'name' field")
-
-        // For entries with multiple games, record all as comma-separated
-        val game = games.joinToString(", ")
+        val entryName = playerYaml.name
+        val game = playerYaml.game
 
         val userId = principal.asDiscordPrincipal.userId
         val filePath = uploadsService.saveFileBytes(yamlFilePart.filename(), yamlBytes)
