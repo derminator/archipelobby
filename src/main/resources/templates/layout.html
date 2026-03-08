@@ -4,10 +4,8 @@
     <div th:if="${#authorization.expression('isAuthenticated()') &&
     #authentication.principal instanceof T(com.github.derminator.archipelobby.security.DiscordPrincipal)}">
         Logged in as: <span th:text="${#authentication.principal.username}">User</span>
-        |
-        <form th:action="@{/logout}" method="post" style="display: inline;">
-            <input type="submit" value="Logout"
-                   style="background:none; border:none; color:blue; text-decoration:underline; cursor:pointer; padding:0;"/>
+        <form th:action="@{/logout}" method="post" class="inline-form">
+            <input type="submit" value="Logout" class="link-btn"/>
         </form>
     </div>
     <div sec:authorize="isAnonymous()">

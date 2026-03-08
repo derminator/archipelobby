@@ -25,13 +25,13 @@
                 <button type="button">Download YAML</button>
             </a>
             <form method="post"
-                  style="display: inline;"
+                  class="inline-form"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
                   th:if="${entry.user.id == userId or isAdmin}">
                 <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
             </form>
             <form method="post"
-                  style="display: inline;"
+                  class="inline-form"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
                   th:if="${entry.user.id == userId}">
                 <label>
