@@ -321,6 +321,37 @@ class WebTests {
     }
 
     @Test
+    fun `session cookie is persistent after form login`() {
+        val loginResult = webTestClient
+            .mutateWith(csrf())
+            .post().uri("/login")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("username", "admin").with("password", "password"))
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectBody<String>().returnResult()
+
+        val sessionCookie = loginResult.responseCookies.entries
+            .flatMap { it.value }
+            .firstOrNull { it.maxAge.seconds > 0 }
+
+        assert(sessionCookie != null) {
+            "Expected a persistent session cookie with max-age > 0, but none was found. " +
+                "Cookies: ${loginResult.responseCookies}"
+        }
+        assert(sessionCookie!!.maxAge >= WebSessionConfiguration.SESSION_DURATION) {
+            "Expected max-age >= ${WebSessionConfiguration.SESSION_DURATION}, got ${sessionCookie.maxAge}"
+        }
+
+        // The session cookie must grant access to a protected resource
+        webTestClient
+            .get().uri("/rooms")
+            .cookie(sessionCookie.name, sessionCookie.value)
+            .exchange()
+            .expectStatus().isOk
+    }
+
+    @Test
     fun `room detail page is accessible with form login`(): Unit = runBlocking {
         val userId = 0L
         val roomId = 1L
