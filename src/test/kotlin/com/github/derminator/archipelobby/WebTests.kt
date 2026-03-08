@@ -1,6 +1,5 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.WebSessionConfiguration
 import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room

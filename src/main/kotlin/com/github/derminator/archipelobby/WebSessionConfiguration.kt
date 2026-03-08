@@ -18,14 +18,12 @@ class WebSessionConfiguration {
     }
 
     @Bean
-    fun webSessionIdResolver(): WebSessionIdResolver {
-        val resolver = CookieWebSessionIdResolver()
-        resolver.addCookieInitializer { cookie ->
+    fun webSessionIdResolver(): WebSessionIdResolver = CookieWebSessionIdResolver().apply {
+        addCookieInitializer { cookie ->
             cookie.maxAge(SESSION_DURATION)
             cookie.httpOnly(true)
             cookie.sameSite("Lax")
         }
-        return resolver
     }
 
     @Bean
