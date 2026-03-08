@@ -129,10 +129,16 @@ button:hover {
     background: none;
     border: none;
     color: #3498db;
-    text-decoration: underline;
+    text-decoration: none;
     cursor: pointer;
     padding: 0;
     font-size: inherit;
+    transition: color 0.2s;
+}
+
+.link-btn:hover {
+    color: #2980b9;
+    text-decoration: underline;
 }
 
 /* List styling */
