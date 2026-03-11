@@ -65,7 +65,7 @@ class RoomService(
         discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, yamlFilePath: String): Entry {
+    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
@@ -85,6 +85,7 @@ class RoomService(
                 roomId = roomId,
                 userId = userId,
                 name = entryName,
+                game = game,
                 yamlFilePath = yamlFilePath
             )
         )
@@ -130,7 +131,7 @@ class RoomService(
             .toList()
             .map { entry ->
                 if (entry.id == null) error("Entry ID is null after saving")
-                EntryInfo(entry.id, entry.name, discordService.getUserInfo(entry.userId))
+                EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId))
             }
         return RoomWithEntries(room, entries, isAdmin)
     }
@@ -151,7 +152,7 @@ class RoomService(
     }
 }
 
-data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
+data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
     val entries: List<EntryInfo>,

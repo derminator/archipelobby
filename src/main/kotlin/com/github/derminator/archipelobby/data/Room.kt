@@ -19,6 +19,7 @@ data class Entry(
     val roomId: Long,
     val userId: Long,
     val name: String,
+    val game: String,
     val yamlFilePath: String
 )
 

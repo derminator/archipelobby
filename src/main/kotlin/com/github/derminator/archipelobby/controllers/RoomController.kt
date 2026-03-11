@@ -107,7 +107,7 @@ class RoomController(
 
         val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
 
-        roomService.addEntry(roomId, userId, entryYaml.name, filePath)
+        roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath)
         "redirect:/rooms/$roomId"
     }
 
