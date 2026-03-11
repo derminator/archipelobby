@@ -1,6 +1,8 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
-    kotlin("jvm") version "2.2.21"
-    kotlin("plugin.spring") version "2.2.21"
+    kotlin("jvm") version "2.3.10"
+    kotlin("plugin.spring") version "2.3.10"
     id("org.springframework.boot") version "4.0.2"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.graalvm.buildtools.native") version "0.11.4"
@@ -12,7 +14,7 @@ description = "archipelobby"
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -35,7 +37,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
     implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
     implementation("tools.jackson.module:jackson-module-kotlin")
-    implementation("com.discord4j:discord4j-core:3.3.0")
+    implementation("com.discord4j:discord4j-core:3.3.1")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
@@ -64,7 +66,24 @@ dependencyManagement {
 
 kotlin {
     compilerOptions {
+        jvmTarget = JvmTarget.JVM_25
         freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
+    }
+}
+
+graalvmNative {
+    metadataRepository {
+        enabled.set(true)
+    }
+    binaries {
+        named("main") {
+            imageName.set("archipelobby")
+            mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
+            buildArgs.addAll(
+                "--enable-url-protocols=https",
+                "-H:+ReportExceptionStackTraces",
+            )
+        }
     }
 }
 
