@@ -111,11 +111,7 @@ class RoomController(
         principal: Principal
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val isAdmin = roomService.isAdminOfGuild(
-            roomService.getRoom(roomId, userId).room.guildId,
-            userId
-        )
-        roomService.deleteEntry(entryId, userId, isAdmin)
+        roomService.deleteEntry(entryId, userId)
         "redirect:/rooms/$roomId"
     }
 
@@ -138,17 +134,10 @@ class RoomController(
     fun downloadEntry(
         @PathVariable roomId: Long,
         @PathVariable entryId: Long,
-        principal: Principal
+        principal: Principal,
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val room = roomService.getRoomForDownload(roomId, userId)
-
-        val entry = roomService.getEntry(entryId)
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
-
-        if (entry.roomId != room.id) {
-            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Entry does not belong to this room")
-        }
+        val entry = roomService.getEntryForDownload(entryId, roomId, userId)
 
         val fileExists = uploadsService.fileExists(entry.yamlFilePath)
         if (!fileExists) {
