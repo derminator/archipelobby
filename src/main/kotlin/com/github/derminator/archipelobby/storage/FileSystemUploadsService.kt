@@ -2,11 +2,9 @@ package com.github.derminator.archipelobby.storage
 
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
-import org.springframework.http.codec.multipart.FilePart
 import org.springframework.stereotype.Service
 import java.nio.file.Files
 import java.nio.file.Paths
@@ -24,10 +22,10 @@ class FileSystemUploadsService(
         Files.createDirectories(uploadsDir)
     }
 
-    override suspend fun saveFile(filePart: FilePart): String {
-        val filePath = uploadsDir.resolve("${System.currentTimeMillis()}_${filePart.filename()}")
-        filePart.transferTo(filePath).awaitSingleOrNull()
-        return filePath.toString()
+    override suspend fun saveFile(content: ByteArray, filename: String): String = withContext(Dispatchers.IO) {
+        val filePath = uploadsDir.resolve("${System.currentTimeMillis()}_$filename")
+        Files.write(filePath, content)
+        filePath.toString()
     }
 
     override suspend fun getFile(filePath: String): ByteArray = withContext(Dispatchers.IO) {

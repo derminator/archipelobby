@@ -1,11 +1,15 @@
 package com.github.derminator.archipelobby.controllers
 
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
+import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -28,6 +32,8 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService
 ) {
+    private val yamlMapper = YAMLMapper().apply { registerKotlinModule() }
+
     @GetMapping
     fun getRooms(
         principal: Principal,
@@ -80,7 +86,6 @@ class RoomController(
     }
 
     data class AddEntryForm(
-        val entryName: String,
         val yamlFile: FilePart,
     )
 
@@ -91,16 +96,18 @@ class RoomController(
         @ModelAttribute form: AddEntryForm,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val entryName = form.entryName.trim()
         val yamlFile = form.yamlFile
 
         if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
         }
 
-        val filePath = uploadsService.saveFile(yamlFile)
+        val fileBytes = readFilePart(yamlFile)
+        val entryYaml = yamlMapper.readValue(fileBytes, EntryYaml::class.java)
 
-        roomService.addEntry(roomId, userId, entryName, filePath)
+        val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
+
+        roomService.addEntry(roomId, userId, entryYaml.name, filePath)
         "redirect:/rooms/$roomId"
     }
 
@@ -112,21 +119,6 @@ class RoomController(
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
         roomService.deleteEntry(entryId, userId)
-        "redirect:/rooms/$roomId"
-    }
-
-    @PostMapping("/{roomId}/entries/{entryId}/rename")
-    fun renameEntry(
-        @PathVariable roomId: Long,
-        @PathVariable entryId: Long,
-        exchange: ServerWebExchange,
-        principal: Principal
-    ): Mono<String> = mono {
-        val userId = principal.asDiscordPrincipal.userId
-        val formData = exchange.formData.awaitSingle()
-        val newName = formData.getFirst("newName")
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'newName' is not present")
-        roomService.renameEntry(entryId, userId, newName)
         "redirect:/rooms/$roomId"
     }
 
@@ -193,5 +185,16 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
+    }
+
+    private suspend fun readFilePart(filePart: FilePart): ByteArray {
+        val outputStream = ByteArrayOutputStream()
+        filePart.content().collectList().awaitSingle().forEach { dataBuffer ->
+            val bytes = ByteArray(dataBuffer.readableByteCount())
+            dataBuffer.read(bytes)
+            DataBufferUtils.release(dataBuffer)
+            outputStream.write(bytes)
+        }
+        return outputStream.toByteArray()
     }
 }
