@@ -20,7 +20,8 @@
     <ul>
         <li th:each="entry : ${entries}">
             <strong th:text="${entry.name}">Entry Name</strong>
-            (<span th:text="${entry.user.username}">Username</span>)
+            (<span th:text="${entry.game}">Game</span>,
+             <span th:text="${entry.user.username}">Username</span>)
             <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.id},entryId=${entry.id})}">
                 <button type="button">Download YAML</button>
             </a>
@@ -30,16 +31,7 @@
                   th:if="${entry.user.id == userId or isAdmin}">
                 <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
             </form>
-            <form method="post"
-                  class="inline-form"
-                  th:action="@{/rooms/{roomId}/entries/{entryId}/rename(roomId=${room.id},entryId=${entry.id})}"
-                  th:if="${entry.user.id == userId}">
-                <label>
-                    Rename
-                    <input name="newName" placeholder="New name" required type="text"/>
-                </label>
-                <input type="submit" value="Rename"/>
-            </form>
+
         </li>
     </ul>
 
