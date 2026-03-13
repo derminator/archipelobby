@@ -146,7 +146,7 @@ class RoomController(
         val entry = roomService.getEntry(entryId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
 
-        if (entry.roomId != roomId) {
+        if (entry.roomId != room.id) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Entry does not belong to this room")
         }
 
