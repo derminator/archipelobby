@@ -162,6 +162,18 @@ class RoomService(
     suspend fun isAdminOfGuild(guildId: Long, userId: Long): Boolean =
         discordService.isAdminOfGuild(userId, guildId)
 
+    /**
+     * Retrieves room for download; enforces membership check
+     */
+    suspend fun getRoomForDownload(roomId: Long, userId: Long): Room {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!isRoomJoinable(room, userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        return room
+    }
+
     suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
 }
 
