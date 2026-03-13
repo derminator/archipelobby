@@ -1,7 +1,7 @@
 package com.github.derminator.archipelobby.controllers
 
-import com.fasterxml.jackson.dataformat.yaml.YAMLMapper
-import com.fasterxml.jackson.module.kotlin.registerKotlinModule
+import tools.jackson.dataformat.yaml.YAMLMapper
+import tools.jackson.module.kotlin.KotlinModule
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
@@ -32,7 +32,9 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService
 ) {
-    private val yamlMapper = YAMLMapper().apply { registerKotlinModule() }
+    private val yamlMapper = YAMLMapper.builder()
+        .addModule(KotlinModule.Builder().build())
+        .build()
 
     @GetMapping
     fun getRooms(
