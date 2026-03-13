@@ -105,7 +105,11 @@ class RoomController(
         }
 
         val fileBytes = readFilePart(yamlFile)
-        val entryYaml = yamlMapper.readValue(fileBytes, EntryYaml::class.java)
+        val entryYaml = try {
+            yamlMapper.readValue(fileBytes, EntryYaml::class.java)
+        } catch (e: tools.jackson.core.JacksonException) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid YAML file: ${e.originalMessage}")
+        }
 
         val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
 
