@@ -92,9 +92,11 @@ class RoomService(
     }
 
     @Transactional
-    suspend fun deleteEntry(entryId: Long, userId: Long, isAdmin: Boolean) {
+    suspend fun deleteEntry(entryId: Long, userId: Long) {
         val entry = entryRepository.findById(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        val room = roomRepository.findById(entry.roomId).awaitSingle()
+        val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
 
         if (entry.userId != userId && !isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's entry")
@@ -148,7 +150,7 @@ class RoomService(
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
-        val isAdmin = isAdminOfGuild(room.guildId, userId)
+        val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
         val entries = entryRepository.findByRoomId(roomId)
             .asFlow()
             .toList()
@@ -159,22 +161,20 @@ class RoomService(
         return RoomWithEntries(room, entries, isAdmin)
     }
 
-    suspend fun isAdminOfGuild(guildId: Long, userId: Long): Boolean =
-        discordService.isAdminOfGuild(userId, guildId)
+    suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
 
-    /**
-     * Retrieves room for download; enforces membership check
-     */
-    suspend fun getRoomForDownload(roomId: Long, userId: Long): Room {
-        val room = roomRepository.findById(roomId).awaitSingleOrNull()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
-        if (!isRoomJoinable(room, userId)) {
+    suspend fun getEntryForDownload(entryId: Long, roomId: Long, userId: Long): Entry {
+        val entry = entryRepository.findById(entryId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        if (entry.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Entry does not belong to this room")
+        }
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
-        return room
+        return entry
     }
-
-    suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
 }
 
 data class EntryInfo(val id: Long, val name: String, val user: UserInfo)
