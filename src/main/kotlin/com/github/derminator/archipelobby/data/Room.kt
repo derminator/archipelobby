@@ -34,3 +34,16 @@ interface EntryRepository : ReactiveCrudRepository<Entry, Long> {
     fun countByRoomIdAndUserId(roomId: Long, userId: Long): Mono<Long>
     fun existsByRoomIdAndName(roomId: Long, name: String): Mono<Boolean>
 }
+
+@Table("APWORLDS")
+data class ApWorld(
+    @Id val id: Long? = null,
+    val roomId: Long,
+    val userId: Long,
+    val fileName: String,
+    val filePath: String
+)
+
+interface ApWorldRepository : ReactiveCrudRepository<ApWorld, Long> {
+    fun findByRoomId(roomId: Long): Flux<ApWorld>
+}

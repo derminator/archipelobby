@@ -14,8 +14,8 @@
     <h1 th:text="${room.name}">Room Name</h1>
 
     <h2>Entries</h2>
-    <a th:href="@{/rooms/{roomId}/download-all(roomId=${room.id})}">
-        <button type="button">Download All YAMLs</button>
+    <a th:href="@{/rooms/{roomId}/download(roomId=${room.id})}">
+        <button type="button">Download YAMLs + APWorlds</button>
     </a>
     <ul>
         <li th:each="entry : ${entries}">
@@ -32,6 +32,23 @@
                 <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
             </form>
 
+        </li>
+    </ul>
+
+    <h2>APWorlds</h2>
+    <ul>
+        <li th:each="apWorld : ${apWorlds}">
+            <strong th:text="${apWorld.fileName}">Filename</strong>
+            (<span th:text="${apWorld.user.username}">Username</span>)
+            <a th:href="@{/rooms/{roomId}/apworlds/{apworldId}/download(roomId=${room.id},apworldId=${apWorld.id})}">
+                <button type="button">Download</button>
+            </a>
+            <form method="post"
+                  class="inline-form"
+                  th:action="@{/rooms/{roomId}/apworlds/{apworldId}/delete(roomId=${room.id},apworldId=${apWorld.id})}"
+                  th:if="${apWorld.user.id == userId or isAdmin}">
+                <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
+            </form>
         </li>
     </ul>
 

@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
+    private val apWorldRepository: ApWorldRepository,
     private val discordService: DiscordService
 ) {
 
@@ -150,9 +151,65 @@ class RoomService(
         }
         return entry
     }
+
+    @Transactional
+    suspend fun addApWorld(roomId: Long, userId: Long, fileName: String, filePath: String): ApWorld {
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!isRoomJoinable(room, userId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
+        }
+        return apWorldRepository.save(
+            ApWorld(roomId = roomId, userId = userId, fileName = fileName, filePath = filePath)
+        ).awaitSingle()
+    }
+
+    suspend fun getApWorldsForRoom(roomId: Long, userId: Long): List<ApWorldInfo> {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        return apWorldRepository.findByRoomId(roomId)
+            .asFlow()
+            .toList()
+            .map { apWorld ->
+                if (apWorld.id == null) error("ApWorld ID is null after saving")
+                ApWorldInfo(apWorld.id, apWorld.fileName, discordService.getUserInfo(apWorld.userId))
+            }
+    }
+
+    suspend fun getApWorld(apWorldId: Long): ApWorld? = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+
+    suspend fun getApWorldForDownload(apWorldId: Long, roomId: Long, userId: Long): ApWorld {
+        val apWorld = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "APWorld not found")
+        if (apWorld.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "APWorld does not belong to this room")
+        }
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        return apWorld
+    }
+
+    @Transactional
+    suspend fun deleteApWorld(apWorldId: Long, userId: Long) {
+        val apWorld = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "APWorld not found")
+        val room = roomRepository.findById(apWorld.roomId).awaitSingle()
+        val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
+
+        if (apWorld.userId != userId && !isAdmin) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's APWorld")
+        }
+
+        apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
+    }
 }
 
 data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
+data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
     val entries: List<EntryInfo>,

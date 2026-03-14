@@ -80,15 +80,18 @@ class RoomController(
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
+        val apWorlds = roomService.getApWorldsForRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
+        model.addAttribute("apWorlds", apWorlds)
         "room"
     }
 
     data class AddEntryForm(
         val yamlFile: FilePart,
+        val apworldFile: FilePart?,
     )
 
     @PostMapping("/{roomId}/entries")
@@ -114,6 +117,17 @@ class RoomController(
         val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
 
         roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath)
+
+        val apworldFile = form.apworldFile
+        if (apworldFile != null && apworldFile.filename().isNotEmpty()) {
+            if (!apworldFile.filename().endsWith(".apworld")) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "APWorld file must have .apworld extension")
+            }
+            val apworldBytes = readFilePart(apworldFile)
+            val apworldPath = uploadsService.saveFile(apworldBytes, apworldFile.filename())
+            roomService.addApWorld(roomId, userId, apworldFile.filename(), apworldPath)
+        }
+
         "redirect:/rooms/$roomId"
     }
 
@@ -151,13 +165,47 @@ class RoomController(
             .body(fileContent)
     }
 
-    @GetMapping("/{roomId}/download-all")
-    fun downloadAllYamls(
+    @GetMapping("/{roomId}/apworlds/{apworldId}/download")
+    fun downloadApWorld(
+        @PathVariable roomId: Long,
+        @PathVariable apworldId: Long,
+        principal: Principal,
+    ): Mono<ResponseEntity<ByteArray>> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val apWorld = roomService.getApWorldForDownload(apworldId, roomId, userId)
+
+        val fileExists = uploadsService.fileExists(apWorld.filePath)
+        if (!fileExists) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found")
+        }
+
+        val fileContent = uploadsService.getFile(apWorld.filePath)
+
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${apWorld.fileName}\"")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(fileContent)
+    }
+
+    @PostMapping("/{roomId}/apworlds/{apworldId}/delete")
+    fun deleteApWorld(
+        @PathVariable roomId: Long,
+        @PathVariable apworldId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.deleteApWorld(apworldId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @GetMapping("/{roomId}/download")
+    fun downloadAll(
         @PathVariable roomId: Long,
         principal: Principal
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
+        val apWorlds = roomService.getApWorldsForRoom(roomId, userId)
 
         val byteArrayOutputStream = ByteArrayOutputStream()
         ZipOutputStream(byteArrayOutputStream).use { zipOut ->
@@ -166,7 +214,18 @@ class RoomController(
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                    val zipEntry = ZipEntry("${entry.name}.yaml")
+                    val zipEntry = ZipEntry("Players/${entry.name}.yaml")
+                    zipOut.putNextEntry(zipEntry)
+                    zipOut.write(fileContent)
+                    zipOut.closeEntry()
+                }
+            }
+            for (apWorldInfo in apWorlds) {
+                val apWorld = roomService.getApWorld(apWorldInfo.id) ?: continue
+                val fileExists = uploadsService.fileExists(apWorld.filePath)
+                if (fileExists) {
+                    val fileContent = uploadsService.getFile(apWorld.filePath)
+                    val zipEntry = ZipEntry("custom_worlds/${apWorld.fileName}")
                     zipOut.putNextEntry(zipEntry)
                     zipOut.write(fileContent)
                     zipOut.closeEntry()
@@ -175,7 +234,7 @@ class RoomController(
         }
 
         val zipBytes = byteArrayOutputStream.toByteArray()
-        val filename = "${roomWithEntries.room.name}_yamls.zip"
+        val filename = "${roomWithEntries.room.name}.zip"
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
