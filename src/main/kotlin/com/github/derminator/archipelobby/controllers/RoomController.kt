@@ -1,7 +1,5 @@
 package com.github.derminator.archipelobby.controllers
 
-import tools.jackson.dataformat.yaml.YAMLMapper
-import tools.jackson.module.kotlin.KotlinModule
 import com.github.derminator.archipelobby.data.ApWorldFile
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.RoomService
@@ -22,6 +20,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import tools.jackson.dataformat.yaml.YAMLMapper
+import tools.jackson.module.kotlin.KotlinModule
 import java.io.ByteArrayOutputStream
 import java.security.Principal
 import java.util.zip.ZipEntry
@@ -81,12 +81,11 @@ class RoomController(
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
-        val apWorlds = roomService.getApWorldsForRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
-        model.addAttribute("entries", roomWithEntries.entries)
+        model.addAttribute("entries", roomWithEntries.entries.toList())
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
-        model.addAttribute("apWorlds", apWorlds)
+        model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         "room"
     }
 
@@ -212,12 +211,11 @@ class RoomController(
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
-        val apWorlds = roomService.getApWorldsForRoom(roomId, userId)
 
         val byteArrayOutputStream = ByteArrayOutputStream()
         ZipOutputStream(byteArrayOutputStream).use { zipOut ->
-            for (entryInfo in roomWithEntries.entries) {
-                val entry = roomService.getEntry(entryInfo.id) ?: continue
+            roomWithEntries.entries.collect { entryInfo ->
+                val entry = roomService.getEntry(entryInfo.id) ?: return@collect
                 val fileExists = uploadsService.fileExists(entry.yamlFilePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(entry.yamlFilePath)
@@ -227,8 +225,8 @@ class RoomController(
                     zipOut.closeEntry()
                 }
             }
-            for (apWorldInfo in apWorlds) {
-                val apWorld = roomService.getApWorld(apWorldInfo.id) ?: continue
+            roomService.getApWorldsForRoom(roomId, userId).collect { apWorldInfo ->
+                val apWorld = roomService.getApWorld(apWorldInfo.id) ?: return@collect
                 val fileExists = uploadsService.fileExists(apWorld.filePath)
                 if (fileExists) {
                     val fileContent = uploadsService.getFile(apWorld.filePath)

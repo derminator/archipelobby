@@ -4,7 +4,9 @@ import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -152,13 +154,16 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
-        val entries = entryRepository.findByRoomId(roomId)
-            .asFlow()
-            .toList()
-            .map { entry ->
-                if (entry.id == null) error("Entry ID is null after saving")
-                EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId))
-            }
+        val entries = channelFlow {
+            entryRepository.findByRoomId(roomId)
+                .asFlow()
+                .collect { entry ->
+                    launch {
+                        if (entry.id == null) error("Entry ID is null after saving")
+                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId)))
+                    }
+                }
+        }
         return RoomWithEntries(room, entries, isAdmin)
     }
 
@@ -178,18 +183,19 @@ class RoomService(
     }
 
 
-    suspend fun getApWorldsForRoom(roomId: Long, userId: Long): List<ApWorldInfo> {
+    fun getApWorldsForRoom(roomId: Long, userId: Long): Flow<ApWorldInfo> = channelFlow {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         if (!discordService.isMemberOfGuild(userId, room.guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
-        return apWorldRepository.findByRoomId(roomId)
+        apWorldRepository.findByRoomId(roomId)
             .asFlow()
-            .toList()
-            .map { apWorld ->
-                if (apWorld.id == null) error("ApWorld ID is null after saving")
-                ApWorldInfo(apWorld.id, apWorld.fileName, discordService.getUserInfo(apWorld.userId))
+            .collect { apWorld ->
+                launch {
+                    if (apWorld.id == null) error("ApWorld ID is null")
+                    send(ApWorldInfo(apWorld.id, apWorld.fileName, discordService.getUserInfo(apWorld.userId)))
+                }
             }
     }
 
@@ -228,6 +234,6 @@ data class EntryInfo(val id: Long, val name: String, val game: String, val user:
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
-    val entries: List<EntryInfo>,
-    val isAdmin: Boolean
+    val entries: Flow<EntryInfo>,
+    val isAdmin: Boolean,
 )
