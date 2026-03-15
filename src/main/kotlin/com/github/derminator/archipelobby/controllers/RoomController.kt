@@ -118,17 +118,24 @@ class RoomController(
 
         val apworldFilePart = form.apworldFile
         val apWorldFile: ApWorldFile? = if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
-            if (!apworldFilePart.filename().endsWith(".apworld")) {
-                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "APWorld file must have .apworld extension")
-            }
             val apworldBytes = readFilePart(apworldFilePart)
-            ApWorldFile(apworldFilePart.filename(), uploadsService.saveFile(apworldBytes, apworldFilePart.filename()))
+            ApWorldFile(
+                apworldFilePart.filename(),
+                uploadsService.saveFile(apworldBytes, apworldFilePart.filename()),
+            )
         } else null
 
         val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
 
         try {
-            roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath, apWorldFile)
+            roomService.addEntry(
+                roomId = roomId,
+                userId = userId,
+                entryName = entryYaml.name,
+                game = entryYaml.game,
+                yamlFilePath = filePath,
+                apWorldFile = apWorldFile,
+            )
         } catch (e: Exception) {
             savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
             throw e
