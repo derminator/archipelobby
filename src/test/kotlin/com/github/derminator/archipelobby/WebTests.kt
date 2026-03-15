@@ -1,6 +1,6 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.data.Entry
+import com.github.derminator.archipelobby.data.ApWorldRepository
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
@@ -50,6 +50,9 @@ class WebTests {
     @MockitoBean
     lateinit var entryRepository: EntryRepository
 
+    @MockitoBean
+    lateinit var apWorldRepository: ApWorldRepository
+
     @Autowired
     lateinit var context: ApplicationContext
 
@@ -66,6 +69,7 @@ class WebTests {
         `when`(discordService.isAdminOfGuild(anyLong(), anyLong())).thenReturn(false)
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
+        `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
 
         webTestClient = WebTestClient.bindToApplicationContext(context)
             .apply(springSecurity())
@@ -220,8 +224,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
 
         val bodyBuilder = MultipartBodyBuilder()
-        bodyBuilder.part("entryName", "Duplicate Name")
-        bodyBuilder.part("yamlFile", "test: data".toByteArray())
+        bodyBuilder.part("yamlFile", "name: Duplicate Name\ngame: Test Game".toByteArray())
             .filename("test.yaml")
 
         webTestClient.mutateWith(
@@ -237,29 +240,6 @@ class WebTests {
             .post().uri("/rooms/1/entries")
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .bodyValue(bodyBuilder.build())
-            .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
-    }
-
-    @Test
-    fun `renaming entry to duplicate name returns conflict`() {
-        val existingEntry = Entry(1, 1, 0, "Old Name", "uploads/test.yaml")
-        `when`(entryRepository.findById(anyLong())).thenReturn(Mono.just(existingEntry))
-        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
-
-        webTestClient.mutateWith(
-            mockAuthentication(
-                UsernamePasswordAuthenticationToken(
-                    testPrincipal,
-                    null,
-                    listOf(SimpleGrantedAuthority("ROLE_USER"))
-                )
-            )
-        )
-            .mutateWith(csrf())
-            .post().uri("/rooms/1/entries/1/rename")
-            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-            .body(BodyInserters.fromFormData("newName", "Duplicate Name"))
             .exchange()
             .expectStatus().isEqualTo(HttpStatus.CONFLICT)
     }
