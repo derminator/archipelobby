@@ -66,7 +66,7 @@ class RoomService(
         discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String): Entry {
+    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String, apWorldFileName: String? = null, apWorldFilePath: String? = null): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
@@ -81,7 +81,7 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
-        return entryRepository.save(
+        val entry = entryRepository.save(
             Entry(
                 roomId = roomId,
                 userId = userId,
@@ -89,8 +89,19 @@ class RoomService(
                 game = game,
                 yamlFilePath = yamlFilePath
             )
-        )
-            .awaitSingle()
+        ).awaitSingle()
+
+        if (apWorldFileName != null && apWorldFilePath != null) {
+            val apWorldExists = apWorldRepository.existsByRoomIdAndFileName(roomId, apWorldFileName).awaitSingle()
+            if (apWorldExists) {
+                throw ResponseStatusException(HttpStatus.CONFLICT, "An APWorld with filename '$apWorldFileName' already exists in this room")
+            }
+            apWorldRepository.save(
+                ApWorld(roomId = roomId, userId = userId, fileName = apWorldFileName, filePath = apWorldFilePath)
+            ).awaitSingle()
+        }
+
+        return entry
     }
 
     @Transactional
@@ -152,20 +163,6 @@ class RoomService(
         return entry
     }
 
-    @Transactional
-    suspend fun addApWorld(roomId: Long, userId: Long, fileName: String, filePath: String): ApWorld {
-        val room = roomRepository.findById(roomId).awaitSingle()
-        if (!isRoomJoinable(room, userId)) {
-            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
-        }
-        val exists = apWorldRepository.existsByRoomIdAndFileName(roomId, fileName).awaitSingle()
-        if (exists) {
-            throw ResponseStatusException(HttpStatus.CONFLICT, "An APWorld with filename '$fileName' already exists in this room")
-        }
-        return apWorldRepository.save(
-            ApWorld(roomId = roomId, userId = userId, fileName = fileName, filePath = filePath)
-        ).awaitSingle()
-    }
 
     suspend fun getApWorldsForRoom(roomId: Long, userId: Long): List<ApWorldInfo> {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()

@@ -116,17 +116,19 @@ class RoomController(
 
         val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
 
-        roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath)
-
         val apworldFile = form.apworldFile
+        var apworldFileName: String? = null
+        var apworldPath: String? = null
         if (apworldFile != null && apworldFile.filename().isNotEmpty()) {
             if (!apworldFile.filename().endsWith(".apworld")) {
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "APWorld file must have .apworld extension")
             }
             val apworldBytes = readFilePart(apworldFile)
-            val apworldPath = uploadsService.saveFile(apworldBytes, apworldFile.filename())
-            roomService.addApWorld(roomId, userId, apworldFile.filename(), apworldPath)
+            apworldFileName = apworldFile.filename()
+            apworldPath = uploadsService.saveFile(apworldBytes, apworldFileName)
         }
+
+        roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath, apworldFileName, apworldPath)
 
         "redirect:/rooms/$roomId"
     }
