@@ -2,6 +2,7 @@ package com.github.derminator.archipelobby.controllers
 
 import tools.jackson.dataformat.yaml.YAMLMapper
 import tools.jackson.module.kotlin.KotlinModule
+import com.github.derminator.archipelobby.data.ApWorldFile
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
@@ -116,23 +117,19 @@ class RoomController(
 
         val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
 
-        val apworldFile = form.apworldFile
-        var apworldFileName: String? = null
-        var apworldPath: String? = null
-        if (apworldFile != null && apworldFile.filename().isNotEmpty()) {
-            if (!apworldFile.filename().endsWith(".apworld")) {
+        val apworldFilePart = form.apworldFile
+        val apWorldFile: ApWorldFile? = if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
+            if (!apworldFilePart.filename().endsWith(".apworld")) {
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "APWorld file must have .apworld extension")
             }
-            val apworldBytes = readFilePart(apworldFile)
-            apworldFileName = apworldFile.filename()
-            apworldPath = uploadsService.saveFile(apworldBytes, apworldFileName)
-        }
+            val apworldBytes = readFilePart(apworldFilePart)
+            ApWorldFile(apworldFilePart.filename(), uploadsService.saveFile(apworldBytes, apworldFilePart.filename()))
+        } else null
 
-        val savedPaths = mutableListOf(filePath)
-        apworldPath?.let { savedPaths += it }
+        val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
 
         try {
-            roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath, apworldFileName, apworldPath)
+            roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath, apWorldFile)
         } catch (e: Exception) {
             savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
             throw e

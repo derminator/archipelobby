@@ -66,7 +66,7 @@ class RoomService(
         discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String, apWorldFileName: String? = null, apWorldFilePath: String? = null): Entry {
+    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String, apWorldFile: ApWorldFile? = null): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
@@ -91,13 +91,13 @@ class RoomService(
             )
         ).awaitSingle()
 
-        if (apWorldFileName != null && apWorldFilePath != null) {
-            val apWorldExists = apWorldRepository.existsByRoomIdAndFileName(roomId, apWorldFileName).awaitSingle()
+        if (apWorldFile != null) {
+            val apWorldExists = apWorldRepository.existsByRoomIdAndFileName(roomId, apWorldFile.fileName).awaitSingle()
             if (apWorldExists) {
-                throw ResponseStatusException(HttpStatus.CONFLICT, "An APWorld with filename '$apWorldFileName' already exists in this room")
+                throw ResponseStatusException(HttpStatus.CONFLICT, "An APWorld with filename '${apWorldFile.fileName}' already exists in this room")
             }
             apWorldRepository.save(
-                ApWorld(roomId = roomId, userId = userId, fileName = apWorldFileName, filePath = apWorldFilePath)
+                ApWorld(roomId = roomId, userId = userId, fileName = apWorldFile.fileName, filePath = apWorldFile.filePath)
             ).awaitSingle()
         }
 
@@ -209,6 +209,7 @@ class RoomService(
     }
 }
 
+data class ApWorldFile(val fileName: String, val filePath: String)
 data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
