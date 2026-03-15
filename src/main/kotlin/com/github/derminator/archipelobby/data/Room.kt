@@ -46,4 +46,5 @@ data class ApWorld(
 
 interface ApWorldRepository : ReactiveCrudRepository<ApWorld, Long> {
     fun findByRoomId(roomId: Long): Flux<ApWorld>
+    fun existsByRoomIdAndFileName(roomId: Long, fileName: String): Mono<Boolean>
 }

@@ -158,6 +158,10 @@ class RoomService(
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
         }
+        val exists = apWorldRepository.existsByRoomIdAndFileName(roomId, fileName).awaitSingle()
+        if (exists) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "An APWorld with filename '$fileName' already exists in this room")
+        }
         return apWorldRepository.save(
             ApWorld(roomId = roomId, userId = userId, fileName = fileName, filePath = filePath)
         ).awaitSingle()
