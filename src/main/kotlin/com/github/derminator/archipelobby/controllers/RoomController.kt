@@ -128,7 +128,15 @@ class RoomController(
             apworldPath = uploadsService.saveFile(apworldBytes, apworldFileName)
         }
 
-        roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath, apworldFileName, apworldPath)
+        val savedPaths = mutableListOf(filePath)
+        apworldPath?.let { savedPaths += it }
+
+        try {
+            roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath, apworldFileName, apworldPath)
+        } catch (e: Exception) {
+            savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
+            throw e
+        }
 
         "redirect:/rooms/$roomId"
     }
