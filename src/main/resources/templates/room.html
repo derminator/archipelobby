@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title th:text="${room.name}">Room Name</title>
     <link rel="stylesheet" th:href="@{/style.css}">
+    <script th:src="@{/confirm.js}" defer></script>
 </head>
 <body>
 <header>
@@ -14,8 +15,8 @@
     <h1 th:text="${room.name}">Room Name</h1>
 
     <h2>Entries</h2>
-    <a th:href="@{/rooms/{roomId}/download-all(roomId=${room.id})}">
-        <button type="button">Download All YAMLs</button>
+    <a th:href="@{/rooms/{roomId}/download(roomId=${room.id})}">
+        <button type="button">Download YAMLs + APWorlds</button>
     </a>
     <ul>
         <li th:each="entry : ${entries}">
@@ -28,10 +29,29 @@
             <form method="post"
                   class="inline-form"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
-                  th:if="${entry.user.id == userId or isAdmin}">
-                <input onclick="return confirm('Are you sure?')" type="submit" value="Delete"/>
+                  th:if="${entry.user.id == userId or isAdmin}"
+                  th:attr="data-confirm=|Delete entry '${entry.name}'?|">
+                <input type="submit" value="Delete"/>
             </form>
 
+        </li>
+    </ul>
+
+    <h2>APWorlds</h2>
+    <ul>
+        <li th:each="apWorld : ${apWorlds}">
+            <strong th:text="${apWorld.fileName}">Filename</strong>
+            (<span th:text="${apWorld.user.username}">Username</span>)
+            <a th:href="@{/rooms/{roomId}/apworlds/{apworldId}/download(roomId=${room.id},apworldId=${apWorld.id})}">
+                <button type="button">Download</button>
+            </a>
+            <form method="post"
+                  class="inline-form"
+                  th:action="@{/rooms/{roomId}/apworlds/{apworldId}/delete(roomId=${room.id},apworldId=${apWorld.id})}"
+                  th:if="${apWorld.user.id == userId or isAdmin}"
+                  th:attr="data-confirm=|Delete APWorld '${apWorld.fileName}'?|">
+                <input type="submit" value="Delete"/>
+            </form>
         </li>
     </ul>
 
@@ -40,8 +60,10 @@
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
-        <form method="post" th:action="@{/rooms/{id}/delete(id=${room.id})}">
-            <input onclick="return confirm('Are you sure?')" type="submit" value="Delete Room"/>
+        <form method="post"
+              th:action="@{/rooms/{id}/delete(id=${room.id})}"
+              th:attr="data-confirm=|Delete room '${room.name}'? This cannot be undone.|">
+            <input type="submit" value="Delete Room"/>
         </form>
     </div>
 </main>

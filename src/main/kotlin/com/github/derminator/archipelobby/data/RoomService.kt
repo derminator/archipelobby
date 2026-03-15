@@ -4,7 +4,9 @@ import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -17,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
+    private val apWorldRepository: ApWorldRepository,
     private val discordService: DiscordService
 ) {
 
@@ -65,7 +68,14 @@ class RoomService(
         discordService.isMemberOfGuild(userId, room.guildId)
 
     @Transactional
-    suspend fun addEntry(roomId: Long, userId: Long, entryName: String, game: String, yamlFilePath: String): Entry {
+    suspend fun addEntry(
+        roomId: Long,
+        userId: Long,
+        entryName: String,
+        game: String,
+        yamlFilePath: String,
+        apWorldFile: ApWorldFile? = null,
+    ): Entry {
         val room = roomRepository.findById(roomId).awaitSingle()
         if (!isRoomJoinable(room, userId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
@@ -80,16 +90,34 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
-        return entryRepository.save(
+        val entry = entryRepository.save(
             Entry(
                 roomId = roomId,
                 userId = userId,
                 name = entryName,
                 game = game,
-                yamlFilePath = yamlFilePath
-            )
-        )
-            .awaitSingle()
+                yamlFilePath = yamlFilePath,
+            ),
+        ).awaitSingle()
+
+        if (apWorldFile != null) {
+            if (apWorldRepository.existsByRoomIdAndFileName(roomId, apWorldFile.fileName).awaitSingle()) {
+                throw ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "An APWorld with filename '${apWorldFile.fileName}' already exists in this room",
+                )
+            }
+            apWorldRepository.save(
+                ApWorld(
+                    roomId = roomId,
+                    userId = userId,
+                    fileName = apWorldFile.fileName,
+                    filePath = apWorldFile.filePath,
+                ),
+            ).awaitSingle()
+        }
+
+        return entry
     }
 
     @Transactional
@@ -126,13 +154,16 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
         }
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
-        val entries = entryRepository.findByRoomId(roomId)
-            .asFlow()
-            .toList()
-            .map { entry ->
-                if (entry.id == null) error("Entry ID is null after saving")
-                EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId))
-            }
+        val entries = channelFlow {
+            entryRepository.findByRoomId(roomId)
+                .asFlow()
+                .collect { entry ->
+                    launch {
+                        if (entry.id == null) error("Entry ID is null after saving")
+                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId)))
+                    }
+                }
+        }
         return RoomWithEntries(room, entries, isAdmin)
     }
 
@@ -150,11 +181,59 @@ class RoomService(
         }
         return entry
     }
+
+
+    fun getApWorldsForRoom(roomId: Long, userId: Long): Flow<ApWorldInfo> = channelFlow {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        apWorldRepository.findByRoomId(roomId)
+            .asFlow()
+            .collect { apWorld ->
+                launch {
+                    if (apWorld.id == null) error("ApWorld ID is null")
+                    send(ApWorldInfo(apWorld.id, apWorld.fileName, discordService.getUserInfo(apWorld.userId)))
+                }
+            }
+    }
+
+    suspend fun getApWorld(apWorldId: Long): ApWorld? = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+
+    suspend fun getApWorldForDownload(apWorldId: Long, roomId: Long, userId: Long): ApWorld {
+        val apWorld = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "APWorld not found")
+        if (apWorld.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "APWorld does not belong to this room")
+        }
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        return apWorld
+    }
+
+    @Transactional
+    suspend fun deleteApWorld(apWorldId: Long, userId: Long) {
+        val apWorld = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "APWorld not found")
+        val room = roomRepository.findById(apWorld.roomId).awaitSingle()
+        val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
+
+        if (apWorld.userId != userId && !isAdmin) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's APWorld")
+        }
+
+        apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
+    }
 }
 
+data class ApWorldFile(val fileName: String, val filePath: String)
 data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
+data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
-    val entries: List<EntryInfo>,
-    val isAdmin: Boolean
+    val entries: Flow<EntryInfo>,
+    val isAdmin: Boolean,
 )

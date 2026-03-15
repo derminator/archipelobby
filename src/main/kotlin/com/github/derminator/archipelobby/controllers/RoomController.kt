@@ -1,14 +1,15 @@
 package com.github.derminator.archipelobby.controllers
 
-import tools.jackson.dataformat.yaml.YAMLMapper
-import tools.jackson.module.kotlin.KotlinModule
+import com.github.derminator.archipelobby.data.ApWorldFile
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
+import kotlinx.coroutines.withContext
 import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import tools.jackson.dataformat.yaml.YAMLMapper
+import tools.jackson.module.kotlin.KotlinModule
 import java.io.ByteArrayOutputStream
 import java.security.Principal
 import java.util.zip.ZipEntry
@@ -81,14 +84,16 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
-        model.addAttribute("entries", roomWithEntries.entries)
+        model.addAttribute("entries", roomWithEntries.entries.toList())
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
+        model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         "room"
     }
 
     data class AddEntryForm(
         val yamlFile: FilePart,
+        val apworldFile: FilePart?,
     )
 
     @PostMapping("/{roomId}/entries")
@@ -113,7 +118,31 @@ class RoomController(
 
         val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
 
-        roomService.addEntry(roomId, userId, entryYaml.name, entryYaml.game, filePath)
+        val apworldFilePart = form.apworldFile
+        val apWorldFile: ApWorldFile? = if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
+            val apworldBytes = readFilePart(apworldFilePart)
+            ApWorldFile(
+                apworldFilePart.filename(),
+                uploadsService.saveFile(apworldBytes, apworldFilePart.filename()),
+            )
+        } else null
+
+        val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
+
+        try {
+            roomService.addEntry(
+                roomId = roomId,
+                userId = userId,
+                entryName = entryYaml.name,
+                game = entryYaml.game,
+                yamlFilePath = filePath,
+                apWorldFile = apWorldFile,
+            )
+        } catch (e: Exception) {
+            savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
+            throw e
+        }
+
         "redirect:/rooms/$roomId"
     }
 
@@ -151,31 +180,75 @@ class RoomController(
             .body(fileContent)
     }
 
-    @GetMapping("/{roomId}/download-all")
-    fun downloadAllYamls(
+    @GetMapping("/{roomId}/apworlds/{apworldId}/download")
+    fun downloadApWorld(
+        @PathVariable roomId: Long,
+        @PathVariable apworldId: Long,
+        principal: Principal,
+    ): Mono<ResponseEntity<ByteArray>> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val apWorld = roomService.getApWorldForDownload(apworldId, roomId, userId)
+
+        val fileExists = uploadsService.fileExists(apWorld.filePath)
+        if (!fileExists) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found")
+        }
+
+        val fileContent = uploadsService.getFile(apWorld.filePath)
+
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${apWorld.fileName}\"")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(fileContent)
+    }
+
+    @PostMapping("/{roomId}/apworlds/{apworldId}/delete")
+    fun deleteApWorld(
+        @PathVariable roomId: Long,
+        @PathVariable apworldId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.deleteApWorld(apworldId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @GetMapping("/{roomId}/download")
+    fun downloadAll(
         @PathVariable roomId: Long,
         principal: Principal
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
 
-        val byteArrayOutputStream = ByteArrayOutputStream()
-        ZipOutputStream(byteArrayOutputStream).use { zipOut ->
-            for (entryInfo in roomWithEntries.entries) {
-                val entry = roomService.getEntry(entryInfo.id) ?: continue
-                val fileExists = uploadsService.fileExists(entry.yamlFilePath)
-                if (fileExists) {
-                    val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                    val zipEntry = ZipEntry("${entry.name}.yaml")
-                    zipOut.putNextEntry(zipEntry)
-                    zipOut.write(fileContent)
-                    zipOut.closeEntry()
+        val entries = roomWithEntries.entries.toList()
+        val apWorlds = roomService.getApWorldsForRoom(roomId, userId).toList()
+
+        val zipBytes = withContext(Dispatchers.IO) {
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            ZipOutputStream(byteArrayOutputStream).use { zipOut ->
+                for (entryInfo in entries) {
+                    val entry = roomService.getEntry(entryInfo.id) ?: continue
+                    if (uploadsService.fileExists(entry.yamlFilePath)) {
+                        val fileContent = uploadsService.getFile(entry.yamlFilePath)
+                        zipOut.putNextEntry(ZipEntry("Players/${entry.name}.yaml"))
+                        zipOut.write(fileContent)
+                        zipOut.closeEntry()
+                    }
+                }
+                for (apWorldInfo in apWorlds) {
+                    val apWorld = roomService.getApWorld(apWorldInfo.id) ?: continue
+                    if (uploadsService.fileExists(apWorld.filePath)) {
+                        val fileContent = uploadsService.getFile(apWorld.filePath)
+                        zipOut.putNextEntry(ZipEntry("custom_worlds/${apWorld.fileName}"))
+                        zipOut.write(fileContent)
+                        zipOut.closeEntry()
+                    }
                 }
             }
+            byteArrayOutputStream.toByteArray()
         }
-
-        val zipBytes = byteArrayOutputStream.toByteArray()
-        val filename = "${roomWithEntries.room.name}_yamls.zip"
+        val filename = "${roomWithEntries.room.name}.zip"
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
