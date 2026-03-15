@@ -221,27 +221,26 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
 
+        val entries = roomWithEntries.entries.toList()
+        val apWorlds = roomService.getApWorldsForRoom(roomId, userId).toList()
+
         val zipBytes = withContext(Dispatchers.IO) {
             val byteArrayOutputStream = ByteArrayOutputStream()
             ZipOutputStream(byteArrayOutputStream).use { zipOut ->
-                roomWithEntries.entries.collect { entryInfo ->
-                    val entry = roomService.getEntry(entryInfo.id) ?: return@collect
-                    val fileExists = uploadsService.fileExists(entry.yamlFilePath)
-                    if (fileExists) {
+                for (entryInfo in entries) {
+                    val entry = roomService.getEntry(entryInfo.id) ?: continue
+                    if (uploadsService.fileExists(entry.yamlFilePath)) {
                         val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                        val zipEntry = ZipEntry("Players/${entry.name}.yaml")
-                        zipOut.putNextEntry(zipEntry)
+                        zipOut.putNextEntry(ZipEntry("Players/${entry.name}.yaml"))
                         zipOut.write(fileContent)
                         zipOut.closeEntry()
                     }
                 }
-                roomService.getApWorldsForRoom(roomId, userId).collect { apWorldInfo ->
-                    val apWorld = roomService.getApWorld(apWorldInfo.id) ?: return@collect
-                    val fileExists = uploadsService.fileExists(apWorld.filePath)
-                    if (fileExists) {
+                for (apWorldInfo in apWorlds) {
+                    val apWorld = roomService.getApWorld(apWorldInfo.id) ?: continue
+                    if (uploadsService.fileExists(apWorld.filePath)) {
                         val fileContent = uploadsService.getFile(apWorld.filePath)
-                        val zipEntry = ZipEntry("custom_worlds/${apWorld.fileName}")
-                        zipOut.putNextEntry(zipEntry)
+                        zipOut.putNextEntry(ZipEntry("custom_worlds/${apWorld.fileName}"))
                         zipOut.write(fileContent)
                         zipOut.closeEntry()
                     }
