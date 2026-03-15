@@ -21,6 +21,7 @@ class SecurityConfiguration(
     companion object {
         private const val CONTENT_SECURITY_POLICY =
             "default-src 'none'; " +
+            "script-src 'self'; " +
             "style-src 'self'; " +
             "img-src 'self'; " +
             "form-action 'self'; " +

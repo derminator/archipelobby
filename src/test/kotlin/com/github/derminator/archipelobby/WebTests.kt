@@ -1,6 +1,8 @@
 package com.github.derminator.archipelobby
 
+import com.github.derminator.archipelobby.data.ApWorld
 import com.github.derminator.archipelobby.data.ApWorldRepository
+import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryRepository
 import com.github.derminator.archipelobby.data.Room
 import com.github.derminator.archipelobby.data.RoomRepository
@@ -329,6 +331,150 @@ class WebTests {
             .cookie(sessionCookie.name, sessionCookie.value)
             .exchange()
             .expectStatus().isOk
+    }
+
+    @Test
+    fun `deleteEntry redirects to room page for entry owner`(): Unit = runBlocking {
+        val userId = 0L
+        val roomId = 1L
+        val entryId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val entry = Entry(entryId, roomId, userId, "Test Entry", "Test Game", "path/to/file.yaml")
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
+        `when`(entryRepository.deleteById(entryId)).thenReturn(Mono.empty())
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/entries/$entryId/delete")
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+    }
+
+    @Test
+    fun `deleteEntry returns forbidden for non-owner non-admin`(): Unit = runBlocking {
+        val userId = 0L
+        val roomId = 1L
+        val entryId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val entry = Entry(entryId, roomId, 999L, "Test Entry", "Test Game", "path/to/file.yaml")
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/entries/$entryId/delete")
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `deleteApWorld redirects to room page for apworld owner`(): Unit = runBlocking {
+        val userId = 0L
+        val roomId = 1L
+        val apWorldId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val apWorld = ApWorld(apWorldId, roomId, userId, "test.apworld", "path/to/test.apworld")
+        `when`(apWorldRepository.findById(apWorldId)).thenReturn(Mono.just(apWorld))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
+        `when`(apWorldRepository.deleteById(apWorldId)).thenReturn(Mono.empty())
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/apworlds/$apWorldId/delete")
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+    }
+
+    @Test
+    fun `deleteApWorld returns forbidden for non-owner non-admin`(): Unit = runBlocking {
+        val userId = 0L
+        val roomId = 1L
+        val apWorldId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val apWorld = ApWorld(apWorldId, roomId, 999L, "test.apworld", "path/to/test.apworld")
+        `when`(apWorldRepository.findById(apWorldId)).thenReturn(Mono.just(apWorld))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/apworlds/$apWorldId/delete")
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `deleteRoom redirects to home for admin`(): Unit = runBlocking {
+        val userId = 0L
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(true)
+        `when`(roomRepository.deleteById(roomId)).thenReturn(Mono.empty())
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/delete")
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/")
+    }
+
+    @Test
+    fun `deleteRoom returns forbidden for non-admin`(): Unit = runBlocking {
+        val userId = 0L
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/delete")
+            .exchange()
+            .expectStatus().isForbidden
     }
 
     @Test
