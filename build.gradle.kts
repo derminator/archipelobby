@@ -76,13 +76,6 @@ springBoot {
     mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
 }
 
-val springProfile: String? by project
-if (springProfile != null) {
-    tasks.withType<org.springframework.boot.gradle.tasks.aot.ProcessAot> {
-        args = mutableListOf("--spring.profiles.active=$springProfile")
-    }
-}
-
 graalvmNative {
     metadataRepository {
         enabled.set(true)
@@ -90,7 +83,6 @@ graalvmNative {
     binaries {
         named("main") {
             imageName.set("archipelobby")
-            mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
             buildArgs.addAll(
                 "--enable-url-protocols=https",
                 "-H:+ReportExceptionStackTraces",

@@ -4,7 +4,8 @@ WORKDIR /app
 RUN microdnf install -y findutils
 COPY . ./
 ARG SPRING_PROFILE=prod
-RUN ./gradlew nativeCompile --no-daemon -PspringProfile=${SPRING_PROFILE}
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
+RUN ./gradlew nativeCompile --no-daemon
 
 # Run stage
 FROM debian:bookworm-slim
