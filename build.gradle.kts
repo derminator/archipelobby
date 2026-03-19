@@ -72,6 +72,14 @@ kotlin {
     }
 }
 
+springBoot {
+    mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
+}
+
+tasks.withType<org.springframework.boot.gradle.tasks.aot.ProcessAot> {
+    args = mutableListOf("--spring.profiles.active=prod")
+}
+
 graalvmNative {
     metadataRepository {
         enabled.set(true)
