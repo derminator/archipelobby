@@ -3,7 +3,8 @@ FROM ghcr.io/graalvm/native-image-community:25 AS build
 WORKDIR /app
 RUN microdnf install -y findutils
 COPY . ./
-RUN ./gradlew nativeCompile --no-daemon
+ARG SPRING_PROFILE=prod
+RUN ./gradlew nativeCompile --no-daemon -PspringProfile=${SPRING_PROFILE}
 
 # Run stage
 FROM debian:bookworm-slim

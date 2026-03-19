@@ -76,8 +76,11 @@ springBoot {
     mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
 }
 
-tasks.withType<org.springframework.boot.gradle.tasks.aot.ProcessAot> {
-    args = mutableListOf("--spring.profiles.active=prod")
+val springProfile: String? by project
+if (springProfile != null) {
+    tasks.withType<org.springframework.boot.gradle.tasks.aot.ProcessAot> {
+        args = mutableListOf("--spring.profiles.active=$springProfile")
+    }
 }
 
 graalvmNative {
