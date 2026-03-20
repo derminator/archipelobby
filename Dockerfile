@@ -3,6 +3,8 @@ FROM ghcr.io/graalvm/native-image-community:25 AS build
 WORKDIR /app
 RUN microdnf install -y findutils
 COPY . ./
+ARG SPRING_PROFILE=prod
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
 RUN ./gradlew nativeCompile --no-daemon
 
 # Run stage

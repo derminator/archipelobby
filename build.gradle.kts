@@ -72,6 +72,10 @@ kotlin {
     }
 }
 
+springBoot {
+    mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
+}
+
 graalvmNative {
     metadataRepository {
         enabled.set(true)
@@ -79,7 +83,6 @@ graalvmNative {
     binaries {
         named("main") {
             imageName.set("archipelobby")
-            mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
             buildArgs.addAll(
                 "--enable-url-protocols=https",
                 "-H:+ReportExceptionStackTraces",
