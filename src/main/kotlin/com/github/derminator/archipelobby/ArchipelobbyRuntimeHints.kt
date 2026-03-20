@@ -77,6 +77,8 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
             $$"discord4j.discordjson.json.ImmutableEmojiData$Json",
             "discord4j.discordjson.json.ImmutableGatewayData",
             $$"discord4j.discordjson.json.ImmutableGatewayData$Json",
+            "discord4j.discordjson.json.ImmutableSessionStartLimitData",
+            $$"discord4j.discordjson.json.ImmutableSessionStartLimitData$Json",
             "discord4j.discordjson.json.ImmutableActivityData",
             $$"discord4j.discordjson.json.ImmutableActivityData$Json",
             "discord4j.discordjson.json.ImmutablePresenceData",
