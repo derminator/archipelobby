@@ -62,17 +62,29 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
         // the full set is covered by reflect-config.json under META-INF/native-image.
         val discord4jClasses = listOf(
             "discord4j.discordjson.json.ImmutableUserData",
+            $$"discord4j.discordjson.json.ImmutableUserData$Json",
             "discord4j.discordjson.json.ImmutableGuildData",
+            $$"discord4j.discordjson.json.ImmutableGuildData$Json",
             "discord4j.discordjson.json.ImmutableMessageData",
+            $$"discord4j.discordjson.json.ImmutableMessageData$Json",
             "discord4j.discordjson.json.ImmutableChannelData",
+            $$"discord4j.discordjson.json.ImmutableChannelData$Json",
             "discord4j.discordjson.json.ImmutableMemberData",
+            $$"discord4j.discordjson.json.ImmutableMemberData$Json",
             "discord4j.discordjson.json.ImmutableRoleData",
+            $$"discord4j.discordjson.json.ImmutableRoleData$Json",
             "discord4j.discordjson.json.ImmutableEmojiData",
+            $$"discord4j.discordjson.json.ImmutableEmojiData$Json",
             "discord4j.discordjson.json.ImmutableGatewayData",
+            $$"discord4j.discordjson.json.ImmutableGatewayData$Json",
             "discord4j.discordjson.json.ImmutableActivityData",
+            $$"discord4j.discordjson.json.ImmutableActivityData$Json",
             "discord4j.discordjson.json.ImmutablePresenceData",
+            $$"discord4j.discordjson.json.ImmutablePresenceData$Json",
             "discord4j.discordjson.json.ImmutableReadyData",
+            $$"discord4j.discordjson.json.ImmutableReadyData$Json",
             "discord4j.discordjson.json.ImmutableUnavailableGuildData",
+            $$"discord4j.discordjson.json.ImmutableUnavailableGuildData$Json",
         )
         for (className in discord4jClasses) {
             try {
