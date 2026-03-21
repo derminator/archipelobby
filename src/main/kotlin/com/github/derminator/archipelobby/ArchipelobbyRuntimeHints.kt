@@ -53,6 +53,39 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
         // Discord4J JSON model classes require reflection for Jackson deserialization.
         // These are registered via the reflect-config.json in META-INF/native-image.
         registerDiscord4jJsonModels(hints, classLoader)
+
+        // Caffeine cache implementation classes used by Discord4J's LocalStoreLayout.
+        registerCaffeineClasses(hints, classLoader)
+    }
+
+    private fun registerCaffeineClasses(hints: RuntimeHints, classLoader: ClassLoader?) {
+        // Caffeine's LocalCacheFactory uses Class.forName() to load cache implementation
+        // classes by name at runtime. Each class name encodes a combination of features
+        // (Strong references, Listener, Maximum size, Stats, etc.). Discord4J's
+        // LocalStoreLayout triggers this via StorageBackend. All reflection-accessed
+        // classes must be pre-registered for GraalVM native image.
+        val caffeineClasses = listOf(
+            "com.github.benmanes.caffeine.cache.SSLMS", // confirmed from stack trace
+            "com.github.benmanes.caffeine.cache.SSMS",
+            "com.github.benmanes.caffeine.cache.SSM",
+            "com.github.benmanes.caffeine.cache.SSL",
+            "com.github.benmanes.caffeine.cache.SS",
+            "com.github.benmanes.caffeine.cache.SSLS",
+            "com.github.benmanes.caffeine.cache.SSLMSA",
+            "com.github.benmanes.caffeine.cache.SSMSA",
+        )
+        for (className in caffeineClasses) {
+            try {
+                val clazz = classLoader?.loadClass(className) ?: Class.forName(className)
+                hints.reflection().registerType(
+                    clazz,
+                    MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+                    MemberCategory.INVOKE_DECLARED_METHODS,
+                )
+            } catch (_: ClassNotFoundException) {
+                // Class not present in this Caffeine version — skip
+            }
+        }
     }
 
     private fun registerDiscord4jJsonModels(hints: RuntimeHints, classLoader: ClassLoader?) {
