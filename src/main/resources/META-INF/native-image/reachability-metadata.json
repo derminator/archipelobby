@@ -1422,10 +1422,36 @@
       "type": "discord4j.discordjson.json.ImmutableActivityTimestampsData$Json"
     },
     {
-      "type": "discord4j.discordjson.json.ImmutableAvatarDecorationData"
+      "type": "discord4j.discordjson.json.ImmutableAvatarDecorationData",
+      "methods": [
+        {
+          "name": "fromJson",
+          "parameterTypes": [
+            "discord4j.discordjson.json.ImmutableAvatarDecorationData$Json"
+          ]
+        }
+      ]
     },
     {
-      "type": "discord4j.discordjson.json.ImmutableAvatarDecorationData$Json"
+      "type": "discord4j.discordjson.json.ImmutableAvatarDecorationData$Json",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setAsset",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSkuId",
+          "parameterTypes": [
+            "discord4j.discordjson.Id"
+          ]
+        }
+      ]
     },
     {
       "type": "discord4j.discordjson.json.ImmutableChannelData",
@@ -2424,10 +2450,84 @@
       ]
     },
     {
-      "type": "discord4j.discordjson.json.ImmutableVoiceStateData"
+      "type": "discord4j.discordjson.json.ImmutableVoiceStateData",
+      "methods": [
+        {
+          "name": "fromJson",
+          "parameterTypes": [
+            "discord4j.discordjson.json.ImmutableVoiceStateData$Json"
+          ]
+        }
+      ]
     },
     {
-      "type": "discord4j.discordjson.json.ImmutableVoiceStateData$Json"
+      "type": "discord4j.discordjson.json.ImmutableVoiceStateData$Json",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "setChannelId",
+          "parameterTypes": [
+            "java.util.Optional"
+          ]
+        },
+        {
+          "name": "setDeaf",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setMute",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setRequestToSpeakTimestamp",
+          "parameterTypes": [
+            "java.util.Optional"
+          ]
+        },
+        {
+          "name": "setSelfDeaf",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setSelfMute",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setSelfVideo",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setSessionId",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        },
+        {
+          "name": "setSuppress",
+          "parameterTypes": [
+            "boolean"
+          ]
+        },
+        {
+          "name": "setUserId",
+          "parameterTypes": [
+            "discord4j.discordjson.Id"
+          ]
+        }
+      ]
     },
     {
       "type": "discord4j.discordjson.json.ImmutableWelcomeScreenChannelData"
@@ -15824,6 +15924,9 @@
       "glob": "META-INF/resources/favicon.ico"
     },
     {
+      "glob": "META-INF/resources/favicon.svg"
+    },
+    {
       "glob": "META-INF/resources/index.html"
     },
     {
@@ -17615,6 +17718,9 @@
       "glob": "resources/favicon.ico"
     },
     {
+      "glob": "resources/favicon.svg"
+    },
+    {
       "glob": "resources/index.html"
     },
     {
@@ -17634,6 +17740,9 @@
     },
     {
       "glob": "static/favicon.ico"
+    },
+    {
+      "glob": "static/favicon.svg"
     },
     {
       "glob": "static/index.html"
