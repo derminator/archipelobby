@@ -17,6 +17,13 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
+    <div th:if="${room.generatedGameFilePath != null}">
+        <h2>Generated Game</h2>
+        <a th:href="@{/rooms/{id}/generated-game/download(id=${room.id})}">
+            <button type="button">Download Game</button>
+        </a>
+    </div>
+
     <h2>Entries</h2>
     <a th:href="@{/rooms/{roomId}/download(roomId=${room.id})}">
         <button type="button">Download YAMLs + APWorlds</button>
@@ -58,11 +65,28 @@
         </li>
     </ul>
 
-    <h3>Add Entry</h3>
-    <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+    <div th:if="${room.generatedGameFilePath == null}">
+        <h3>Add Entry</h3>
+        <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+    </div>
+    <div th:unless="${room.generatedGameFilePath == null}">
+        <p>Submissions are closed — the game has been generated.</p>
+    </div>
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
+        <form method="post"
+              th:if="${room.generatedGameFilePath == null}"
+              th:action="@{/rooms/{id}/generate(id=${room.id})}"
+              th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
+            <input type="submit" value="Generate Game"/>
+        </form>
+        <form method="post"
+              th:unless="${room.generatedGameFilePath == null}"
+              th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
+              th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
+            <input type="submit" value="Delete Generated Game"/>
+        </form>
         <form method="post"
               th:action="@{/rooms/{id}/delete(id=${room.id})}"
               th:attr="data-confirm=|Delete room '${room.name}'? This cannot be undone.|">
