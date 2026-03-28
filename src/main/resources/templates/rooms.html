@@ -10,6 +10,7 @@
     <div th:replace="~{layout :: user-bar}"></div>
 </header>
 <main>
+    <!--/*@thymesVar id="errorMessage" type="java.lang.String"*/-->
     <div class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}"></div>
     <h1>Rooms</h1>
     <div th:if="${not #lists.isEmpty(userRooms)}">

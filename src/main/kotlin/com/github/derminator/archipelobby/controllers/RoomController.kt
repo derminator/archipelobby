@@ -53,7 +53,7 @@ class RoomController(
     fun createRoom(
         exchange: ServerWebExchange,
         principal: Principal,
-        model: Model
+        model: Model,
     ): Mono<String> = mono {
         val formData = exchange.formData.awaitSingle()
         val userId = principal.asDiscordPrincipal.userId

@@ -12,6 +12,7 @@
     <a th:href="@{/rooms}">Back to Rooms</a>
 </header>
 <main>
+    <!--/*@thymesVar id="errorMessage" type="java.lang.String"*/-->
     <div class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}"></div>
     <h1 th:text="${room.name}">Room Name</h1>
 
