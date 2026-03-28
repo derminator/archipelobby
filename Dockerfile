@@ -27,7 +27,7 @@ RUN mkdir -p /data && chown -R appuser:appuser /data
 
 # Install Python 3 for the Archipelago generator
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip && \
+    python3 python3-pip git ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/build/native/nativeCompile/archipelobby .
