@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="en">
 <div th:fragment="user-bar">
+    <!--/*@thymesVar id="errorMessage" type="java.lang.String"*/-->
+    <div class="error-banner" th:if="${errorMessage}" th:text="${errorMessage}"></div>
     <div th:if="${#authorization.expression('isAuthenticated()') &&
     #authentication.principal instanceof T(com.github.derminator.archipelobby.security.DiscordPrincipal)}">
         Logged in as: <span th:text="${#authentication.principal.username}">User</span>
