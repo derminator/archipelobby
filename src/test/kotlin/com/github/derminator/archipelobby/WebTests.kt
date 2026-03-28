@@ -164,18 +164,17 @@ class WebTests {
                     null,
                     listOf(SimpleGrantedAuthority("ROLE_USER"))
                 )
-            )
+            ),
         )
-            .mutateWith(csrf())
-            .post().uri("/rooms")
-            // guildId and name are missing, should trigger 400 Bad Request
+            .get().uri("/rooms/abc")
             .header("Accept", "text/html")
             .exchange()
+            .expectStatus().isBadRequest
             .expectBody<String>().consumeWith { response ->
-                val status = response.status
                 val body = response.responseBody
-                println("[DEBUG_LOG] Status: $status")
-                println("[DEBUG_LOG] Body: $body")
+                assert(body != null)
+                assert(body!!.contains("An error occurred"))
+                assert(body.contains("Error - Archipelobby"))
             }
     }
 
