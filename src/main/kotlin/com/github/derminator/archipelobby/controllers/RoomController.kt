@@ -80,9 +80,14 @@ class RoomController(
     @GetMapping("/{roomId}")
     fun getRoom(
         @PathVariable roomId: Long,
-        principal: Principal,
+        principal: Principal?,
         model: Model
     ): Mono<String> = mono {
+        if (principal == null) {
+            val preview = roomService.getRoomForPreview(roomId)
+            model.addAttribute("preview", preview)
+            return@mono "room-preview"
+        }
         val userId = principal.asDiscordPrincipal.userId
         loadRoomModel(roomId, userId, model)
         "room"

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta property="og:type" content="website">
+    <meta property="og:title" th:content="${preview.name}">
+    <meta property="og:description" th:content="|${preview.entryCount} ${preview.entryCount == 1 ? 'entry' : 'entries'}${not #lists.isEmpty(preview.games) ? ': ' + #strings.listJoin(preview.games, ', ') : ''}|">
+    <title th:text="${preview.name}">Room</title>
+    <link rel="stylesheet" th:href="@{/style.css}">
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+</header>
+<main>
+    <h1 th:text="${preview.name}">Room Name</h1>
+    <p>
+        <span th:text="${preview.entryCount}">0</span>
+        <span th:text="${preview.entryCount == 1 ? 'entry' : 'entries'}">entries</span>
+        <span th:if="${not #lists.isEmpty(preview.games)}">
+            — <span th:text="${#strings.listJoin(preview.games, ', ')}">Games</span>
+        </span>
+    </p>
+    <p><a th:href="@{/oauth2/authorization/discord}">Log in with Discord to view the full room</a></p>
+</main>
+</body>
+</html>

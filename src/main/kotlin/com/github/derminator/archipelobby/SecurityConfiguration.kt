@@ -3,6 +3,7 @@ package com.github.derminator.archipelobby
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.env.Environment
+import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.config.web.server.invoke
@@ -36,6 +37,7 @@ class SecurityConfiguration(
         return http {
             authorizeExchange {
                 authorize(pathMatchers("/", "/error", "/style.css", "/robots.txt", "/favicon.svg"), permitAll)
+                authorize(pathMatchers(HttpMethod.GET, "/rooms/*"), permitAll)
                 authorize(anyExchange(), authenticated)
             }
             if (isDiscordEnabled) {

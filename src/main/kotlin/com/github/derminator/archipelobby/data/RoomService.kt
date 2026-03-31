@@ -227,8 +227,17 @@ class RoomService(
 
         apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
     }
+
+    suspend fun getRoomForPreview(roomId: Long): RoomPreview {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
+        val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
+        val games = entries.map { it.game }.distinct().sorted()
+        return RoomPreview(room.name, entries.size, games)
+    }
 }
 
+data class RoomPreview(val name: String, val entryCount: Int, val games: List<String>)
 data class ApWorldFile(val fileName: String, val filePath: String)
 data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)

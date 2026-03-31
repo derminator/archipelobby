@@ -2,6 +2,9 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta property="og:type" content="website">
+    <meta property="og:title" th:content="${room.name}">
+    <meta property="og:description" th:content="|Archipelago room with ${#lists.size(entries)} entries|">
     <title th:text="${room.name}">Room Name</title>
     <link rel="stylesheet" th:href="@{/style.css}">
     <script th:src="@{/confirm.js}" defer></script>
