@@ -45,34 +45,36 @@ class RoomController(
         model: Model
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val userRooms = roomService.getRoomsForUser(userId)
-        val adminGuilds = roomService.getAdminGuilds(userId).toList()
-        val joinableRooms = roomService.getJoinableRooms(userId)
-
-        model.addAttribute("userRooms", userRooms)
-        model.addAttribute("adminGuilds", adminGuilds)
-        model.addAttribute("joinableRooms", joinableRooms)
+        loadRoomsModel(userId, model)
         "rooms"
     }
 
     @PostMapping
     fun createRoom(
         exchange: ServerWebExchange,
-        principal: Principal
+        principal: Principal,
+        model: Model,
     ): Mono<String> = mono {
         val formData = exchange.formData.awaitSingle()
-        val guildId = formData.getFirst("guildId")?.toLongOrNull() ?: throw ResponseStatusException(
-            HttpStatus.BAD_REQUEST,
-            "Required form parameter 'guildId' is not present"
-        )
-
-        val name = formData.getFirst("name")
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
-
         val userId = principal.asDiscordPrincipal.userId
+        try {
+            val guildId = formData.getFirst("guildId")?.toLongOrNull() ?: throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Required form parameter 'guildId' is not present"
+            )
 
-        val room = roomService.createRoom(guildId, name, userId)
-        "redirect:/rooms/${room.id}"
+            val name = formData.getFirst("name")
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
+
+            val room = roomService.createRoom(guildId, name, userId)
+            "redirect:/rooms/${room.id}"
+        } catch (e: ResponseStatusException) {
+            if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
+                loadRoomsModel(userId, model)
+                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+                "rooms"
+            } else throw e
+        }
     }
 
     @GetMapping("/{roomId}")
@@ -82,12 +84,7 @@ class RoomController(
         model: Model
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val roomWithEntries = roomService.getRoom(roomId, userId)
-        model.addAttribute("room", roomWithEntries.room)
-        model.addAttribute("entries", roomWithEntries.entries.toList())
-        model.addAttribute("isAdmin", roomWithEntries.isAdmin)
-        model.addAttribute("userId", userId)
-        model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
+        loadRoomModel(roomId, userId, model)
         "room"
     }
 
@@ -101,49 +98,58 @@ class RoomController(
         @PathVariable roomId: Long,
         principal: Principal,
         @ModelAttribute form: AddEntryForm,
+        model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val yamlFile = form.yamlFile
-
-        if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
-        }
-
-        val fileBytes = readFilePart(yamlFile)
-        val entryYaml = try {
-            yamlMapper.readValue(fileBytes, EntryYaml::class.java)
-        } catch (e: tools.jackson.core.JacksonException) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid YAML file: ${e.originalMessage}")
-        }
-
-        val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
-
-        val apworldFilePart = form.apworldFile
-        val apWorldFile: ApWorldFile? = if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
-            val apworldBytes = readFilePart(apworldFilePart)
-            ApWorldFile(
-                apworldFilePart.filename(),
-                uploadsService.saveFile(apworldBytes, apworldFilePart.filename()),
-            )
-        } else null
-
-        val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
-
         try {
-            roomService.addEntry(
-                roomId = roomId,
-                userId = userId,
-                entryName = entryYaml.name,
-                game = entryYaml.game,
-                yamlFilePath = filePath,
-                apWorldFile = apWorldFile,
-            )
-        } catch (e: Exception) {
-            savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
-            throw e
-        }
+            val yamlFile = form.yamlFile
 
-        "redirect:/rooms/$roomId"
+            if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
+            }
+
+            val fileBytes = readFilePart(yamlFile)
+            val entryYaml = try {
+                yamlMapper.readValue(fileBytes, EntryYaml::class.java)
+            } catch (e: tools.jackson.core.JacksonException) {
+                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid YAML file: ${e.originalMessage}")
+            }
+
+            val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
+
+            val apworldFilePart = form.apworldFile
+            val apWorldFile: ApWorldFile? = if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
+                val apworldBytes = readFilePart(apworldFilePart)
+                ApWorldFile(
+                    apworldFilePart.filename(),
+                    uploadsService.saveFile(apworldBytes, apworldFilePart.filename()),
+                )
+            } else null
+
+            val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
+
+            try {
+                roomService.addEntry(
+                    roomId = roomId,
+                    userId = userId,
+                    entryName = entryYaml.name,
+                    game = entryYaml.game,
+                    yamlFilePath = filePath,
+                    apWorldFile = apWorldFile,
+                )
+            } catch (e: Exception) {
+                savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
+                throw e
+            }
+
+            "redirect:/rooms/$roomId"
+        } catch (e: ResponseStatusException) {
+            if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
+                loadRoomModel(roomId, userId, model)
+                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+                "room"
+            } else throw e
+        }
     }
 
     @PostMapping("/{roomId}/entries/{entryId}/delete")
@@ -264,6 +270,21 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
+    }
+
+    private suspend fun loadRoomsModel(userId: Long, model: Model) {
+        model.addAttribute("userRooms", roomService.getRoomsForUser(userId))
+        model.addAttribute("adminGuilds", roomService.getAdminGuilds(userId).toList())
+        model.addAttribute("joinableRooms", roomService.getJoinableRooms(userId))
+    }
+
+    private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model) {
+        val roomWithEntries = roomService.getRoom(roomId, userId)
+        model.addAttribute("room", roomWithEntries.room)
+        model.addAttribute("entries", roomWithEntries.entries.toList())
+        model.addAttribute("isAdmin", roomWithEntries.isAdmin)
+        model.addAttribute("userId", userId)
+        model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {

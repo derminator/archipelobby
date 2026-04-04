@@ -1,11 +1,6 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.data.ApWorld
-import com.github.derminator.archipelobby.data.ApWorldRepository
-import com.github.derminator.archipelobby.data.Entry
-import com.github.derminator.archipelobby.data.EntryRepository
-import com.github.derminator.archipelobby.data.Room
-import com.github.derminator.archipelobby.data.RoomRepository
+import com.github.derminator.archipelobby.data.*
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.security.DiscordPrincipal
@@ -22,7 +17,6 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -170,11 +164,9 @@ class WebTests {
                     null,
                     listOf(SimpleGrantedAuthority("ROLE_USER"))
                 )
-            )
+            ),
         )
-            .mutateWith(csrf())
-            .post().uri("/rooms")
-            // guildId and name are missing, should trigger 400 Bad Request
+            .get().uri("/rooms/abc")
             .header("Accept", "text/html")
             .exchange()
             .expectStatus().isBadRequest
@@ -182,6 +174,7 @@ class WebTests {
                 val body = response.responseBody
                 assert(body != null)
                 assert(body!!.contains("An error occurred"))
+                assert(body.contains("Error - Archipelobby"))
             }
     }
 
@@ -220,10 +213,12 @@ class WebTests {
     }
 
     @Test
-    fun `adding entry with duplicate name returns conflict`(): Unit = runBlocking {
+    fun `adding entry with duplicate name returns error banner in room page`(): Unit = runBlocking {
+        val roomId = 1L
         `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
-        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(1, 123, "Test Room")))
+        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(roomId, 123, "Test Room")))
         `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
 
         val bodyBuilder = MultipartBodyBuilder()
         bodyBuilder.part("yamlFile", "name: Duplicate Name\ngame: Test Game".toByteArray())
@@ -239,11 +234,17 @@ class WebTests {
             )
         )
             .mutateWith(csrf())
-            .post().uri("/rooms/1/entries")
+            .post().uri("/rooms/$roomId/entries")
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .bodyValue(bodyBuilder.build())
             .exchange()
-            .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("class=\"error-banner\""))
+                assert(body.contains("Conflict") || body.contains("already exists"))
+            }
     }
 
     @Test
