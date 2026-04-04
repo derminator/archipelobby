@@ -7,17 +7,6 @@ ARG SPRING_PROFILE=prod
 ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
 RUN ./gradlew nativeCompile --no-daemon
 
-# Fetch Archipelago at the pinned submodule commit
-FROM debian:bookworm-slim AS archipelago-fetch
-RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
-ARG ARCHIPELAGO_COMMIT=116ab2286ad95fe4a43fbc06247d4f0ba42e6e34
-RUN mkdir /archipelago && \
-    cd /archipelago && \
-    git init && \
-    git remote add origin https://github.com/ArchipelagoMW/Archipelago.git && \
-    git fetch --depth=1 origin "${ARCHIPELAGO_COMMIT}" && \
-    git checkout FETCH_HEAD
-
 # Run stage
 FROM debian:bookworm-slim
 WORKDIR /app
@@ -31,7 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/build/native/nativeCompile/archipelobby .
-COPY --from=archipelago-fetch /archipelago ./Archipelago
+COPY  ./Archipelago ./Archipelago
 
 # Install Archipelago Python dependencies, excluding GUI and Windows-only packages
 # that are not needed for server-side game generation (kivy, kivymd, pyshortcuts, Pymem)
