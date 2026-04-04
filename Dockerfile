@@ -33,8 +33,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app/build/native/nativeCompile/archipelobby .
 COPY --from=archipelago-fetch /archipelago ./Archipelago
 
-# Install Archipelago Python dependencies
-RUN pip3 install --no-cache-dir --break-system-packages -r Archipelago/requirements.txt
+# Install Archipelago Python dependencies, excluding GUI and Windows-only packages
+# that are not needed for server-side game generation (kivy, kivymd, pyshortcuts, Pymem)
+RUN grep -vE "^(kivy|pyshortcuts|Pymem)" Archipelago/requirements.txt \
+    | pip3 install --no-cache-dir --break-system-packages -r /dev/stdin
 
 RUN chown -R appuser:appuser /app
 
