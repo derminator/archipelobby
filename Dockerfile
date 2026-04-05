@@ -26,9 +26,6 @@ COPY  ./Archipelago ./Archipelago
 # manages its own deps; failures on platform-incompatible packages don't abort the build)
 RUN python3 Archipelago/ModuleUpdate.py --yes
 
-# Skip the runtime dependency check since deps are pre-installed at build time
-ENV SKIP_REQUIREMENTS_UPDATE=1
-
 RUN chown -R appuser:appuser /app
 
 USER appuser
