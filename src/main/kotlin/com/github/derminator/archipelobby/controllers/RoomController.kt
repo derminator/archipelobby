@@ -294,9 +294,9 @@ class RoomController(
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val room = roomService.getGeneratedGameForDownload(roomId, userId)
-        val filePath = room.generatedGameFilePath!!
+        val filePath = room.generatedGameFilePath
 
-        if (!uploadsService.fileExists(filePath)) {
+        if (filePath == null || !uploadsService.fileExists(filePath)) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "Generated game file not found")
         }
 
