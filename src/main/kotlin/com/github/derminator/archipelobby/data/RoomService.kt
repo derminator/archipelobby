@@ -248,20 +248,10 @@ class RoomService(
         }
 
         val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
-        val yamlFiles = mutableMapOf<String, ByteArray>()
-        for (entry in entries) {
-            if (uploadsService.fileExists(entry.yamlFilePath)) {
-                yamlFiles["${entry.name}.yaml"] = uploadsService.getFile(entry.yamlFilePath)
-            }
-        }
+        val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
 
         val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
-        val apWorldFiles = mutableMapOf<String, ByteArray>()
-        for (apWorld in apWorlds) {
-            if (uploadsService.fileExists(apWorld.filePath)) {
-                apWorldFiles[apWorld.fileName] = uploadsService.getFile(apWorld.filePath)
-            }
-        }
+        val apWorldFiles = apWorlds.associate { it.fileName to uploadsService.getFile(it.filePath) }
 
         val gameBytes = archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
         val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
@@ -311,6 +301,4 @@ data class RoomWithEntries(
     val room: Room,
     val entries: Flow<EntryInfo>,
     val isAdmin: Boolean,
-) {
-    val isGenerated: Boolean get() = room.generatedGameFilePath != null
-}
+)
