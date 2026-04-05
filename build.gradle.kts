@@ -43,6 +43,8 @@ dependencies {
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework:spring-jdbc")
+    implementation("org.graalvm.polyglot:polyglot:25.0.2")
+    implementation("org.graalvm.polyglot:python:25.0.2")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("io.r2dbc:r2dbc-h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -86,6 +88,7 @@ graalvmNative {
             buildArgs.addAll(
                 "--enable-url-protocols=https",
                 "-H:+ReportExceptionStackTraces",
+                "--language:python",
             )
         }
     }

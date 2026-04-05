@@ -14,17 +14,13 @@ WORKDIR /app
 RUN groupadd -r -g 1000 appuser && useradd -r -u 1000 -g appuser appuser
 RUN mkdir -p /data && chown -R appuser:appuser /data
 
-# Install Python 3 for the Archipelago generator
+# ca-certificates for HTTPS; Python runtime is embedded via GraalPy in the native binary
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip git ca-certificates && \
+    ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/build/native/nativeCompile/archipelobby .
 COPY  ./Archipelago ./Archipelago
-
-# Install Archipelago Python dependencies via ModuleUpdate (mirrors how Archipelago
-# manages its own deps; failures on platform-incompatible packages don't abort the build)
-RUN python3 Archipelago/ModuleUpdate.py --yes
 
 RUN chown -R appuser:appuser /app
 

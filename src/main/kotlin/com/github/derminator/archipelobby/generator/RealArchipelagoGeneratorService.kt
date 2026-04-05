@@ -14,6 +14,7 @@ import java.nio.file.Path
 @Profile("prod")
 class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val scriptPath: String,
+    private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
 
     override suspend fun generate(
@@ -33,23 +34,12 @@ class RealArchipelagoGeneratorService(
                 Files.write(worldsDir.resolve(name), bytes)
             }
 
-            val process = ProcessBuilder(
-                "python3", scriptPath,
+            pythonScriptRunner.run(
+                scriptPath,
                 "--player_files_path", playersDir.toString(),
                 "--outputpath", outputDir.toString(),
                 "--world_directory", worldsDir.toString(),
             )
-                .redirectErrorStream(true)
-                .start()
-
-            val output = process.inputStream.readBytes().toString(Charsets.UTF_8)
-            val exitCode = process.waitFor()
-            if (exitCode != 0) {
-                throw ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Archipelago generation failed (exit $exitCode): $output",
-                )
-            }
 
             val generatedFile = findGeneratedFile(outputDir)
                 ?: throw ResponseStatusException(
