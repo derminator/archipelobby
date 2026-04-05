@@ -1,9 +1,6 @@
 package com.github.derminator.archipelobby
 
-import com.github.derminator.archipelobby.data.Entry
-import com.github.derminator.archipelobby.data.EntryInfo
-import com.github.derminator.archipelobby.data.Room
-import com.github.derminator.archipelobby.data.RoomWithEntries
+import com.github.derminator.archipelobby.data.*
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import org.springframework.aot.hint.MemberCategory
@@ -47,7 +44,11 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
         )
         hints.reflection().registerType<UserInfo>(
             MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS,
+        )
+        hints.reflection().registerType<RoomPreview>(
+            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
+            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS,
         )
     }
 }

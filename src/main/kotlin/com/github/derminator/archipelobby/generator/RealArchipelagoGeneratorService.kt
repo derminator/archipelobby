@@ -3,7 +3,6 @@ package com.github.derminator.archipelobby.generator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
-import org.springframework.context.annotation.Profile
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
@@ -11,7 +10,6 @@ import java.nio.file.Files
 import java.nio.file.Path
 
 @Service
-@Profile("prod")
 class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val scriptPath: String,
     private val pythonScriptRunner: PythonScriptRunner,
