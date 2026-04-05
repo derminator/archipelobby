@@ -22,10 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=build /app/build/native/nativeCompile/archipelobby .
 COPY  ./Archipelago ./Archipelago
 
-# Install Archipelago Python dependencies, excluding GUI and Windows-only packages
-# that are not needed for server-side game generation (kivy, kivymd, pyshortcuts, Pymem)
-RUN grep -vE "^(kivy|pyshortcuts|Pymem)" Archipelago/requirements.txt \
-    | pip3 install --no-cache-dir --break-system-packages -r /dev/stdin
+# Install Archipelago Python dependencies via ModuleUpdate (mirrors how Archipelago
+# manages its own deps; failures on platform-incompatible packages don't abort the build)
+RUN python3 Archipelago/ModuleUpdate.py --yes
+
+# Skip the runtime dependency check since deps are pre-installed at build time
+ENV SKIP_REQUIREMENTS_UPDATE=1
 
 RUN chown -R appuser:appuser /app
 
