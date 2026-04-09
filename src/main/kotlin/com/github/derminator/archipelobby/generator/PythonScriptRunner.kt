@@ -32,9 +32,13 @@ class PythonScriptRunner {
                 } catch (e: PolyglotException) {
                     val output = outputStream.toString(Charsets.UTF_8)
                     if (!e.isExit || e.exitStatus != 0) {
+                        val detail = buildString {
+                            if (!e.isExit) e.message?.let { append(it).append("\n") }
+                            if (output.isNotEmpty()) append(output)
+                        }.trim()
                         throw ResponseStatusException(
                             HttpStatus.INTERNAL_SERVER_ERROR,
-                            "Python script failed (exit ${if (e.isExit) e.exitStatus else "n/a"}): $output",
+                            "Python script failed (exit ${if (e.isExit) e.exitStatus else "n/a"}): $detail",
                         )
                     }
                 }
