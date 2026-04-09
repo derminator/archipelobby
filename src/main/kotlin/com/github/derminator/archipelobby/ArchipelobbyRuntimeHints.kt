@@ -1,8 +1,12 @@
 package com.github.derminator.archipelobby
 
+import com.github.derminator.archipelobby.data.ApWorld
+import com.github.derminator.archipelobby.data.ApWorldInfo
 import com.github.derminator.archipelobby.data.Entry
 import com.github.derminator.archipelobby.data.EntryInfo
+import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.Room
+import com.github.derminator.archipelobby.data.RoomPreview
 import com.github.derminator.archipelobby.data.RoomWithEntries
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
@@ -24,30 +28,28 @@ class ArchipelobbyRuntimeHints : RuntimeHintsRegistrar {
         // Static resources
         hints.resources().registerPattern("static/*")
 
-        // Application data classes used with R2DBC mapping and Jackson
-        hints.reflection().registerType<Room>(
+        val reflectionCategories = arrayOf(
             MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
+            MemberCategory.ACCESS_DECLARED_FIELDS,
+            MemberCategory.INVOKE_DECLARED_METHODS,
         )
-        hints.reflection().registerType<Entry>(
-            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
-        )
-        hints.reflection().registerType<RoomWithEntries>(
-            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
-        )
-        hints.reflection().registerType<EntryInfo>(
-            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
-        )
-        hints.reflection().registerType<GuildInfo>(
-            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
-        )
-        hints.reflection().registerType<UserInfo>(
-            MemberCategory.INVOKE_DECLARED_CONSTRUCTORS,
-            MemberCategory.ACCESS_DECLARED_FIELDS, MemberCategory.INVOKE_DECLARED_METHODS
-        )
+
+        // R2DBC entities – row mapping uses reflection to construct and populate instances
+        hints.reflection().registerType<Room>(*reflectionCategories)
+        hints.reflection().registerType<Entry>(*reflectionCategories)
+        hints.reflection().registerType<ApWorld>(*reflectionCategories)
+
+        // Jackson / YAML – deserialisation uses reflection
+        hints.reflection().registerType<EntryYaml>(*reflectionCategories)
+
+        // DTOs accessed via Thymeleaf property expressions at runtime
+        hints.reflection().registerType<RoomWithEntries>(*reflectionCategories)
+        hints.reflection().registerType<EntryInfo>(*reflectionCategories)
+        hints.reflection().registerType<ApWorldInfo>(*reflectionCategories)
+        hints.reflection().registerType<RoomPreview>(*reflectionCategories)
+
+        // Discord API data classes
+        hints.reflection().registerType<GuildInfo>(*reflectionCategories)
+        hints.reflection().registerType<UserInfo>(*reflectionCategories)
     }
 }
