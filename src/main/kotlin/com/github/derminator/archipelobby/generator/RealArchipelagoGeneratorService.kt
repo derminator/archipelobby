@@ -37,13 +37,6 @@ class RealArchipelagoGeneratorService(
                 "--player_files_path", playersDir.toString(),
                 "--outputpath", outputDir.toString(),
                 "--world_directory", worldsDir.toString(),
-                preamble = """
-                    try:
-                        import ModuleUpdate
-                        ModuleUpdate.update = lambda *args, **kwargs: None
-                    except ImportError:
-                        pass
-                """.trimIndent(),
             )
 
             val generatedFile = findGeneratedFile(outputDir)
