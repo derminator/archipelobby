@@ -94,6 +94,35 @@ class PythonScriptRunnerTest {
     }
 
     @Test
+    fun `environment variables are visible to the Python script`(@TempDir tempDir: Path) {
+        val script = tempDir.resolve("test.py")
+        script.writeText("import os\nprint(os.environ.get('ARCHIPELOBBY_TEST_VAR', 'MISSING'))")
+
+        val output = runner.run(
+            script.toString(),
+            environment = mapOf("ARCHIPELOBBY_TEST_VAR" to "hello-env"),
+        )
+
+        assertContains(output, "hello-env")
+    }
+
+    @Test
+    fun `extra sys path entries are prepended before the script runs`(@TempDir tempDir: Path) {
+        val extraDir = tempDir.resolve("extra").also { it.toFile().mkdirs() }
+        extraDir.resolve("archipelobby_probe.py").writeText("marker = 'from-extra'")
+
+        val script = tempDir.resolve("test.py")
+        script.writeText("import archipelobby_probe\nprint(archipelobby_probe.marker)")
+
+        val output = runner.run(
+            script.toString(),
+            extraSysPath = listOf(extraDir),
+        )
+
+        assertContains(output, "from-extra")
+    }
+
+    @Test
     fun `preamble is evaluated before the main script`(@TempDir tempDir: Path) {
         val script = tempDir.resolve("test.py")
         script.writeText("print(setup_value)")

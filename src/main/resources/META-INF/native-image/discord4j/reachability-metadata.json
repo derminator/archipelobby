@@ -1,0 +1,2584 @@
+{
+  "resources": [
+    {
+      "glob": "META-INF/build-info.properties"
+    },
+    {
+      "glob": "META-INF/graalvm/org.graalvm.polyglot/version"
+    },
+    {
+      "glob": "META-INF/graalvm/org.graalvm.truffle/version"
+    },
+    {
+      "glob": "META-INF/native-image/sbom.json"
+    },
+    {
+      "glob": "META-INF/native/netty_quiche42_windows_x86_64.dll"
+    },
+    {
+      "glob": "META-INF/r2dbc-named-queries.properties"
+    },
+    {
+      "glob": "META-INF/resources/confirm.js"
+    },
+    {
+      "glob": "META-INF/resources/engine/libtruffleattach/windows/amd64/sha256"
+    },
+    {
+      "glob": "META-INF/resources/favicon.ico"
+    },
+    {
+      "glob": "META-INF/resources/favicon.svg"
+    },
+    {
+      "glob": "META-INF/resources/include.sha256"
+    },
+    {
+      "glob": "META-INF/resources/index.html"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy.sha256"
+    },
+    {
+      "glob": "META-INF/resources/libpython.sha256"
+    },
+    {
+      "glob": "META-INF/resources/ni.sha256"
+    },
+    {
+      "glob": "META-INF/resources/style.css"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/native.sha256"
+    },
+    {
+      "glob": "META-INF/sbom/application.cdx.json"
+    },
+    {
+      "glob": "META-INF/sbom/bom.json"
+    },
+    {
+      "glob": "META-INF/services/ch.qos.logback.classic.spi.Configurator"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.TruffleRuntimeAccess"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.impl.TruffleLocator"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.instrumentation.provider.TruffleInstrumentProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.library.provider.DefaultExportProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.provider.InternalResourceProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.provider.TruffleLanguageProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.strings.provider.JCodingsProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.EngineCacheSupport"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.FloodControlHandler"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.LoopNodeFactory"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.TruffleTypes"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.jfr.EventFactory$Provider"
+    },
+    {
+      "glob": "META-INF/services/io.r2dbc.spi.ConnectionFactoryProvider"
+    },
+    {
+      "glob": "META-INF/services/jakarta.el.ExpressionFactory"
+    },
+    {
+      "glob": "META-INF/services/jakarta.validation.ConstraintValidator"
+    },
+    {
+      "glob": "META-INF/services/jakarta.validation.spi.ValidationProvider"
+    },
+    {
+      "glob": "META-INF/services/jakarta.validation.valueextraction.ValueExtractor"
+    },
+    {
+      "glob": "META-INF/services/java.net.spi.InetAddressResolverProvider"
+    },
+    {
+      "glob": "META-INF/services/java.net.spi.URLStreamHandlerProvider"
+    },
+    {
+      "glob": "META-INF/services/java.nio.channels.spi.SelectorProvider"
+    },
+    {
+      "glob": "META-INF/services/java.nio.file.spi.FileSystemProvider"
+    },
+    {
+      "glob": "META-INF/services/java.rmi.server.RMIClassLoaderSpi"
+    },
+    {
+      "glob": "META-INF/services/java.time.zone.ZoneRulesProvider"
+    },
+    {
+      "glob": "META-INF/services/kotlin.reflect.jvm.internal.impl.km.internal.extensions.MetadataExtensions"
+    },
+    {
+      "glob": "META-INF/services/kotlin.reflect.jvm.internal.impl.resolve.ExternalOverridabilityCondition"
+    },
+    {
+      "glob": "META-INF/services/kotlin.reflect.jvm.internal.impl.util.ModuleVisibilityHelper"
+    },
+    {
+      "glob": "META-INF/services/kotlinx.coroutines.reactive.ContextInjector"
+    },
+    {
+      "glob": "META-INF/services/org.apache.commons.logging.LogFactory"
+    },
+    {
+      "glob": "META-INF/services/org.apache.logging.log4j.util.PropertySource"
+    },
+    {
+      "glob": "META-INF/services/org.flywaydb.core.extensibility.Plugin"
+    },
+    {
+      "glob": "META-INF/services/org.graalvm.home.HomeFinder"
+    },
+    {
+      "glob": "META-INF/services/org.graalvm.polyglot.impl.AbstractPolyglotImpl"
+    },
+    {
+      "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
+    },
+    {
+      "glob": "META-INF/services/tools.jackson.databind.JacksonModule"
+    },
+    {
+      "glob": "META-INF/spring-autoconfigure-metadata.properties"
+    },
+    {
+      "glob": "META-INF/spring.components"
+    },
+    {
+      "glob": "META-INF/spring.factories"
+    },
+    {
+      "glob": "META-INF/spring/logback-pattern-rules"
+    },
+    {
+      "glob": "META-INF/spring/org.springframework.boot.actuate.autoconfigure.web.ManagementContextConfiguration.imports"
+    },
+    {
+      "glob": "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports"
+    },
+    {
+      "glob": "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.replacements"
+    },
+    {
+      "glob": "META-INF/validation.xml"
+    },
+    {
+      "glob": "application-discord.properties"
+    },
+    {
+      "glob": "application-discord.xml"
+    },
+    {
+      "glob": "application-discord.yaml"
+    },
+    {
+      "glob": "application-discord.yml"
+    },
+    {
+      "glob": "application-prod.properties"
+    },
+    {
+      "glob": "application-prod.xml"
+    },
+    {
+      "glob": "application-prod.yaml"
+    },
+    {
+      "glob": "application-prod.yml"
+    },
+    {
+      "glob": "application.properties"
+    },
+    {
+      "glob": "application.xml"
+    },
+    {
+      "glob": "application.yaml"
+    },
+    {
+      "glob": "application.yml"
+    },
+    {
+      "glob": "banner.txt"
+    },
+    {
+      "glob": "ch/qos/logback/classic/logback-classic-version.properties"
+    },
+    {
+      "glob": "ch/qos/logback/core/logback-core-version.properties"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/GlobalExceptionHandler.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/SecurityConfiguration$Companion.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/SecurityConfiguration.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/WebFluxConfiguration.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/WebSessionConfiguration$Companion.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/WebSessionConfiguration.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/controllers/IndexController.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/controllers/RoomController$AddEntryForm.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/controllers/RoomController.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/data/ApWorldRepository.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/data/EntryRepository.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/data/RoomRepository.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/data/RoomService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/discord/DevDiscordProperties.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/discord/DiscordBotConfiguration.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/discord/DiscordOAuth2UserService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/discord/DiscordService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/generator/ArchipelagoGeneratorService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/generator/PythonScriptRunner$LoggingStream.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/generator/PythonScriptRunner.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/generator/RealArchipelagoGeneratorService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/security/AbstractDiscordPrincipalConverter.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/security/RealDiscordPrincipalConverter.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/storage/FileSystemUploadsService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/storage/UploadsService.class"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/PythonBuiltins.class"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCODECS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCOLLECTIONS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCOLLECTIONS_ABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCONTEXTLIB.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCOPYREG.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenDATETIME.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ALIASES.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ASCII.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BASE64_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BIG5.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BIG5HKSCS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BZ2_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CHARMAP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP037.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1006.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1026.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1125.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1140.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1250.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1251.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1252.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1253.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1254.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1255.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1256.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1257.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1258.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP273.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP424.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP437.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP500.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP720.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP737.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP775.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP850.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP852.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP855.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP856.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP857.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP858.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP860.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP861.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP862.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP863.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP864.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP865.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP866.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP869.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP874.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP875.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP932.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP949.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP950.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_JISX0213.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_JIS_2004.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_JP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_KR.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_GB18030.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_GB2312.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_GBK.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_HEX_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_HP_ROMAN8.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_HZ.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_IDNA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_1.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_2.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_2004.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_3.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_EXT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_KR.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_1.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_10.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_11.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_13.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_14.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_15.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_16.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_2.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_3.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_4.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_5.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_6.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_7.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_8.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_9.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_JOHAB.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KOI8_R.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KOI8_T.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KOI8_U.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KZ1048.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_LATIN_1.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ARABIC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_CROATIAN.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_CYRILLIC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_FARSI.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_GREEK.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ICELAND.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_LATIN2.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ROMAN.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ROMANIAN.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_TURKISH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MBCS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_OEM.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_PALMOS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_PTCP154.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_PUNYCODE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_QUOPRI_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_RAW_UNICODE_ESCAPE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ROT_13.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_SHIFT_JIS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_SHIFT_JISX0213.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_SHIFT_JIS_2004.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_TIS_620.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UNDEFINED.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UNICODE_ESCAPE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_16.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_16_BE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_16_LE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_32.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_32_BE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_32_LE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_7.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_8.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_8_SIG.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UU_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ZLIB_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENUM.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenFROZEN_ONLY.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenFUNCTOOLS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGENERICPATH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_BUILTINS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_JAVA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_PIP_HOOK.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_UNICODEDATA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__NT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__SRE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__SYSCONFIG.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__WEAKREF.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY___GRAALPYTHON__.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenHEAPQ.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB_MACHINERY.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB_UTIL.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB__BOOTSTRAP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB__BOOTSTRAP_EXTERNAL.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenINSPECT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIO.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenKEYWORD.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenLOCALE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenNTPATH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenOPERATOR.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenOS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenPOLYGLOT_ARROW.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenPOSIXPATH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenREPRLIB.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__CASEFIX.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__COMPILER.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__CONSTANTS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__PARSER.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRLCOMPLETER.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRUNPY.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSITE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSRE_COMPILE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSRE_CONSTANTS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSRE_PARSE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSTAT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenTYPES.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenWARNINGS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenZIPIMPORT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_COLLECTIONS_ABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_POLYGLOT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_POLYGLOT_DATETIME.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_POLYGLOT_TIME.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_PY_ABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_SITEBUILTINS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_SYSCONFIGDATA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_WEAKREFSET.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__HELLO__.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO__.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO___HAM.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO___HAM_EGGS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO___SPAM.bin"
+    },
+    {
+      "glob": "commons-logging.properties"
+    },
+    {
+      "glob": "config/application-discord.properties"
+    },
+    {
+      "glob": "config/application-discord.xml"
+    },
+    {
+      "glob": "config/application-discord.yaml"
+    },
+    {
+      "glob": "config/application-discord.yml"
+    },
+    {
+      "glob": "config/application-prod.properties"
+    },
+    {
+      "glob": "config/application-prod.xml"
+    },
+    {
+      "glob": "config/application-prod.yaml"
+    },
+    {
+      "glob": "config/application-prod.yml"
+    },
+    {
+      "glob": "config/application.properties"
+    },
+    {
+      "glob": "config/application.xml"
+    },
+    {
+      "glob": "config/application.yaml"
+    },
+    {
+      "glob": "config/application.yml"
+    },
+    {
+      "glob": "data-all.sql"
+    },
+    {
+      "glob": "data.sql"
+    },
+    {
+      "glob": "db/callback"
+    },
+    {
+      "glob": "db/migration"
+    },
+    {
+      "glob": "db/migration/V1__InitialDb.sql"
+    },
+    {
+      "glob": "db/migration/V2__AddGameToEntries.sql"
+    },
+    {
+      "glob": "db/migration/V3__AddApWorlds.sql"
+    },
+    {
+      "glob": "db/migration/V4__AddGeneratedGameToRooms.sql"
+    },
+    {
+      "glob": "discord4j/common/git.properties"
+    },
+    {
+      "glob": "git.properties"
+    },
+    {
+      "glob": "graalpy_versions"
+    },
+    {
+      "glob": "jndi.properties"
+    },
+    {
+      "glob": "kotlin/Function.class"
+    },
+    {
+      "glob": "kotlin/Metadata.class"
+    },
+    {
+      "glob": "kotlin/annotation/MustBeDocumented.class"
+    },
+    {
+      "glob": "kotlin/annotation/Retention.class"
+    },
+    {
+      "glob": "kotlin/annotation/Target.class"
+    },
+    {
+      "glob": "kotlin/coroutines/Continuation.class"
+    },
+    {
+      "glob": "kotlin/coroutines/jvm/internal/BaseContinuationImpl.class"
+    },
+    {
+      "glob": "kotlin/coroutines/jvm/internal/ContinuationImpl.class"
+    },
+    {
+      "glob": "kotlin/coroutines/jvm/internal/CoroutineStackFrame.class"
+    },
+    {
+      "glob": "kotlin/coroutines/jvm/internal/SuspendFunction.class"
+    },
+    {
+      "glob": "kotlin/coroutines/jvm/internal/SuspendLambda.class"
+    },
+    {
+      "glob": "kotlin/jvm/functions/Function2.class"
+    },
+    {
+      "glob": "kotlin/jvm/internal/FunctionBase.class"
+    },
+    {
+      "glob": "kotlinx/coroutines/flow/FlowCollector.class"
+    },
+    {
+      "glob": "log4j2.StatusLogger.properties"
+    },
+    {
+      "glob": "log4j2.component.properties"
+    },
+    {
+      "glob": "log4j2.system.properties"
+    },
+    {
+      "glob": "logback-spring.groovy"
+    },
+    {
+      "glob": "logback-spring.xml"
+    },
+    {
+      "glob": "logback-test-spring.groovy"
+    },
+    {
+      "glob": "logback-test-spring.xml"
+    },
+    {
+      "glob": "logback-test.groovy"
+    },
+    {
+      "glob": "logback-test.xml"
+    },
+    {
+      "glob": "logback.groovy"
+    },
+    {
+      "glob": "logback.xml"
+    },
+    {
+      "glob": "messages.properties"
+    },
+    {
+      "glob": "org.graalvm.python.vfs/fileslist.txt"
+    },
+    {
+      "glob": "org.graalvm.python.vfs/venv/Lib/site-packages/pip-24.3.1.dist-info/RECORD"
+    },
+    {
+      "glob": "org.graalvm.python.vfs/venv/Lib/site-packages/pip/__init__.py"
+    },
+    {
+      "glob": "org.graalvm.python.vfs/venv/Lib/site-packages/pip/__pycache__/__init__.graalpy250-312.pyc"
+    },
+    {
+      "glob": "org.graalvm.python.vfs/venv/pyvenv.cfg"
+    },
+    {
+      "glob": "org/flywaydb/core/internal/version.txt"
+    },
+    {
+      "glob": "org/graalvm/shadowed/com/ibm/icu/ICUConfig.properties"
+    },
+    {
+      "glob": "org/graalvm/shadowed/com/ibm/icu/impl/data/icudata/ucase.icu"
+    },
+    {
+      "glob": "org/graalvm/shadowed/com/ibm/icu/impl/data/icudata/uprops.icu"
+    },
+    {
+      "glob": "org/h2/util/data.zip"
+    },
+    {
+      "glob": "org/springframework/aot/hint/RuntimeHintsRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/aot/hint/annotation/Reflective.class"
+    },
+    {
+      "glob": "org/springframework/beans/factory/Aware.class"
+    },
+    {
+      "glob": "org/springframework/beans/factory/BeanFactoryAware.class"
+    },
+    {
+      "glob": "org/springframework/beans/factory/InitializingBean.class"
+    },
+    {
+      "glob": "org/springframework/beans/factory/SmartInitializingSingleton.class"
+    },
+    {
+      "glob": "org/springframework/beans/factory/config/BeanFactoryPostProcessor.class"
+    },
+    {
+      "glob": "org/springframework/beans/factory/support/BeanDefinitionRegistryPostProcessor.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/audit/AuditAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/audit/AuditEventsEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/beans/BeansEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/condition/ConditionsReportEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/context/ShutdownEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/context/properties/ConfigurationPropertiesReportEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/EndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/condition/ConditionalOnAvailableEndpoint.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/jackson/Jackson2EndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/jackson/JacksonEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/jmx/JmxEndpointAutoConfiguration$JmxJackson2EndpointConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/jmx/JmxEndpointAutoConfiguration$JmxJacksonEndpointConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/jmx/JmxEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/web/WebEndpointAutoConfiguration$WebEndpointServletConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/endpoint/web/WebEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/env/EnvironmentEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/info/InfoContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/info/InfoEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/logging/LogFileWebEndpointAutoConfiguration$LogFileCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/logging/LogFileWebEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/logging/LoggersEndpointAutoConfiguration$OnEnabledLoggingSystemCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/logging/LoggersEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/management/HeapDumpWebEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/management/ThreadDumpEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/sbom/SbomEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/scheduling/ScheduledTasksEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/startup/StartupEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/ManagementContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/exchanges/HttpExchangesEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/mappings/MappingsEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ConditionalOnManagementPort.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/EnableManagementContext.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ManagementContextAutoConfiguration$DifferentManagementContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ManagementContextAutoConfiguration$LocalManagementPortPropertySource.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ManagementContextAutoConfiguration$SameManagementContextConfiguration$EnableSameManagementContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ManagementContextAutoConfiguration$SameManagementContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ManagementContextAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/actuate/autoconfigure/web/server/ManagementContextConfigurationImportSelector.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/AutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/AutoConfigureAfter.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/AutoConfigureBefore.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/AutoConfigureOrder.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/admin/SpringApplicationAdminJmxAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/aop/AopAutoConfiguration$AspectJAutoProxyingConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/aop/AopAutoConfiguration$ClassProxyingConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/aop/AopAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/availability/ApplicationAvailabilityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnBean.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnBooleanProperty.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnClass.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnMissingBean.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnMissingClass.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnProperty.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnResource.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnSingleCandidate.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/condition/ConditionalOnWebApplication.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/context/ConfigurationPropertiesAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/context/LifecycleAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/context/MessageSourceAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/context/PropertyPlaceholderAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/data/AbstractRepositoryConfigurationSourceSupport.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/info/ProjectInfoAutoConfiguration$GitResourceAvailableCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/info/ProjectInfoAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/jmx/JmxAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/ssl/SslAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/DefaultTaskSchedulerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutionAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$AsyncConfigurerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$AsyncConfigurerWrapperConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$BootstrapExecutorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$OnExecutorCondition$ExecutorBeanCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$OnExecutorCondition$ModelCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$OnExecutorCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$SimpleAsyncTaskExecutorBuilderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$TaskExecutorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$TaskExecutorContextPropagationConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskExecutorConfigurations$ThreadPoolTaskExecutorBuilderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskSchedulingAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskSchedulingConfigurations$SimpleAsyncTaskSchedulerBuilderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskSchedulingConfigurations$TaskSchedulerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/autoconfigure/task/TaskSchedulingConfigurations$ThreadPoolTaskSchedulerBuilderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/context/properties/ConfigurationProperties.class"
+    },
+    {
+      "glob": "org/springframework/boot/context/properties/EnableConfigurationProperties.class"
+    },
+    {
+      "glob": "org/springframework/boot/context/properties/EnableConfigurationPropertiesRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/boot/data/autoconfigure/metrics/DataRepositoryMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/data/r2dbc/autoconfigure/DataR2dbcAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/data/r2dbc/autoconfigure/DataR2dbcRepositoriesAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/data/r2dbc/autoconfigure/DataR2dbcRepositoriesAutoConfigureRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$Extension.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayAutoConfigurationRuntimeHints.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayConfiguration$OracleConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayConfiguration$PostgresqlConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayConfiguration$SqlServerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayDataSourceCondition$DataSourceBeanCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayDataSourceCondition$FlywayUrlCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayDataSourceCondition$JdbcConnectionDetailsCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$FlywayDataSourceCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$LocationResolver.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$OracleFlywayConfigurationCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$PostgresqlFlywayConfigurationCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$PropertiesFlywayConnectionDetails.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$SqlServerFlywayConfigurationCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration$StringOrNumberToMigrationVersionConverter.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/flyway/autoconfigure/FlywayEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/gson/autoconfigure$GsonAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/gson/autoconfigure/GsonAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/AvailabilityProbesAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/HealthEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/HealthEndpointConfiguration$HealthEndpointGroupMembershipValidator.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/HealthEndpointConfiguration$HealthEndpointGroupsBeanPostProcessor.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/HealthEndpointConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/HealthEndpointReactiveWebExtensionConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/actuate/endpoint/HealthEndpointWebExtensionConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/application/AvailabilityHealthContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/application/DiskSpaceHealthContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/application/SslHealthContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/contributor/AbstractCompositeHealthContributorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/contributor/CompositeReactiveHealthContributorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/contributor/ConditionalOnEnabledHealthIndicator.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/contributor/HealthContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/registry/HealthContributorRegistryAutoConfiguration$ReactiveHealthContributorRegistryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/health/autoconfigure/registry/HealthContributorRegistryAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/hibernate/autoconfigure$HibernateJpaAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/hibernate/autoconfigure/HibernateJpaAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/HttpClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/imperative/ImperativeHttpClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/imperative/NotReactiveWebApplicationCondition$ReactiveWebApplication.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/imperative/NotReactiveWebApplicationCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/metrics/HttpClientMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/reactive/ReactiveHttpClientAutoConfiguration$ReactorNetty.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/reactive/ReactiveHttpClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/client/autoconfigure/service/HttpServiceClientPropertiesAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration$DefaultCodecCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$DefaultCodecsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$Jackson2JsonCodecConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$JacksonJsonCodecConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$KotlinxSerializationJsonCodecConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$NoJacksonOrJackson2Preferred$Jackson2Preferred.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$NoJacksonOrJackson2Preferred$NoJackson.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration$NoJacksonOrJackson2Preferred.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/codec/autoconfigure/CodecsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/converter/autoconfigure/HttpMessageConvertersAutoConfiguration$NotReactiveWebApplicationCondition$ReactiveWebApplication.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/converter/autoconfigure/HttpMessageConvertersAutoConfiguration$NotReactiveWebApplicationCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/http/converter/autoconfigure/HttpMessageConvertersAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$AbstractFactoryBuilderCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$AbstractMapperBuilderCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$CborConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonAutoConfigurationRuntimeHints.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonJsonCustomizerConfiguration$StandardJsonFactoryBuilderCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonJsonCustomizerConfiguration$StandardJsonMapperBuilderCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonJsonCustomizerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonJsonMapperBuilderCustomizerConfiguration$StandardJsonMapperBuilderCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonJsonMapperBuilderCustomizerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JacksonMixinConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JsonProblemDetailsConfiguration$ProblemDetailJsonMapperBuilderCustomizer.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$JsonProblemDetailsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration$XmlConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson/autoconfigure/JacksonAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson2/autoconfigure$Jackson2AutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jackson2/autoconfigure/Jackson2AutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$EmbeddedDatabaseCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$EmbeddedDatabaseConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$PooledDataSourceAvailableCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$PooledDataSourceCondition$ExplicitType.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$PooledDataSourceCondition$PooledDataSourceAvailable.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$PooledDataSourceCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration$PooledDataSourceConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceCheckpointRestoreConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceConfiguration$Dbcp2.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceConfiguration$Generic.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceConfiguration$Hikari.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceConfiguration$OracleUcp.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceConfiguration$Tomcat.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceInitializationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceJmxConfiguration$Hikari.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceJmxConfiguration$TomcatDataSourceJmxConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceJmxConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourcePoolMetadataProvidersConfiguration$CommonsDbcp2PoolDataSourceMetadataProviderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourcePoolMetadataProvidersConfiguration$HikariDataSourcePoolMetadataRuntimeHints.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourcePoolMetadataProvidersConfiguration$HikariPoolDataSourceMetadataProviderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourcePoolMetadataProvidersConfiguration$OracleUcpPoolDataSourceMetadataProviderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourcePoolMetadataProvidersConfiguration$TomcatDataSourcePoolMetadataProviderConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourcePoolMetadataProvidersConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceTransactionManagerAutoConfiguration$JdbcTransactionManagerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/DataSourceTransactionManagerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/JdbcClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/JdbcTemplateAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/JdbcTemplateConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/JndiDataSourceAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/NamedParameterJdbcTemplateConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/health/DataSourceHealthContributorAutoConfiguration$RoutingDataSourceHealthContributor.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/health/DataSourceHealthContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/metrics/DataSourcePoolMetricsAutoConfiguration$DataSourcePoolMetadataMetricsConfiguration$DataSourcePoolMetadataMeterBinder.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/metrics/DataSourcePoolMetricsAutoConfiguration$DataSourcePoolMetadataMetricsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/metrics/DataSourcePoolMetricsAutoConfiguration$HikariDataSourceMetricsConfiguration$HikariDataSourceMeterBinder.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/metrics/DataSourcePoolMetricsAutoConfiguration$HikariDataSourceMetricsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jdbc/autoconfigure/metrics/DataSourcePoolMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jsonb/autoconfigure$JsonbAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/jsonb/autoconfigure/JsonbAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/kotlinx/serialization/json/autoconfigure$KotlinxSerializationJsonAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/kotlinx/serialization/json/autoconfigure/KotlinxSerializationJsonAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/CompositeMeterRegistryAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/CompositeMeterRegistryConfiguration$MultipleNonPrimaryMeterRegistriesCondition$NoMeterRegistryCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/CompositeMeterRegistryConfiguration$MultipleNonPrimaryMeterRegistriesCondition$SingleInjectableMeterRegistry.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/CompositeMeterRegistryConfiguration$MultipleNonPrimaryMeterRegistriesCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/CompositeMeterRegistryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/MetricsAutoConfiguration$MeterRegistryCloser.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/MetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/MetricsEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/NoOpMeterRegistryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/export/ConditionalOnEnabledMetricsExport.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/export/simple/SimpleMetricsExportAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/jvm/JvmMetricsAutoConfiguration$VirtualThreadMetricsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/jvm/JvmMetricsAutoConfiguration$VirtualThreadMetricsRuntimeHintsRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/jvm/JvmMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/logging/logback/LogbackMetricsAutoConfiguration$LogbackLoggingCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/logging/logback/LogbackMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/ssl/SslMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/startup/StartupTimeMetricsListenerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/system/SystemMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/metrics/autoconfigure/task/TaskExecutorMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/observation/autoconfigure/ObservationAutoConfiguration$ObservedAspectConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/observation/autoconfigure/ObservationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/observation/autoconfigure/ScheduledTasksObservationAutoConfiguration$ObservabilitySchedulingConfigurer.class"
+    },
+    {
+      "glob": "org/springframework/boot/micrometer/observation/autoconfigure/ScheduledTasksObservationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/netty/autoconfigure/NettyAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/persistence/autoconfigure/PersistenceExceptionTranslationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/ConnectionFactoryConfigurations$GenericConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/ConnectionFactoryConfigurations$PoolConfiguration$PooledConnectionFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/ConnectionFactoryConfigurations$PoolConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/ConnectionFactoryDependentConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/R2dbcAutoConfiguration$PropertiesR2dbcConnectionDetails.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/R2dbcAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/R2dbcInitializationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/R2dbcTransactionManagerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/health/ConnectionFactoryHealthContributorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/r2dbc/autoconfigure/metrics/ConnectionPoolMetricsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/reactor/autoconfigure/ReactorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/reactor/netty/autoconfigure/NettyReactiveWebServerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/reactor/netty/autoconfigure/ReactorNettyConfigurations$ReactorResourceFactoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/reactor/netty/autoconfigure/actuate/web/server/NettyReactiveManagementChildContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/reactor/netty/autoconfigure/actuate/web/server/NettyReactiveManagementContextAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/rsocket/autoconfigure$RSocketMessagingAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/rsocket/autoconfigure/RSocketMessagingAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured$MissingAlternative.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured$NameConfigured.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured$PasswordConfigured.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/MissingAlternativeUserDetailsManagerOrUserPropertiesConfigured.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/ReactiveUserDetailsServiceAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/SecurityAutoConfiguration$SecurityDataConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/SecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/UserDetailsServiceAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/actuate/web/reactive/ReactiveManagementWebSecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/actuate/web/servlet/ManagementWebSecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/actuate/web/servlet/SecurityRequestMatchersManagementContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/web/reactive/ReactiveWebSecurityAutoConfiguration$SpringBootWebFluxSecurityConfiguration$EnableWebFluxSecurityConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/web/reactive/ReactiveWebSecurityAutoConfiguration$SpringBootWebFluxSecurityConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/web/reactive/ReactiveWebSecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/web/servlet/SecurityFilterAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/autoconfigure/web/servlet/ServletWebSecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/ConditionalOnOAuth2ClientRegistrationProperties.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/OAuth2ClientAutoConfiguration$NonReactiveWebApplicationCondition$ReactiveWebApplicationCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/OAuth2ClientAutoConfiguration$NonReactiveWebApplicationCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/OAuth2ClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/reactive/ReactiveOAuth2ClientAutoConfiguration$NonServletApplicationCondition$ServletApplicationCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/reactive/ReactiveOAuth2ClientAutoConfiguration$NonServletApplicationCondition.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/reactive/ReactiveOAuth2ClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/reactive/ReactiveOAuth2ClientConfigurations$ReactiveClientRegistrationRepositoryConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/reactive/ReactiveOAuth2ClientConfigurations$ReactiveOAuth2AuthorizedClientServiceConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/reactive/ReactiveOAuth2ClientWebSecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/security/oauth2/client/autoconfigure/servlet/OAuth2ClientWebSecurityAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/sql/autoconfigure/init/ConditionalOnSqlInitialization.class"
+    },
+    {
+      "glob": "org/springframework/boot/sql/init/dependency/DatabaseInitializationDependencyConfigurer.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/TemplateEngineConfigurations$DefaultTemplateEngineConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/TemplateEngineConfigurations$ReactiveTemplateEngineConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration$DataAttributeDialectConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration$DefaultTemplateResolverConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration$ThymeleafSecurityDialectConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration$ThymeleafWebFluxConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration$ThymeleafWebLayoutConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration$ThymeleafWebMvcConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/thymeleaf/autoconfigure/ThymeleafAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionAutoConfiguration$AspectJTransactionManagementConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionAutoConfiguration$EnableTransactionManagementConfiguration$CglibAutoProxyConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionAutoConfiguration$EnableTransactionManagementConfiguration$JdkDynamicAutoProxyConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionAutoConfiguration$EnableTransactionManagementConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionAutoConfiguration$TransactionTemplateConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/transaction/autoconfigure/TransactionManagerCustomizationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/validation/autoconfigure$ValidationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/validation/autoconfigure/PrimaryDefaultValidatorPostProcessor.class"
+    },
+    {
+      "glob": "org/springframework/boot/validation/autoconfigure/ValidationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/web/server/autoconfigure/reactive/ReactiveWebServerConfiguration$BeanPostProcessorsRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/boot/web/server/autoconfigure/reactive/ReactiveWebServerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webclient/autoconfigure/WebClientAutoConfiguration$WebClientCodecsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webclient/autoconfigure/WebClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webclient/autoconfigure/WebClientObservationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webclient/autoconfigure/service/ReactiveHttpServiceClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/HttpHandlerAutoConfiguration$AnnotationConfig.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/HttpHandlerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/ReactiveMultipartAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$EnableWebFluxConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$MaxIdleTimeInMemoryWebSessionStore.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$ProblemDetailsErrorHandlingConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$ResourceChainCustomizerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$WebFluxConfig.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$WebFluxValidatorRuntimeHints.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration$WelcomePageConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebFluxObservationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/WebSessionIdResolverAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/endpoint/web/WebFluxHealthEndpointExtensionAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/WebFluxEndpointManagementContextConfiguration$HealthConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/WebFluxEndpointManagementContextConfiguration$ServerCodecConfigurerEndpointJackson2JsonMapperBeanPostProcessor.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/WebFluxEndpointManagementContextConfiguration$ServerCodecConfigurerEndpointJsonMapperBeanPostProcessor.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/WebFluxEndpointManagementContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/WebFluxManagementChildContextConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/exchanges/WebFluxHttpExchangesAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/actuate/web/mappings/WebFluxMappingsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webflux/autoconfigure/error/ErrorWebFluxAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webmvc/autoconfigure$WebMvcAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/boot/webmvc/autoconfigure/WebMvcAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/ConfigurationPropertiesRebinderAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/LifecycleMvcEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/PauseResumeEndpointsConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RefreshAutoConfiguration$RefreshProperties.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RefreshAutoConfiguration$RefreshScopeBeanDefinitionEnhancer.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RefreshAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RefreshEndpointAutoConfiguration$RefreshEndpointConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RefreshEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RestartEndpointWithIntegrationConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/RestartEndpointWithoutIntegrationConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/autoconfigure/WritableEnvironmentEndpointAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/CommonsClientAutoConfiguration$ActuatorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/CommonsClientAutoConfiguration$CircuitBreakerInterfaceClientsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/CommonsClientAutoConfiguration$DiscoveryLoadBalancerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/CommonsClientAutoConfiguration$ReactiveCircuitBreakerInterfaceClientsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/CommonsClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/ConditionalOnBlockingDiscoveryEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/ConditionalOnDiscoveryEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/ConditionalOnReactiveDiscoveryEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/ReactiveCommonsClientAutoConfiguration$ReactiveDiscoveryLoadBalancerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/ReactiveCommonsClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/composite/CompositeDiscoveryClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/composite/reactive/ReactiveCompositeDiscoveryClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/SimpleDiscoveryClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/SimpleDiscoveryClientConfigurations$SimpleDiscoveryClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/SimpleDiscoveryClientConfigurations$StandardSimpleDiscoveryClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/SimpleDiscoveryClientConfigurations$WebApplicationSimpleDiscoveryClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/reactive/SimpleReactiveDiscoveryClientAutoConfiguration$HealthConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/reactive/SimpleReactiveDiscoveryClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/reactive/SimpleReactiveDiscoveryClientConfigurations$SimpleReactiveDiscoveryClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/reactive/SimpleReactiveDiscoveryClientConfigurations$StandardSimpleReactiveDiscoveryClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/discovery/simple/reactive/SimpleReactiveDiscoveryClientConfigurations$WebApplicationSimpleReactiveDiscoveryClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/hypermedia/CloudHypermediaAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/BlockingRestClassesPresentCondition$RestClientPresent.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/BlockingRestClassesPresentCondition$RestTemplatePresent.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/BlockingRestClassesPresentCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorHttpClientConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$DeferringLoadBalancerInterceptorRestTemplateBuilderConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$LoadBalancerInterceptorConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryInterceptorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration$RetryMissingOrDisabledCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/LoadBalancerDefaultMappingsProviderAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/LoadBalancerBeanPostProcessorAutoConfiguration$OnAnyLoadBalancerImplementationPresentCondition$LoadBalancerClientPresent.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/LoadBalancerBeanPostProcessorAutoConfiguration$OnAnyLoadBalancerImplementationPresentCondition$ReactiveLoadBalancerFactoryPresent.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/LoadBalancerBeanPostProcessorAutoConfiguration$OnAnyLoadBalancerImplementationPresentCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/LoadBalancerBeanPostProcessorAutoConfiguration$ReactorDeferringLoadBalancerFilterConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/LoadBalancerBeanPostProcessorAutoConfiguration$ReactorDeferringLoadBalancerFilterHttpClientConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/LoadBalancerBeanPostProcessorAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/loadbalancer/reactive/ReactorLoadBalancerClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/serviceregistry/AutoServiceRegistrationAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/serviceregistry/AutoServiceRegistrationConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/serviceregistry/ServiceRegistryAutoConfiguration$ServiceRegistryEndpointConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/client/serviceregistry/ServiceRegistryAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/commons/config/CommonsConfigAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/commons/security/ResourceServerTokenRelayAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/commons/util/UtilAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/configuration/CompatibilityVerifierAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$Bucket4jConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$GatewayActuatorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$GatewayWebFluxApiVersionConfig.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$NettyConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$OnVerboseDisabledCondition$VerboseDisabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$OnVerboseDisabledCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration$TokenRelayConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayClassPathWarningAutoConfiguration$SpringMvcFoundOnClasspathConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayClassPathWarningAutoConfiguration$WebfluxMissingFromClasspathConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayClassPathWarningAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayNoLoadBalancerClientAutoConfiguration$NoLoadBalancerClientFilter.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/GatewayNoLoadBalancerClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/SimpleUrlHandlerMappingGlobalCorsAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/config/conditional/ConditionalOnEnabledFilter.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/discovery/GatewayDiscoveryClientAutoConfiguration$ReactiveDiscoveryClientRouteDefinitionLocatorConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/discovery/GatewayDiscoveryClientAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/filter/headers/TrustedProxies$ForwardedTrustedProxiesCondition$OnPropertyEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/filter/headers/TrustedProxies$ForwardedTrustedProxiesCondition$OnTrustedProxiesNotEmpty.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/filter/headers/TrustedProxies$ForwardedTrustedProxiesCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/filter/headers/TrustedProxies$XForwardedTrustedProxiesCondition$OnPropertyEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/filter/headers/TrustedProxies$XForwardedTrustedProxiesCondition$OnTrustedProxiesNotEmpty.class"
+    },
+    {
+      "glob": "org/springframework/cloud/gateway/filter/headers/TrustedProxies$XForwardedTrustedProxiesCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/loadbalancer/config$LoadBalancerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/loadbalancer/config/LoadBalancerAutoConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapDisabled$OnBootstrapDisabledCondition$OnBootstrapEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapDisabled$OnBootstrapDisabledCondition$OnBootstrapMarkerClassPresent.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapDisabled$OnBootstrapDisabledCondition$OnUseLegacyProcessingEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapDisabled$OnBootstrapDisabledCondition.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapEnabled$OnBootstrapEnabledCondition$OnBootstrapEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapEnabled$OnBootstrapEnabledCondition$OnBootstrapMarkerClassPresent.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapEnabled$OnBootstrapEnabledCondition$OnUseLegacyProcessingEnabled.class"
+    },
+    {
+      "glob": "org/springframework/cloud/util/ConditionalOnBootstrapEnabled$OnBootstrapEnabledCondition.class"
+    },
+    {
+      "glob": "org/springframework/context/ApplicationContextAware.class"
+    },
+    {
+      "glob": "org/springframework/context/ApplicationContextInitializer.class"
+    },
+    {
+      "glob": "org/springframework/context/ApplicationListener.class"
+    },
+    {
+      "glob": "org/springframework/context/EnvironmentAware.class"
+    },
+    {
+      "glob": "org/springframework/context/ResourceLoaderAware.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/AdviceModeImportSelector.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/AutoProxyRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/Conditional.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/Configuration.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/DeferredImportSelector.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/Import.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/ImportAware.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/ImportBeanDefinitionRegistrar.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/ImportRuntimeHints.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/Profile.class"
+    },
+    {
+      "glob": "org/springframework/context/annotation/Role.class"
+    },
+    {
+      "glob": "org/springframework/core/annotation/Order.class"
+    },
+    {
+      "glob": "org/springframework/data/r2dbc/repository/support/R2dbcRepositoryFactoryBean.class"
+    },
+    {
+      "glob": "org/springframework/data/repository/reactive/ReactiveCrudRepository.class"
+    },
+    {
+      "glob": "org/springframework/http/codec/CodecConfigurer.properties"
+    },
+    {
+      "glob": "org/springframework/http/mime.types"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/EnableWebFluxSecurity.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ReactiveOAuth2ClientConfiguration$OAuth2ClientWebFluxSecurityConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ReactiveOAuth2ClientConfiguration$ReactiveOAuth2AuthorizedClientManagerConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ReactiveOAuth2ClientConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ReactiveOAuth2ClientImportSelector.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ReactiveObservationConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ReactiveObservationImportSelector.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ServerHttpSecurityConfiguration$ContextAwareServerHttpSecurity.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/ServerHttpSecurityConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/WebFluxSecurityConfiguration$OAuth2ClasspathGuard.class"
+    },
+    {
+      "glob": "org/springframework/security/config/annotation/web/reactive/WebFluxSecurityConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/security/default-ui.css"
+    },
+    {
+      "glob": "org/springframework/security/oauth2/client/userinfo/DefaultReactiveOAuth2UserService.class"
+    },
+    {
+      "glob": "org/springframework/security/oauth2/client/userinfo/ReactiveOAuth2UserService.class"
+    },
+    {
+      "glob": "org/springframework/transaction/annotation/AbstractTransactionManagementConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/transaction/annotation/EnableTransactionManagement.class"
+    },
+    {
+      "glob": "org/springframework/transaction/annotation/ProxyTransactionManagementConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/transaction/annotation/TransactionManagementConfigurationSelector.class"
+    },
+    {
+      "glob": "org/springframework/web/bind/annotation/ControllerAdvice.class"
+    },
+    {
+      "glob": "org/springframework/web/bind/annotation/Mapping.class"
+    },
+    {
+      "glob": "org/springframework/web/bind/annotation/RequestMapping.class"
+    },
+    {
+      "glob": "org/springframework/web/reactive/config/DelegatingWebFluxConfiguration.class"
+    },
+    {
+      "glob": "org/springframework/web/reactive/config/WebFluxConfigurationSupport$EmptyHandlerMapping.class"
+    },
+    {
+      "glob": "org/springframework/web/reactive/config/WebFluxConfigurationSupport$NoOpValidator.class"
+    },
+    {
+      "glob": "org/springframework/web/reactive/config/WebFluxConfigurationSupport$NoUpgradeStrategyWebSocketService.class"
+    },
+    {
+      "glob": "org/springframework/web/reactive/config/WebFluxConfigurationSupport.class"
+    },
+    {
+      "glob": "org/springframework/web/reactive/config/WebFluxConfigurer.class"
+    },
+    {
+      "glob": "org/springframework/web/server/WebFilter.class"
+    },
+    {
+      "glob": "org/springframework/web/server/session/InMemoryWebSessionStore.class"
+    },
+    {
+      "glob": "org/springframework/web/server/session/WebSessionStore.class"
+    },
+    {
+      "glob": "org/springframework/web/util/HtmlCharacterEntityReferences.properties"
+    },
+    {
+      "glob": "org/thymeleaf/thymeleaf.properties"
+    },
+    {
+      "glob": "public/favicon.ico"
+    },
+    {
+      "glob": "public/index.html"
+    },
+    {
+      "glob": "resources/confirm.js"
+    },
+    {
+      "glob": "resources/favicon.ico"
+    },
+    {
+      "glob": "resources/favicon.svg"
+    },
+    {
+      "glob": "resources/index.html"
+    },
+    {
+      "glob": "resources/style.css"
+    },
+    {
+      "glob": "schema-all.sql"
+    },
+    {
+      "glob": "schema.sql"
+    },
+    {
+      "glob": "spring.properties"
+    },
+    {
+      "glob": "static/confirm.js"
+    },
+    {
+      "glob": "static/favicon.ico"
+    },
+    {
+      "glob": "static/favicon.svg"
+    },
+    {
+      "glob": "static/index.html"
+    },
+    {
+      "glob": "static/style.css"
+    },
+    {
+      "glob": "templates"
+    },
+    {
+      "glob": "templates/error/404.html"
+    },
+    {
+      "glob": "templates/error/error.html"
+    },
+    {
+      "glob": "templates/index.html"
+    },
+    {
+      "glob": "templates/layout.html"
+    },
+    {
+      "glob": "templates/room-preview.html"
+    },
+    {
+      "glob": "templates/room.html"
+    },
+    {
+      "glob": "templates/rooms.html"
+    },
+    {
+      "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
+    },
+    {
+      "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/uprops.icu"
+    },
+    {
+      "module": "java.base",
+      "glob": "sun/net/idn/uidna.spp"
+    },
+    {
+      "module": "java.base",
+      "glob": "sun/net/www/content-types.properties"
+    },
+    {
+      "module": "jdk.jfr",
+      "glob": "jdk/jfr/internal/query/view.ini"
+    },
+    {
+      "module": "jdk.jfr",
+      "glob": "jdk/jfr/internal/types/metadata.bin"
+    }
+  ]
+}

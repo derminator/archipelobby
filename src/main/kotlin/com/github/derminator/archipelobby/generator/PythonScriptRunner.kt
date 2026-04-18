@@ -10,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.OutputStream
+import java.nio.file.Path
 
 @Component
 class PythonScriptRunner {
@@ -21,20 +22,31 @@ class PythonScriptRunner {
      * Stdout and stderr are captured and returned (or included in the exception message on failure).
      * A fresh context is created per call, ensuring thread safety for concurrent invocations.
      */
-    fun run(scriptPath: String, vararg args: String, preamble: String = ""): String {
+    fun run(
+        scriptPath: String,
+        vararg args: String,
+        preamble: String = "",
+        extraSysPath: List<Path> = emptyList(),
+        environment: Map<String, String> = emptyMap(),
+    ): String {
         val scriptFile = File(scriptPath).absoluteFile
         val scriptDirectory = scriptFile.parent
         val outputStream = LoggingStream()
-        GraalPyResources.contextBuilder()
+        val builder = GraalPyResources.contextBuilder()
             .environment("PYTHONUNBUFFERED", "1")
             .allowAllAccess(true)
             .out(outputStream)
             .err(outputStream)
             .arguments("python", arrayOf(scriptFile.path, *args))
-            .build()
+        for ((k, v) in environment) builder.environment(k, v)
+        builder.build()
             .use { context ->
                 try {
                     context.getBindings("python").putMember("__archipelobby_script_directory__", scriptDirectory)
+                    context.getBindings("python").putMember(
+                        "__archipelobby_extra_sys_path__",
+                        extraSysPath.map { it.toAbsolutePath().toString() }.toTypedArray(),
+                    )
                     context.eval(
                         "python",
                         """
@@ -42,6 +54,9 @@ class PythonScriptRunner {
                         script_directory = __archipelobby_script_directory__
                         if script_directory and script_directory not in sys.path:
                             sys.path.insert(0, script_directory)
+                        for _extra in reversed(list(__archipelobby_extra_sys_path__)):
+                            if _extra and _extra not in sys.path:
+                                sys.path.insert(0, _extra)
                         """.trimIndent(),
                     )
                     if (preamble.isNotBlank()) context.eval("python", preamble)

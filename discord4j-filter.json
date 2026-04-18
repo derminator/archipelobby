@@ -1,0 +1,10 @@
+{
+  "rules": [
+    {
+      "includeClasses": "discord4j.**"
+    },
+    {
+      "excludeClasses": "**"
+    }
+  ]
+}

@@ -12,6 +12,8 @@ import java.nio.file.Path
 @Service
 class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val scriptPath: String,
+    @Value($$"#{'${archipelobby.archipelago.package-blacklist:kivy,kivymd,pyshortcuts,pymem,orjson,cymem,bsdiff4}'.split(',')}")
+    private val blacklist: List<String>,
     private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
 
@@ -32,11 +34,25 @@ class RealArchipelagoGeneratorService(
                 Files.write(worldsDir.resolve(name), bytes)
             }
 
+            val roomEnv = RoomPythonEnvironment(
+                workDir,
+                blacklist.map { it.trim().lowercase() }.filter { it.isNotEmpty() }.toSet(),
+                pythonScriptRunner,
+            )
+            val archipelagoDir = Path.of(scriptPath).toAbsolutePath().parent
+                ?: throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Cannot resolve Archipelago directory from script path: $scriptPath",
+                )
+            roomEnv.prepare(archipelagoDir, apWorldFiles)
+
             pythonScriptRunner.run(
                 scriptPath,
                 "--player_files_path", playersDir.toString(),
                 "--outputpath", outputDir.toString(),
                 "--world_directory", worldsDir.toString(),
+                extraSysPath = listOf(roomEnv.sitePackagesDir),
+                environment = mapOf("SKIP_REQUIREMENTS_UPDATE" to "1"),
             )
 
             val generatedFile = findGeneratedFile(outputDir)

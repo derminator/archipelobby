@@ -86,8 +86,44 @@ graalvmNative {
     }
 }
 
+// Keep in sync with archipelobby.archipelago.package-blacklist in application.properties.
+// Entries are pip distribution names, lowercase.
+val graalPyPackageBlacklist = setOf(
+    "kivy", "kivymd",           // GUI — not needed for generation
+    "pyshortcuts", "pymem",     // OS-integration / runtime client
+    "orjson", "cymem", "bsdiff4", // native builds that do not support GraalPy
+)
+
+fun requirementDistributionName(requirementLine: String): String =
+    requirementLine
+        .trim()
+        .substringBefore("#egg=")
+        .substringBefore("@")
+        .substringBefore("[")
+        .substringBefore(";")
+        .split(Regex("[=<>!~\\s]"))[0]
+        .trim()
+        .lowercase()
+
+fun parseRequirementsFile(file: File): List<String> {
+    if (!file.exists()) return emptyList()
+    val joined = mutableListOf<String>()
+    for (raw in file.readLines()) {
+        val line = raw.substringBefore('#').trimEnd()
+        if (line.isBlank()) continue
+        if (joined.isNotEmpty() && joined.last().endsWith("\\")) {
+            joined[joined.lastIndex] = joined.last().dropLast(1).trimEnd() + " " + line.trim()
+        } else {
+            joined.add(line.trim())
+        }
+    }
+    return joined.filter { requirementDistributionName(it) !in graalPyPackageBlacklist }
+}
+
 graalPy {
-    packages = setOf("pip")
+    packages = (listOf("pip", "setuptools") +
+            parseRequirementsFile(file("Archipelago/requirements.txt"))
+            ).toSet()
 }
 
 tasks.withType<Test> {
