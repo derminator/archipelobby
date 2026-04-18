@@ -71,8 +71,7 @@ class PythonScriptRunner {
             fullOutput.write(b)
             val ch = b.toChar()
             if (ch == '\n') {
-                logger.info("[python] {}", lineBuffer.toString())
-                lineBuffer.clear()
+                writeLogLine()
             } else {
                 lineBuffer.append(ch)
             }
@@ -80,10 +79,14 @@ class PythonScriptRunner {
 
         override fun close() {
             if (lineBuffer.isNotEmpty()) {
-                logger.info("[python] {}", lineBuffer.toString())
-                lineBuffer.clear()
+                writeLogLine()
             }
             super.close()
+        }
+
+        private fun writeLogLine() {
+            logger.info("[python] {}", lineBuffer.toString())
+            lineBuffer.clear()
         }
 
         fun getOutput(): String = fullOutput.toString(Charsets.UTF_8)
