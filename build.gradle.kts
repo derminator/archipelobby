@@ -6,6 +6,7 @@ plugins {
     id("org.springframework.boot") version "4.1.0-M4"
     id("io.spring.dependency-management") version "1.1.7"
     id("org.graalvm.buildtools.native") version "1.0.0"
+    id("org.graalvm.python") version "25.0.2"
 }
 
 group = "com.github.derminator"
@@ -42,6 +43,7 @@ dependencies {
     implementation("org.springframework:spring-jdbc")
     implementation("org.graalvm.polyglot:polyglot:25.0.2")
     implementation("org.graalvm.polyglot:python:25.0.2")
+    implementation("org.graalvm.python:python-embedding:25.0.2")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("io.r2dbc:r2dbc-h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -82,6 +84,10 @@ graalvmNative {
             )
         }
     }
+}
+
+graalPy {
+    packages = setOf("pip")
 }
 
 tasks.withType<Test> {

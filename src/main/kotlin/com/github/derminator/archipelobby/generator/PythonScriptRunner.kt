@@ -1,8 +1,8 @@
 package com.github.derminator.archipelobby.generator
 
-import org.graalvm.polyglot.Context
 import org.graalvm.polyglot.PolyglotException
 import org.graalvm.polyglot.Source
+import org.graalvm.python.embedding.GraalPyResources
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ResponseStatusException
@@ -19,7 +19,7 @@ class PythonScriptRunner {
      */
     fun run(scriptPath: String, vararg args: String): String {
         val outputStream = ByteArrayOutputStream()
-        Context.newBuilder("python")
+        GraalPyResources.contextBuilder()
             .allowAllAccess(true)
             .out(outputStream)
             .err(outputStream)

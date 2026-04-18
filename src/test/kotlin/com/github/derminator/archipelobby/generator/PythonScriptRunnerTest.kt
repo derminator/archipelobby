@@ -7,6 +7,7 @@ import org.springframework.web.server.ResponseStatusException
 import java.nio.file.Path
 import kotlin.io.path.writeText
 import kotlin.test.assertContains
+import kotlin.test.assertTrue
 
 class PythonScriptRunnerTest {
 
@@ -55,5 +56,37 @@ class PythonScriptRunnerTest {
         val output = runner.run(script.toString())
 
         assertContains(output, "done")
+    }
+
+    @Test
+    fun `pip is importable inside the GraalPy context`(@TempDir tempDir: Path) {
+        val script = tempDir.resolve("check_pip.py")
+        script.writeText("import pip\nprint(pip.__version__)")
+
+        val output = runner.run(script.toString())
+
+        assertTrue(
+            output.trim().matches(Regex("""\d+\.\d+.*""")),
+            "Expected a pip version in output but got: $output",
+        )
+    }
+
+    @Test
+    fun `ModuleUpdate from the Archipelago submodule is callable`(@TempDir tempDir: Path) {
+        val archipelagoDir = Path.of("Archipelago").toAbsolutePath().toString()
+        val script = tempDir.resolve("call_module_update.py")
+        script.writeText(
+            """
+            import sys
+            sys.path.insert(0, r'${archipelagoDir.replace("\\", "\\\\")}')
+            import ModuleUpdate
+            ModuleUpdate.check_pip()
+            print('ModuleUpdate.check_pip OK')
+            """.trimIndent(),
+        )
+
+        val output = runner.run(script.toString())
+
+        assertContains(output, "ModuleUpdate.check_pip OK")
     }
 }
