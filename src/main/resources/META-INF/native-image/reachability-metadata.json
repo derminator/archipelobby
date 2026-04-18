@@ -565,6 +565,13 @@
           ]
         },
         {
+          "name": "generateGame",
+          "parameterTypes": [
+            "long",
+            "java.security.Principal"
+          ]
+        },
+        {
           "name": "getRoom",
           "parameterTypes": [
             "long",
@@ -592,6 +599,9 @@
           ]
         }
       ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.controllers.RoomController$getRoom$1"
     },
     {
       "type": "com.github.derminator.archipelobby.data.ApWorld",
@@ -739,6 +749,9 @@
       "type": "com.github.derminator.archipelobby.data.Room",
       "fields": [
         {
+          "name": "generatedGameFilePath"
+        },
+        {
           "name": "guildId"
         },
         {
@@ -750,6 +763,10 @@
       ],
       "methods": [
         {
+          "name": "getGeneratedGameFilePath",
+          "parameterTypes": []
+        },
+        {
           "name": "getId",
           "parameterTypes": []
         },
@@ -758,6 +775,9 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.data.RoomPreview"
     },
     {
       "type": "com.github.derminator.archipelobby.data.RoomRepository"
@@ -772,6 +792,17 @@
             "com.github.derminator.archipelobby.data.EntryRepository",
             "com.github.derminator.archipelobby.data.ApWorldRepository",
             "com.github.derminator.archipelobby.discord.DiscordService"
+          ]
+        },
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.github.derminator.archipelobby.data.RoomRepository",
+            "com.github.derminator.archipelobby.data.EntryRepository",
+            "com.github.derminator.archipelobby.data.ApWorldRepository",
+            "com.github.derminator.archipelobby.discord.DiscordService",
+            "com.github.derminator.archipelobby.storage.UploadsService",
+            "com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService"
           ]
         },
         {
@@ -820,6 +851,14 @@
         },
         {
           "name": "deleteRoom",
+          "parameterTypes": [
+            "long",
+            "long",
+            "kotlin.coroutines.Continuation"
+          ]
+        },
+        {
+          "name": "generateGame",
           "parameterTypes": [
             "long",
             "long",
@@ -922,13 +961,119 @@
       ]
     },
     {
+      "type": "com.github.derminator.archipelobby.discord.DevDiscordConfiguration",
+      "methods": [
+        {
+          "name": "discordService",
+          "parameterTypes": []
+        },
+        {
+          "name": "userDetailsService",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.discord.DevDiscordConfiguration$$SpringCGLIB$$0",
+      "fields": [
+        {
+          "name": "$$beanFactory"
+        },
+        {
+          "name": "CGLIB$CALLBACK_FILTER"
+        },
+        {
+          "name": "CGLIB$FACTORY_DATA"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.github.derminator.archipelobby.discord.DevDiscordProperties"
+          ]
+        },
+        {
+          "name": "CGLIB$SET_STATIC_CALLBACKS",
+          "parameterTypes": [
+            "org.springframework.cglib.proxy.Callback[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.discord.DevDiscordConfiguration$$SpringCGLIB$$FastClass$$0",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.discord.DevDiscordConfiguration$$SpringCGLIB$$FastClass$$1",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
       "type": "com.github.derminator.archipelobby.discord.DevDiscordProperties",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": []
+        },
+        {
+          "name": "getAdminGuilds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getGuilds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUserGuilds",
+          "parameterTypes": []
+        },
+        {
+          "name": "getUsers",
+          "parameterTypes": []
+        },
+        {
+          "name": "setAdminGuilds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setGuilds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setUserGuilds",
+          "parameterTypes": [
+            "java.util.List"
+          ]
+        },
+        {
+          "name": "setUsers",
+          "parameterTypes": [
+            "java.util.List"
+          ]
         }
       ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.discord.DevDiscordService"
     },
     {
       "type": "com.github.derminator.archipelobby.discord.DiscordBotConfiguration",
@@ -1039,10 +1184,53 @@
       ]
     },
     {
+      "type": "com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService"
+    },
+    {
+      "type": "com.github.derminator.archipelobby.generator.PythonScriptRunner",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.generator.RealArchipelagoGeneratorService",
+      "fields": [
+        {
+          "name": "scriptPath"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.String",
+            "com.github.derminator.archipelobby.generator.PythonScriptRunner"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.generator.RealArchipelagoGeneratorService$generate$2"
+    },
+    {
       "type": "com.github.derminator.archipelobby.security.AbstractDiscordPrincipalConverter"
     },
     {
       "type": "com.github.derminator.archipelobby.security.AbstractDiscordPrincipalConverter$filter$1"
+    },
+    {
+      "type": "com.github.derminator.archipelobby.security.DevDiscordPrincipalConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "com.github.derminator.archipelobby.discord.DevDiscordProperties"
+          ]
+        }
+      ]
     },
     {
       "type": "com.github.derminator.archipelobby.security.DiscordPrincipal",
@@ -1052,6 +1240,9 @@
           "parameterTypes": []
         }
       ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.security.DiscordPrincipalKt"
     },
     {
       "type": "com.github.derminator.archipelobby.security.RealDiscordPrincipalConverter",
@@ -1078,6 +1269,15 @@
         },
         {
           "name": "init",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.github.derminator.archipelobby.storage.InMemoryUploadsService",
+      "methods": [
+        {
+          "name": "<init>",
           "parameterTypes": []
         }
       ]
@@ -3757,7 +3957,12 @@
       ]
     },
     {
-      "type": "java.lang.ClassLoader"
+      "type": "java.lang.ClassLoader",
+      "fields": [
+        {
+          "name": "classLoaderValueMap"
+        }
+      ]
     },
     {
       "type": "java.lang.ClassValue"
@@ -4322,6 +4527,9 @@
       "type": "java.security.SecureClassLoader"
     },
     {
+      "type": "java.security.cert.PKIXRevocationChecker"
+    },
+    {
       "type": "java.security.interfaces.DSAPrivateKey"
     },
     {
@@ -4702,6 +4910,9 @@
       "type": "jdk.internal.loader.ClassLoaders$PlatformClassLoader"
     },
     {
+      "type": "jdk.internal.misc.Unsafe"
+    },
+    {
       "type": "jdk.management.VirtualThreadSchedulerMXBean"
     },
     {
@@ -4930,6 +5141,12 @@
       "type": "kotlinx.coroutines.CancellableContinuationImpl"
     },
     {
+      "type": "kotlinx.coroutines.CancelledContinuation"
+    },
+    {
+      "type": "kotlinx.coroutines.CompletedExceptionally"
+    },
+    {
       "type": "kotlinx.coroutines.DispatchedCoroutine"
     },
     {
@@ -4960,6 +5177,9 @@
       "type": "kotlinx.coroutines.internal.LimitedDispatcher"
     },
     {
+      "type": "kotlinx.coroutines.internal.LimitedDispatcher$Worker"
+    },
+    {
       "type": "kotlinx.coroutines.internal.LockFreeLinkedListNode"
     },
     {
@@ -4985,6 +5205,9 @@
     },
     {
       "type": "kotlinx.coroutines.scheduling.CoroutineScheduler$Worker"
+    },
+    {
+      "type": "kotlinx.coroutines.scheduling.TaskImpl"
     },
     {
       "type": "kotlinx.coroutines.scheduling.WorkQueue"
@@ -5081,6 +5304,897 @@
     },
     {
       "type": "org.bouncycastle.asn1.ASN1Sequence"
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.CONTEXT$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.CompositeSignatures$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.DH$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.DSA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.DSTU4145$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.Dilithium$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.ECGOST$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.EXTERNAL$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.EdEC$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.ElGamal$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.Falcon$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.GM$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.GOST$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.IES$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.LMS$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.MLDSA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.MLKEM$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.NTRU$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.NoSig$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.SLHDSA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.SPHINCSPlus$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.asymmetric.X509$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Blake2b$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Blake2s$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Blake3$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.DSTU7564$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.GOST3411$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Haraka$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Keccak$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.MD2$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.MD4$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.MD5$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD128$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD160$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD256$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.RIPEMD320$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SHA1$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SHA224$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SHA256$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SHA3$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SHA384$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SHA512$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.SM3$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Skein$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Tiger$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.digest.Whirlpool$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.keystore.BC$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.keystore.BCFKS$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.keystore.PKCS12$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.AES$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.ARC4$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.ARIA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Blowfish$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.CAST5$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.CAST6$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Camellia$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.ChaCha$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.DES$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.DESede$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.DSTU7624$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.GOST28147$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.GOST3412_2015$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Grain128$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Grainv1$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.HC128$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.HC256$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.IDEA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Noekeon$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.OpenSSLPBKDF$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF1$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF2$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.PBEPKCS12$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Poly1305$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.RC2$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.RC5$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.RC6$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Rijndael$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.SCRYPT$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.SEED$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.SM4$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Salsa20$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Serpent$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Shacal2$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.SipHash$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.SipHash128$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Skipjack$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.TEA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.TLSKDF$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Threefish$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Twofish$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.VMPC$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.VMPCKSA3$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.XSalsa20$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.XTEA$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.bouncycastle.jcajce.provider.symmetric.Zuc$Mappings",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
     },
     {
       "type": "org.crac.Core"
@@ -5331,6 +6445,25 @@
     },
     {
       "type": "org.flywaydb.database.sqlserver.SQLServerConfigurationExtension"
+    },
+    {
+      "type": "org.graalvm.home.impl.DefaultHomeFinder"
+    },
+    {
+      "type": "org.graalvm.polyglot.io.IOHelper",
+      "fields": [
+        {
+          "name": "ACCESS"
+        }
+      ]
+    },
+    {
+      "type": "org.graalvm.polyglot.management.Management",
+      "fields": [
+        {
+          "name": "ACCESS"
+        }
+      ]
     },
     {
       "type": "org.h2.Driver",
@@ -11835,6 +12968,9 @@
       "type": "org.springframework.cloud.context.restart.RestartEndpoint"
     },
     {
+      "type": "org.springframework.cloud.context.restart.RestartEndpoint$PauseEndpoint"
+    },
+    {
       "type": "org.springframework.cloud.context.restart.RestartEndpoint$ResumeEndpoint"
     },
     {
@@ -14793,6 +15929,12 @@
           "parameterTypes": [
             "java.util.List"
           ]
+        },
+        {
+          "name": "size",
+          "parameterTypes": [
+            "java.util.List"
+          ]
         }
       ]
     },
@@ -15679,6 +16821,60 @@
       ]
     },
     {
+      "type": "sun.security.provider.SHA3$SHA224",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA3$SHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA3$SHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA3$SHA512",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA3$SHAKE128Hash",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA3$SHAKE256Hash",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
       "type": "sun.security.provider.SHA5$SHA384",
       "methods": [
         {
@@ -16275,6 +17471,12 @@
       "glob": "META-INF/build-info.properties"
     },
     {
+      "glob": "META-INF/graalvm/org.graalvm.polyglot/version"
+    },
+    {
+      "glob": "META-INF/graalvm/org.graalvm.truffle/version"
+    },
+    {
       "glob": "META-INF/native-image/sbom.json"
     },
     {
@@ -16287,16 +17489,3352 @@
       "glob": "META-INF/resources/confirm.js"
     },
     {
+      "glob": "META-INF/resources/engine/libtruffleattach/windows/amd64/bin/truffleattach.dll"
+    },
+    {
+      "glob": "META-INF/resources/engine/libtruffleattach/windows/amd64/files"
+    },
+    {
+      "glob": "META-INF/resources/engine/libtruffleattach/windows/amd64/sha256"
+    },
+    {
       "glob": "META-INF/resources/favicon.ico"
     },
     {
       "glob": "META-INF/resources/favicon.svg"
     },
     {
+      "glob": "META-INF/resources/include.files"
+    },
+    {
+      "glob": "META-INF/resources/include.sha256"
+    },
+    {
+      "glob": "META-INF/resources/include/Python.h"
+    },
+    {
+      "glob": "META-INF/resources/include/abstract.h"
+    },
+    {
+      "glob": "META-INF/resources/include/boolobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/bytearrayobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/bytesobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/ceval.h"
+    },
+    {
+      "glob": "META-INF/resources/include/codecs.h"
+    },
+    {
+      "glob": "META-INF/resources/include/compile.h"
+    },
+    {
+      "glob": "META-INF/resources/include/complexobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/abstract.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/bytearrayobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/bytesobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/cellobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/ceval.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/classobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/code.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/compile.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/complexobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/context.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/descrobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/dictobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/fileobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/fileutils.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/floatobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/frameobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/funcobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/genobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/import.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/initconfig.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/listobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/longintrepr.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/longobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/memoryobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/methodobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/modsupport.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/object.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/objimpl.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pyctype.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pydebug.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pyerrors.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pyfpe.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pyframe.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pylifecycle.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pymem.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pystate.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pythonrun.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pythread.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/pytime.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/setobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/sysmodule.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/traceback.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/tupleobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/unicodeobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/warnings.h"
+    },
+    {
+      "glob": "META-INF/resources/include/cpython/weakrefobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/datetime.h"
+    },
+    {
+      "glob": "META-INF/resources/include/descrobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/dictobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/dynamic_annotations.h"
+    },
+    {
+      "glob": "META-INF/resources/include/exports.h"
+    },
+    {
+      "glob": "META-INF/resources/include/fileobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/fileutils.h"
+    },
+    {
+      "glob": "META-INF/resources/include/floatobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/frameobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/genericaliasobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/graalpy/handles.h"
+    },
+    {
+      "glob": "META-INF/resources/include/import.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_abstract.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_atomic.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_bitutils.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_blocks_output_buffer.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_call.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_ceval.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_condvar.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_dtoa.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_fileutils.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_fileutils_windows.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_floatobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_format.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_frame.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_gc.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_gil.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_global_objects.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_initconfig.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_interp.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_long.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_moduleobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_namespace.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_object.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_pyerrors.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_pymath.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_pymem.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_pystate.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_runtime.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_runtime_init.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_strhex.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_tuple.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_typeobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_ucnhash.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_unicodeobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/internal/pycore_warnings.h"
+    },
+    {
+      "glob": "META-INF/resources/include/iterobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/listobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/longobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/memoryobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/methodobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/modsupport.h"
+    },
+    {
+      "glob": "META-INF/resources/include/moduleobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/object.h"
+    },
+    {
+      "glob": "META-INF/resources/include/objimpl.h"
+    },
+    {
+      "glob": "META-INF/resources/include/osdefs.h"
+    },
+    {
+      "glob": "META-INF/resources/include/osmodule.h"
+    },
+    {
+      "glob": "META-INF/resources/include/patchlevel.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pybuffer.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pycapsule.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pyconfig.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pydtrace.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pyerrors.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pyexpat.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pyframe.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pyhash.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pylifecycle.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pymacro.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pymath.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pymem.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pyport.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pystate.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pystats.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pystrcmp.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pystrtod.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pythonrun.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pythread.h"
+    },
+    {
+      "glob": "META-INF/resources/include/pytypedefs.h"
+    },
+    {
+      "glob": "META-INF/resources/include/rangeobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/setobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/sliceobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/structmember.h"
+    },
+    {
+      "glob": "META-INF/resources/include/structseq.h"
+    },
+    {
+      "glob": "META-INF/resources/include/sysmodule.h"
+    },
+    {
+      "glob": "META-INF/resources/include/traceback.h"
+    },
+    {
+      "glob": "META-INF/resources/include/tracemalloc.h"
+    },
+    {
+      "glob": "META-INF/resources/include/tupleobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/typeslots.h"
+    },
+    {
+      "glob": "META-INF/resources/include/unicodeobject.h"
+    },
+    {
+      "glob": "META-INF/resources/include/warnings.h"
+    },
+    {
+      "glob": "META-INF/resources/include/weakrefobject.h"
+    },
+    {
       "glob": "META-INF/resources/index.html"
     },
     {
+      "glob": "META-INF/resources/libgraalpy.files"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy.sha256"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/__graalpython__.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/_nt.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/_sre.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/_sysconfig.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/_weakref.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/builtins.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/java.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/_polyglot.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/_polyglot_arrow.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/_polyglot_datetime.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/_polyglot_time.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/_sysconfigdata.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/autopatch_capi.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/graalpy-config.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/standalone/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/standalone/resources/Py2BinLauncher.java"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/modules/standalone/resources/native-image-resources.json"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/Cython-0.29.32.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/Cython-0.29.37.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/Cython-3.0.10.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/MarkupSafe.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/PyDriller.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/README.md"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/asv-0.5.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/autopep8.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/bcrypt-4.0.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/blosc2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/catboost-1.2.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/catboost-1.2.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/category-encoders.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cffi-1.15.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cffi-1.16.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cloudpickle-2.2.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cramjam-2.7.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-3.4.7.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-38.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-38.0.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-39.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-39.0.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-41.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-42.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/cryptography-42.0.5.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/flake8-6.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/greenlet-3.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/greenlet-3.1.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/grpcio-1.56.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/grpcio-1.60.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/grpcio-1.66.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/h2o.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/hmmlearn.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/hypothesis-6.104.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/hypothesis-6.105.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/hypothesis-6.118.5.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/hypothesis-6.135.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/hypothesis-6.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/itk-5.4.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/jaxlib-0.4.13.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/jiter.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/joblib-1.3.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/joblib-1.4.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/jq-1.8.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/jupyter_server.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lazy-object-proxy.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/libcst-1.0.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lightfm-1.15.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/llvmlite.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-4.9.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-5.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-5.1.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-5.1.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-5.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-5.3.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/lxml-5.4.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/meson-python.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/metadata.toml"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/mlx.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/nanobind.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/numba-0.59.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/numpy-1.26.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/numpy-1.26.4.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/numpy-2.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/onnxruntime-1.17.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/orjson-3.10.5.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/orjson-3.9.7.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/ormsgpack-1.8.0-1.9.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/overrides-7.4.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/packaging.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pandas-1.5.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pandas-2.0.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pandas-2.2.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pandas-2.2.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pendulum-3.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pip-23.2.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pip-24.3.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/prompt_toolkit.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/protobuf-3.21.9.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/protobuf.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/psycopg2-2.9.10.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/psycopg2-2.9.9.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/py4j.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyarrow-12.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyarrow-15.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyarrow-19.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyarrow-19.0.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyarrow-20.0.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pybind11-2.10.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pybind11-2.11.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pydantic-core-2.10.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pydantic-core-2.23.4.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pydantic-core-2.26.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pydantic-core-2.27.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pygame-2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pygobject-3.52.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pymongo-4.8.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pymongo.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pymupdf.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyperf-2.3.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyperf-2.3.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyperformance-1.0.5.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyspark-3.4.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pythran-0.12.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pythran-0.13.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pythran-0.15.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pythran-0.16.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/pyzmq.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/rapidfuzz-3.10.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/rapidfuzz.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/rasterio-1.4.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/ray-2.3.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/ray-2.9.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/rpds_py-0.10.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/safetensors-0.3.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/scikit-build-core.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/scikit-learn-1.1.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/scikit-learn-1.2.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/scikit-learn-1.5.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/scikit-learn-1.7.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/scipy-1.10.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/setproctitle-1.2.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tensorflow-2.14.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tensorflow-2.15.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tensorflow-io-0.34.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tensorflow-io-gcs-filesystem-0.34.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tiktoken-0.7.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tokenizers-0.13.3.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/tokenizers-0.15.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torch-1.13.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torch-2.2.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torch-2.4.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torch-2.7.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torchvision-0.17.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torchvision-0.19.1.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/torchvision-0.22.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/trio.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/typing_extensions.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/urllib3-2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/uvloop.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/watchfiles-0.21.0.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-0.35.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-0.37.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-0.38.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-0.40.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-0.41.2.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-0.43.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/wheel-pre-0.35.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/xmlschema.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/patches/zstandard.patch"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/pip_hook.py"
+    },
+    {
+      "glob": "META-INF/resources/libgraalpy/unicodedata.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython.files"
+    },
+    {
+      "glob": "META-INF/resources/libpython.sha256"
+    },
+    {
+      "glob": "META-INF/resources/libpython/__future__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/__hello__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/__phello__/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/__phello__/ham/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/__phello__/ham/eggs.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/__phello__/spam.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_aix_support.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_collections_abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_compat_pickle.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_compression.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_dummy_thread.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_markupbase.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_md5.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_osx_support.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_py_abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_pydatetime.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_pydecimal.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_pyio.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_pylong.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_sha1.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_sha256.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_sha512.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_sitebuiltins.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_strptime.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_threading_local.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/_weakrefset.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/aifc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/antigravity.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/argparse.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ast.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/base_events.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/base_futures.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/base_subprocess.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/base_tasks.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/constants.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/coroutines.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/events.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/exceptions.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/format_helpers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/futures.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/locks.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/log.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/mixins.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/proactor_events.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/protocols.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/queues.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/runners.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/selector_events.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/sslproto.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/staggered.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/streams.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/subprocess.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/taskgroups.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/tasks.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/threads.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/timeouts.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/transports.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/trsock.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/unix_events.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/windows_events.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/asyncio/windows_utils.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/base64.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/bdb.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/bisect.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/bz2.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/cProfile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/calendar.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/cgi.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/cgitb.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/chunk.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/cmd.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/code.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/codecs.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/codeop.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/collections/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/collections/abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/colorsys.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/compileall.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/concurrent/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/concurrent/futures/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/concurrent/futures/_base.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/concurrent/futures/process.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/concurrent/futures/thread.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/configparser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/contextlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/contextvars.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/copy.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/copyreg.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/crypt.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/csv.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/_aix.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/_endian.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/README.ctypes"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/dyld.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/dylib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/fetch_macholib"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/fetch_macholib.bat"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/macholib/framework.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ctypes/wintypes.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/curses/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/curses/ascii.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/curses/has_key.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/curses/panel.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/curses/textpad.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/dataclasses.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/datetime.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/dbm/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/dbm/dumb.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/dbm/gnu.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/dbm/ndbm.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/decimal.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/difflib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/dis.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/doctest.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/_encoded_words.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/_header_value_parser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/_parseaddr.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/_policybase.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/architecture.rst"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/base64mime.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/charset.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/contentmanager.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/encoders.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/errors.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/feedparser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/generator.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/header.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/headerregistry.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/iterators.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/message.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/application.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/audio.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/base.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/image.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/message.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/multipart.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/nonmultipart.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/mime/text.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/parser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/policy.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/quoprimime.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/email/utils.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/aliases.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/ascii.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/base64_codec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/big5.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/big5hkscs.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/bz2_codec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/charmap.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp037.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1006.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1026.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1125.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1140.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1250.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1251.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1252.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1253.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1254.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1255.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1256.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1257.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp1258.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp273.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp424.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp437.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp500.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp720.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp737.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp775.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp850.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp852.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp855.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp856.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp857.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp858.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp860.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp861.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp862.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp863.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp864.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp865.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp866.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp869.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp874.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp875.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp932.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp949.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/cp950.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/euc_jis_2004.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/euc_jisx0213.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/euc_jp.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/euc_kr.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/gb18030.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/gb2312.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/gbk.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/hex_codec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/hp_roman8.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/hz.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/idna.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_jp.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_jp_1.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_jp_2.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_jp_2004.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_jp_3.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_jp_ext.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso2022_kr.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_1.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_10.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_11.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_13.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_14.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_15.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_16.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_2.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_3.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_4.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_5.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_6.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_7.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_8.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/iso8859_9.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/johab.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/koi8_r.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/koi8_t.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/koi8_u.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/kz1048.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/latin_1.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_arabic.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_croatian.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_cyrillic.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_farsi.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_greek.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_iceland.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_latin2.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_roman.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_romanian.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mac_turkish.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/mbcs.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/oem.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/palmos.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/ptcp154.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/punycode.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/quopri_codec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/raw_unicode_escape.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/rot_13.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/shift_jis.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/shift_jis_2004.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/shift_jisx0213.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/tis_620.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/undefined.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/unicode_escape.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_16.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_16_be.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_16_le.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_32.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_32_be.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_32_le.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_7.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_8.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/utf_8_sig.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/uu_codec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/encodings/zlib_codec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ensurepip/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ensurepip/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ensurepip/_bundled/pip-24.3.1-py3-none-any.whl"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ensurepip/_uninstall.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/enum.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/filecmp.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/fileinput.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/fnmatch.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/fractions.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ftplib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/functools.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/genericpath.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/getopt.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/getpass.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/gettext.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/glob.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/graphlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/gzip.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/hashlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/heapq.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/hmac.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/html/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/html/entities.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/html/parser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/http/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/http/client.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/http/cookiejar.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/http/cookies.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/http/server.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/CREDITS.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/ChangeLog"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/HISTORY.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/README.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/folder.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle.ico"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_16.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_16.png"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_256.png"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_32.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_32.png"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_48.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/idle_48.png"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/minusnode.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/openfolder.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/plusnode.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/python.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/Icons/tk.gif"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/NEWS2x.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/News3.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/README.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/TODO.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/autocomplete.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/autocomplete_w.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/autoexpand.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/browser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/calltip.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/calltip_w.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/codecontext.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/colorizer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/config-extensions.def"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/config-highlight.def"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/config-keys.def"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/config-main.def"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/config.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/config_key.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/configdialog.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/debugger.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/debugger_r.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/debugobj.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/debugobj_r.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/delegator.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/dynoption.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/editor.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/extend.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/filelist.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/format.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/grep.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/help.html"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/help.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/help_about.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/history.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/hyperparser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/idle.bat"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/idle.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/idle.pyw"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/iomenu.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/macosx.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/mainmenu.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/multicall.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/outwin.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/parenmatch.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/pathbrowser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/percolator.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/pyparse.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/pyshell.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/query.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/redirector.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/replace.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/rpc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/run.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/runscript.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/scrolledlist.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/search.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/searchbase.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/searchengine.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/sidebar.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/squeezer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/stackviewer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/statusbar.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/textview.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/tooltip.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/tree.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/undo.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/window.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/zoomheight.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/idlelib/zzdummy.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/imaplib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/imghdr.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/_abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/_bootstrap.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/_bootstrap_external.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/machinery.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/_adapters.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/_collections.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/_functools.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/_itertools.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/_meta.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/metadata/_text.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/readers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/_adapters.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/_common.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/_itertools.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/_legacy.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/abc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/readers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/resources/simple.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/simple.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/importlib/util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/inspect.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/io.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ipaddress.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/json/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/json/decoder.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/json/encoder.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/json/scanner.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/json/tool.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/keyword.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/Grammar.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/Grammar3.8.2.dev.0.pickle"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/PatternGrammar.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/PatternGrammar3.8.2.dev.0.pickle"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/btm_matcher.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/btm_utils.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixer_base.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixer_util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_apply.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_asserts.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_basestring.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_buffer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_dict.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_except.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_exec.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_execfile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_exitfunc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_filter.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_funcattrs.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_future.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_getcwdu.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_has_key.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_idioms.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_import.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_imports.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_imports2.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_input.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_intern.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_isinstance.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_itertools.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_itertools_imports.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_long.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_map.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_metaclass.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_methodattrs.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_ne.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_next.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_nonzero.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_numliterals.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_operator.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_paren.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_print.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_raise.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_raw_input.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_reduce.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_reload.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_renames.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_repr.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_set_literal.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_standarderror.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_sys_exc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_throw.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_tuple_params.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_types.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_unicode.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_urllib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_ws_comma.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_xrange.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_xreadlines.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/fixes/fix_zip.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/main.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/patcomp.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/conv.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/driver.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/grammar.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/literals.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/parse.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/pgen.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/token.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pgen2/tokenize.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pygram.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/pytree.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lib2to3/refactor.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/linecache.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/locale.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/logging/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/logging/config.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/logging/handlers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/lzma.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/mailbox.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/mailcap.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/mimetypes.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/modulefinder.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/msilib/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/msilib/schema.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/msilib/sequence.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/msilib/text.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/connection.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/context.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/dummy/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/dummy/connection.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/forkserver.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/heap.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/managers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/pool.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/popen_fork.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/popen_forkserver.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/popen_spawn_posix.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/popen_spawn_win32.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/popen_truffleprocess.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/process.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/queues.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/reduction.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/resource_sharer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/resource_tracker.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/shared_memory.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/sharedctypes.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/spawn.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/synchronize.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/multiprocessing/util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/netrc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/nntplib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ntpath.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/nturl2path.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/numbers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/opcode.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/operator.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/optparse.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/os.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pathlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pdb.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pickle.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pickletools.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pipes.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pkgutil.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/platform.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/plistlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/poplib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/posixpath.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pprint.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/profile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pstats.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pty.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/py_compile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pydoc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pydoc_data/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pydoc_data/_pydoc.css"
+    },
+    {
+      "glob": "META-INF/resources/libpython/pydoc_data/topics.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/queue.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/quopri.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/random.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/re/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/re/_casefix.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/re/_compiler.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/re/_constants.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/re/_parser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/reprlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/rlcompleter.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/runpy.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sched.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/secrets.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/selectors.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/shelve.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/shlex.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/shutil.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/signal.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/site-packages/README.txt"
+    },
+    {
+      "glob": "META-INF/resources/libpython/site.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/smtplib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sndhdr.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/socket.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/socketserver.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sqlite3/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sqlite3/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sqlite3/dbapi2.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sqlite3/dump.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sre_compile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sre_constants.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sre_parse.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/ssl.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/stat.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/statistics.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/string.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/stringprep.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/struct.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/subprocess.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sunau.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/symtable.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/sysconfig.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tabnanny.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tarfile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/telnetlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tempfile.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/_hypothesis_stubs/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/_hypothesis_stubs/_helpers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/_hypothesis_stubs/strategies.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/ast_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/asynchat.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/asyncore.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/bytecode_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/hashlib_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/hypothesis_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/i18n_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/import_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/interpreters.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/logging_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/os_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/pty_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/script_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/smtpd.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/socket_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/testcase.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/threading_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/venv.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/test/support/warnings_helper.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/textwrap.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/this.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/threading.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/timeit.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/colorchooser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/commondialog.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/constants.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/dialog.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/dnd.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/filedialog.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/font.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/messagebox.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/scrolledtext.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/simpledialog.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/tix.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tkinter/ttk.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/token.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tokenize.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tomllib/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tomllib/_parser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tomllib/_re.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tomllib/_types.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/trace.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/traceback.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tracemalloc.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/tty.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtle.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/bytedesign.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/chaos.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/clock.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/colormixer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/forest.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/fractalcurves.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/lindenmayer.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/minimal_hanoi.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/nim.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/paint.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/peace.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/penrose.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/planet_and_moon.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/rosette.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/round_dance.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/sorting_animate.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/tree.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/turtle.cfg"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/two_canvases.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/turtledemo/yinyang.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/types.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/typing.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/_log.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/async_case.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/case.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/loader.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/main.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/mock.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/result.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/runner.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/signals.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/suite.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/unittest/util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/urllib/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/urllib/error.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/urllib/parse.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/urllib/request.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/urllib/response.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/urllib/robotparser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/uu.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/uuid.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/scripts/common/Activate.ps1"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/scripts/common/activate"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/scripts/nt/activate.bat"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/scripts/nt/deactivate.bat"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/scripts/posix/activate.csh"
+    },
+    {
+      "glob": "META-INF/resources/libpython/venv/scripts/posix/activate.fish"
+    },
+    {
+      "glob": "META-INF/resources/libpython/warnings.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wave.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/weakref.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/webbrowser.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/handlers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/headers.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/simple_server.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/types.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/util.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/wsgiref/validate.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xdrlib.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/NodeFilter.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/domreg.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/expatbuilder.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/minicompat.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/minidom.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/pulldom.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/dom/xmlbuilder.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/etree/ElementInclude.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/etree/ElementPath.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/etree/ElementTree.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/etree/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/etree/cElementTree.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/parsers/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/parsers/expat.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/sax/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/sax/_exceptions.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/sax/expatreader.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/sax/handler.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/sax/saxutils.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xml/sax/xmlreader.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xmlrpc/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xmlrpc/client.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/xmlrpc/server.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zipapp.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zipfile/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zipfile/__main__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zipfile/_path/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zipfile/_path/glob.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zipimport.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zoneinfo/__init__.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zoneinfo/_common.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zoneinfo/_tzpath.py"
+    },
+    {
+      "glob": "META-INF/resources/libpython/zoneinfo/_zoneinfo.py"
+    },
+    {
+      "glob": "META-INF/resources/native-image.properties"
+    },
+    {
+      "glob": "META-INF/resources/ni.files"
+    },
+    {
+      "glob": "META-INF/resources/ni.sha256"
+    },
+    {
+      "glob": "META-INF/resources/oauth2/authorization/discord"
+    },
+    {
       "glob": "META-INF/resources/style.css"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/Lib/venv/scripts/nt/graalpy.exe"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/Lib/venv/scripts/nt/python.exe"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/bz2support.dll"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_cpython_sre.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_cpython_unicodedata.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_ctypes_test.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_sha3.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_sqlite3.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_testbuffer.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_testcapi.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_testmultiphase.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/_testsinglephase.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/modules/pyexpat.graalpy250-312-native-x86_64-win32.pyd"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/python-native.dll"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/lib-graalpython/python-native.lib"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/libs/python312.lib"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/native.files"
+    },
+    {
+      "glob": "META-INF/resources/windows/amd64/native.sha256"
     },
     {
       "glob": "META-INF/sbom/application.cdx.json"
@@ -16306,6 +20844,42 @@
     },
     {
       "glob": "META-INF/services/ch.qos.logback.classic.spi.Configurator"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.TruffleRuntimeAccess"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.impl.TruffleLocator"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.instrumentation.provider.TruffleInstrumentProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.library.provider.DefaultExportProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.provider.InternalResourceProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.provider.TruffleLanguageProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.api.strings.provider.JCodingsProvider"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.EngineCacheSupport"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.FloodControlHandler"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.LoopNodeFactory"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.TruffleTypes"
+    },
+    {
+      "glob": "META-INF/services/com.oracle.truffle.runtime.jfr.EventFactory$Provider"
     },
     {
       "glob": "META-INF/services/io.r2dbc.spi.ConnectionFactoryProvider"
@@ -16362,6 +20936,12 @@
       "glob": "META-INF/services/org.flywaydb.core.extensibility.Plugin"
     },
     {
+      "glob": "META-INF/services/org.graalvm.home.HomeFinder"
+    },
+    {
+      "glob": "META-INF/services/org.graalvm.polyglot.impl.AbstractPolyglotImpl"
+    },
+    {
       "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
     },
     {
@@ -16387,6 +20967,18 @@
     },
     {
       "glob": "META-INF/validation.xml"
+    },
+    {
+      "glob": "application-dev.properties"
+    },
+    {
+      "glob": "application-dev.xml"
+    },
+    {
+      "glob": "application-dev.yaml"
+    },
+    {
+      "glob": "application-dev.yml"
     },
     {
       "glob": "application-discord.properties"
@@ -16470,6 +21062,9 @@
       "glob": "com/github/derminator/archipelobby/data/RoomService.class"
     },
     {
+      "glob": "com/github/derminator/archipelobby/discord/DevDiscordConfiguration.class"
+    },
+    {
       "glob": "com/github/derminator/archipelobby/discord/DevDiscordProperties.class"
     },
     {
@@ -16482,7 +21077,19 @@
       "glob": "com/github/derminator/archipelobby/discord/DiscordService.class"
     },
     {
+      "glob": "com/github/derminator/archipelobby/generator/ArchipelagoGeneratorService.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/generator/PythonScriptRunner.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/generator/RealArchipelagoGeneratorService.class"
+    },
+    {
       "glob": "com/github/derminator/archipelobby/security/AbstractDiscordPrincipalConverter.class"
+    },
+    {
+      "glob": "com/github/derminator/archipelobby/security/DevDiscordPrincipalConverter.class"
     },
     {
       "glob": "com/github/derminator/archipelobby/security/RealDiscordPrincipalConverter.class"
@@ -16491,10 +21098,583 @@
       "glob": "com/github/derminator/archipelobby/storage/FileSystemUploadsService.class"
     },
     {
+      "glob": "com/github/derminator/archipelobby/storage/InMemoryUploadsService.class"
+    },
+    {
       "glob": "com/github/derminator/archipelobby/storage/UploadsService.class"
     },
     {
+      "glob": "com/oracle/graal/python/builtins/PythonBuiltins.class"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCODECS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCOLLECTIONS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCOLLECTIONS_ABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCONTEXTLIB.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenCOPYREG.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenDATETIME.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ALIASES.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ASCII.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BASE64_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BIG5.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BIG5HKSCS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_BZ2_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CHARMAP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP037.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1006.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1026.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1125.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1140.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1250.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1251.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1252.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1253.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1254.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1255.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1256.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1257.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP1258.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP273.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP424.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP437.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP500.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP720.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP737.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP775.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP850.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP852.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP855.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP856.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP857.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP858.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP860.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP861.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP862.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP863.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP864.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP865.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP866.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP869.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP874.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP875.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP932.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP949.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_CP950.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_JISX0213.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_JIS_2004.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_JP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_EUC_KR.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_GB18030.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_GB2312.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_GBK.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_HEX_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_HP_ROMAN8.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_HZ.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_IDNA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_1.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_2.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_2004.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_3.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_JP_EXT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO2022_KR.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_1.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_10.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_11.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_13.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_14.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_15.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_16.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_2.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_3.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_4.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_5.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_6.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_7.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_8.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ISO8859_9.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_JOHAB.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KOI8_R.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KOI8_T.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KOI8_U.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_KZ1048.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_LATIN_1.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ARABIC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_CROATIAN.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_CYRILLIC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_FARSI.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_GREEK.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ICELAND.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_LATIN2.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ROMAN.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_ROMANIAN.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MAC_TURKISH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_MBCS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_OEM.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_PALMOS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_PTCP154.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_PUNYCODE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_QUOPRI_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_RAW_UNICODE_ESCAPE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ROT_13.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_SHIFT_JIS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_SHIFT_JISX0213.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_SHIFT_JIS_2004.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_TIS_620.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UNDEFINED.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UNICODE_ESCAPE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_16.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_16_BE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_16_LE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_32.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_32_BE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_32_LE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_7.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_8.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UTF_8_SIG.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_UU_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENCODINGS_ZLIB_CODEC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenENUM.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenFROZEN_ONLY.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenFUNCTOOLS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGENERICPATH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_BUILTINS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_JAVA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_PIP_HOOK.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY_UNICODEDATA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__NT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__SRE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__SYSCONFIG.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY__WEAKREF.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenGRAALPY___GRAALPYTHON__.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenHEAPQ.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB_MACHINERY.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB_UTIL.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB__BOOTSTRAP.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIMPORTLIB__BOOTSTRAP_EXTERNAL.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenINSPECT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenIO.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenKEYWORD.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenLOCALE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenNTPATH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenOPERATOR.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenOS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenPOLYGLOT_ARROW.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenPOSIXPATH.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenREPRLIB.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__CASEFIX.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__COMPILER.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__CONSTANTS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRE__PARSER.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRLCOMPLETER.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenRUNPY.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSITE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSRE_COMPILE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSRE_CONSTANTS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSRE_PARSE.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenSTAT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenTYPES.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenWARNINGS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/FrozenZIPIMPORT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_COLLECTIONS_ABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_POLYGLOT.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_POLYGLOT_DATETIME.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_POLYGLOT_TIME.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_PY_ABC.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_SITEBUILTINS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_SYSCONFIGDATA.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen_WEAKREFSET.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__HELLO__.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO__.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO___HAM.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO___HAM_EGGS.bin"
+    },
+    {
+      "glob": "com/oracle/graal/python/builtins/objects/module/Frozen__PHELLO___SPAM.bin"
+    },
+    {
       "glob": "commons-logging.properties"
+    },
+    {
+      "glob": "config/application-dev.properties"
+    },
+    {
+      "glob": "config/application-dev.xml"
+    },
+    {
+      "glob": "config/application-dev.yaml"
+    },
+    {
+      "glob": "config/application-dev.yml"
     },
     {
       "glob": "config/application-discord.properties"
@@ -16554,10 +21734,16 @@
       "glob": "db/migration/V3__AddApWorlds.sql"
     },
     {
+      "glob": "db/migration/V4__AddGeneratedGameToRooms.sql"
+    },
+    {
       "glob": "discord4j/common/git.properties"
     },
     {
       "glob": "git.properties"
+    },
+    {
+      "glob": "graalpy_versions"
     },
     {
       "glob": "jndi.properties"
@@ -16654,6 +21840,15 @@
     },
     {
       "glob": "org/flywaydb/core/internal/version.txt"
+    },
+    {
+      "glob": "org/graalvm/shadowed/com/ibm/icu/ICUConfig.properties"
+    },
+    {
+      "glob": "org/graalvm/shadowed/com/ibm/icu/impl/data/icudata/ucase.icu"
+    },
+    {
+      "glob": "org/graalvm/shadowed/com/ibm/icu/impl/data/icudata/uprops.icu"
     },
     {
       "glob": "org/h2/util/data.zip"
@@ -18078,6 +23273,9 @@
       "glob": "public/index.html"
     },
     {
+      "glob": "public/oauth2/authorization/discord"
+    },
+    {
       "glob": "resources/confirm.js"
     },
     {
@@ -18088,6 +23286,9 @@
     },
     {
       "glob": "resources/index.html"
+    },
+    {
+      "glob": "resources/oauth2/authorization/discord"
     },
     {
       "glob": "resources/style.css"
@@ -18114,6 +23315,9 @@
       "glob": "static/index.html"
     },
     {
+      "glob": "static/oauth2/authorization/discord"
+    },
+    {
       "glob": "static/style.css"
     },
     {
@@ -18121,6 +23325,9 @@
     },
     {
       "glob": "templates/error/404.html"
+    },
+    {
+      "glob": "templates/error/error.html"
     },
     {
       "glob": "templates/index.html"
@@ -18145,6 +23352,10 @@
     {
       "module": "java.base",
       "glob": "sun/net/idn/uidna.spp"
+    },
+    {
+      "module": "java.base",
+      "glob": "sun/net/www/content-types.properties"
     },
     {
       "module": "jdk.jfr",

@@ -88,7 +88,6 @@ graalvmNative {
             buildArgs.addAll(
                 "--enable-url-protocols=https",
                 "-H:+ReportExceptionStackTraces",
-                "--language:python",
             )
         }
     }
