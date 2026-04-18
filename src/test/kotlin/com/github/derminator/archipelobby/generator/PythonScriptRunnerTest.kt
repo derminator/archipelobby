@@ -72,13 +72,20 @@ class PythonScriptRunnerTest {
     }
 
     @Test
-    fun `ModuleUpdate from the Archipelago submodule is callable`(@TempDir tempDir: Path) {
-        val archipelagoDir = Path.of("Archipelago").toAbsolutePath().toString()
-        val script = tempDir.resolve("call_module_update.py")
+    fun `script can import ModuleUpdate from its own directory`(@TempDir tempDir: Path) {
+        val archipelagoDir = tempDir.resolve("Archipelago")
+        archipelagoDir.toFile().mkdirs()
+
+        archipelagoDir.resolve("ModuleUpdate.py").writeText(
+            """
+            def check_pip():
+                return True
+            """.trimIndent(),
+        )
+
+        val script = archipelagoDir.resolve("Generate.py")
         script.writeText(
             """
-            import sys
-            sys.path.insert(0, r'${archipelagoDir.replace("\\", "\\\\")}')
             import ModuleUpdate
             ModuleUpdate.check_pip()
             print('ModuleUpdate.check_pip OK')

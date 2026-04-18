@@ -18,16 +18,29 @@ class PythonScriptRunner {
      * A fresh context is created per call, ensuring thread safety for concurrent invocations.
      */
     fun run(scriptPath: String, vararg args: String): String {
+        val scriptFile = File(scriptPath).absoluteFile
+        val scriptDirectory = scriptFile.parent
         val outputStream = ByteArrayOutputStream()
         GraalPyResources.contextBuilder()
             .allowAllAccess(true)
             .out(outputStream)
             .err(outputStream)
-            .arguments("python", arrayOf(scriptPath, *args))
+            .arguments("python", arrayOf(scriptFile.path, *args))
             .build()
             .use { context ->
                 try {
-                    val source = Source.newBuilder("python", File(scriptPath)).build()
+                    context.getBindings("python").putMember("__archipelobby_script_directory__", scriptDirectory)
+                    context.eval(
+                        "python",
+                        """
+                        import sys
+                        script_directory = __archipelobby_script_directory__
+                        if script_directory and script_directory not in sys.path:
+                            sys.path.insert(0, script_directory)
+                        """.trimIndent(),
+                    )
+
+                    val source = Source.newBuilder("python", scriptFile).build()
                     context.eval(source)
                 } catch (e: PolyglotException) {
                     val output = outputStream.toString(Charsets.UTF_8)
