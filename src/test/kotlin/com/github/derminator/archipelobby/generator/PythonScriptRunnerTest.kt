@@ -1,8 +1,11 @@
 package com.github.derminator.archipelobby.generator
 
+import ch.qos.logback.classic.spi.ILoggingEvent
+import ch.qos.logback.core.read.ListAppender
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
+import org.slf4j.LoggerFactory
 import org.springframework.web.server.ResponseStatusException
 import java.nio.file.Path
 import kotlin.io.path.writeText
@@ -69,6 +72,25 @@ class PythonScriptRunnerTest {
             output.trim().matches(Regex("""\d+\.\d+.*""")),
             "Expected a pip version in output but got: $output",
         )
+    }
+
+    @Test
+    fun `output lines are logged in real-time during script execution`(@TempDir tempDir: Path) {
+        val script = tempDir.resolve("test.py")
+        script.writeText("print('live output')")
+
+        val logger = LoggerFactory.getLogger(PythonScriptRunner::class.java) as ch.qos.logback.classic.Logger
+        val appender = ListAppender<ILoggingEvent>()
+        appender.start()
+        logger.addAppender(appender)
+
+        try {
+            runner.run(script.toString())
+        } finally {
+            logger.detachAppender(appender)
+        }
+
+        assertTrue(appender.list.any { "[python] live output" in it.formattedMessage })
     }
 
     @Test

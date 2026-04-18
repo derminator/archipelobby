@@ -3,14 +3,18 @@ package com.github.derminator.archipelobby.generator
 import org.graalvm.polyglot.PolyglotException
 import org.graalvm.polyglot.Source
 import org.graalvm.python.embedding.GraalPyResources
+import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ResponseStatusException
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.OutputStream
 
 @Component
 class PythonScriptRunner {
+
+    private val logger = LoggerFactory.getLogger(PythonScriptRunner::class.java)
 
     /**
      * Executes a Python script with the given arguments in an isolated GraalPy context.
@@ -20,7 +24,7 @@ class PythonScriptRunner {
     fun run(scriptPath: String, vararg args: String): String {
         val scriptFile = File(scriptPath).absoluteFile
         val scriptDirectory = scriptFile.parent
-        val outputStream = ByteArrayOutputStream()
+        val outputStream = LoggingStream()
         GraalPyResources.contextBuilder()
             .allowAllAccess(true)
             .out(outputStream)
@@ -43,7 +47,7 @@ class PythonScriptRunner {
                     val source = Source.newBuilder("python", scriptFile).build()
                     context.eval(source)
                 } catch (e: PolyglotException) {
-                    val output = outputStream.toString(Charsets.UTF_8)
+                    val output = outputStream.getOutput()
                     if (!e.isExit || e.exitStatus != 0) {
                         val detail = buildString {
                             if (!e.isExit) e.message?.let { append(it).append("\n") }
@@ -56,6 +60,32 @@ class PythonScriptRunner {
                     }
                 }
             }
-        return outputStream.toString(Charsets.UTF_8)
+        return outputStream.getOutput()
+    }
+
+    private inner class LoggingStream : OutputStream() {
+        private val lineBuffer = StringBuilder()
+        private val fullOutput = ByteArrayOutputStream()
+
+        override fun write(b: Int) {
+            fullOutput.write(b)
+            val ch = b.toChar()
+            if (ch == '\n') {
+                logger.info("[python] {}", lineBuffer.toString())
+                lineBuffer.clear()
+            } else {
+                lineBuffer.append(ch)
+            }
+        }
+
+        override fun close() {
+            if (lineBuffer.isNotEmpty()) {
+                logger.info("[python] {}", lineBuffer.toString())
+                lineBuffer.clear()
+            }
+            super.close()
+        }
+
+        fun getOutput(): String = fullOutput.toString(Charsets.UTF_8)
     }
 }
