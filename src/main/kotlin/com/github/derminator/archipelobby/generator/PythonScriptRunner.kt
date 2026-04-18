@@ -26,6 +26,7 @@ class PythonScriptRunner {
         val scriptDirectory = scriptFile.parent
         val outputStream = LoggingStream()
         GraalPyResources.contextBuilder()
+            .environment("PYTHONUNBUFFERED", "1")
             .allowAllAccess(true)
             .out(outputStream)
             .err(outputStream)
@@ -64,29 +65,29 @@ class PythonScriptRunner {
     }
 
     private inner class LoggingStream : OutputStream() {
-        private val lineBuffer = StringBuilder()
+        private val lineBuffer = ByteArrayOutputStream()
         private val fullOutput = ByteArrayOutputStream()
 
         override fun write(b: Int) {
             fullOutput.write(b)
-            val ch = b.toChar()
-            if (ch == '\n') {
+            if (b == '\n'.code) {
                 writeLogLine()
             } else {
-                lineBuffer.append(ch)
+                lineBuffer.write(b)
             }
         }
 
         override fun close() {
-            if (lineBuffer.isNotEmpty()) {
+            if (lineBuffer.size() > 0) {
                 writeLogLine()
             }
             super.close()
         }
 
         private fun writeLogLine() {
-            logger.info("[python] {}", lineBuffer.toString())
-            lineBuffer.clear()
+            val line = lineBuffer.toString(Charsets.UTF_8).trimEnd('\r')
+            logger.info("[python] {}", line)
+            lineBuffer.reset()
         }
 
         fun getOutput(): String = fullOutput.toString(Charsets.UTF_8)
