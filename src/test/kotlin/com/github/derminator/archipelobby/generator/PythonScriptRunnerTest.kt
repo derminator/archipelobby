@@ -94,6 +94,16 @@ class PythonScriptRunnerTest {
     }
 
     @Test
+    fun `preamble is evaluated before the main script`(@TempDir tempDir: Path) {
+        val script = tempDir.resolve("test.py")
+        script.writeText("print(setup_value)")
+
+        val output = runner.run(script.toString(), preamble = "setup_value = 'from preamble'")
+
+        assertContains(output, "from preamble")
+    }
+
+    @Test
     fun `script can import ModuleUpdate from its own directory`(@TempDir tempDir: Path) {
         val archipelagoDir = tempDir.resolve("Archipelago")
         archipelagoDir.toFile().mkdirs()

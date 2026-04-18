@@ -21,7 +21,7 @@ class PythonScriptRunner {
      * Stdout and stderr are captured and returned (or included in the exception message on failure).
      * A fresh context is created per call, ensuring thread safety for concurrent invocations.
      */
-    fun run(scriptPath: String, vararg args: String): String {
+    fun run(scriptPath: String, vararg args: String, preamble: String = ""): String {
         val scriptFile = File(scriptPath).absoluteFile
         val scriptDirectory = scriptFile.parent
         val outputStream = LoggingStream()
@@ -44,6 +44,7 @@ class PythonScriptRunner {
                             sys.path.insert(0, script_directory)
                         """.trimIndent(),
                     )
+                    if (preamble.isNotBlank()) context.eval("python", preamble)
 
                     val source = Source.newBuilder("python", scriptFile).build()
                     context.eval(source)
