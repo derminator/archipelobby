@@ -14,7 +14,7 @@ class PythonScriptRunner {
 
     /**
      * Executes a Python script with the given arguments in an isolated GraalPy context.
-     * stdout and stderr are captured and returned (or included in the exception message on failure).
+     * Stdout and stderr are captured and returned (or included in the exception message on failure).
      * A fresh context is created per call, ensuring thread safety for concurrent invocations.
      */
     fun run(scriptPath: String, vararg args: String): String {

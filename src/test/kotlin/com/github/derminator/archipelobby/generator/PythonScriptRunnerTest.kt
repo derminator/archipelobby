@@ -7,7 +7,6 @@ import org.springframework.web.server.ResponseStatusException
 import java.nio.file.Path
 import kotlin.io.path.writeText
 import kotlin.test.assertContains
-import kotlin.test.assertFalse
 
 class PythonScriptRunnerTest {
 
