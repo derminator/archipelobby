@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
+import org.springframework.security.authentication.AnonymousAuthenticationToken
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -83,7 +84,7 @@ class RoomController(
         principal: Principal?,
         model: Model
     ): Mono<String> = mono {
-        if (principal == null) {
+        if (principal == null || principal is AnonymousAuthenticationToken) {
             val preview = roomService.getRoomForPreview(roomId)
             model.addAttribute("preview", preview)
             return@mono "room-preview"
