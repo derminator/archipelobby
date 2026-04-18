@@ -5,8 +5,6 @@ plugins {
     kotlin("plugin.spring") version "2.3.20"
     id("org.springframework.boot") version "4.1.0-M4"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.graalvm.buildtools.native") version "1.0.0"
-    id("org.graalvm.python") version "25.0.2"
 }
 
 group = "com.github.derminator"
@@ -41,9 +39,6 @@ dependencies {
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework:spring-jdbc")
-    implementation("org.graalvm.polyglot:polyglot:25.0.2")
-    implementation("org.graalvm.polyglot:python:25.0.2")
-    implementation("org.graalvm.python:python-embedding:25.0.2")
     runtimeOnly("com.h2database:h2")
     runtimeOnly("io.r2dbc:r2dbc-h2")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -69,25 +64,6 @@ kotlin {
 
 springBoot {
     mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
-}
-
-graalvmNative {
-    metadataRepository {
-        enabled.set(true)
-    }
-    binaries {
-        named("main") {
-            imageName.set("archipelobby")
-            buildArgs.addAll(
-                "--enable-url-protocols=https",
-                "-H:+ReportExceptionStackTraces",
-            )
-        }
-    }
-}
-
-graalPy {
-    packages = setOf("pip")
 }
 
 tasks.withType<Test> {

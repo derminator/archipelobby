@@ -1,96 +1,98 @@
 package com.github.derminator.archipelobby.generator
 
-import org.graalvm.polyglot.PolyglotException
-import org.graalvm.polyglot.Source
-import org.graalvm.python.embedding.GraalPyResources
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.server.ResponseStatusException
-import java.io.ByteArrayOutputStream
+import java.io.BufferedReader
 import java.io.File
-import java.io.OutputStream
+import java.io.InputStreamReader
+import java.nio.file.Files
 
 @Component
-class PythonScriptRunner {
+class PythonScriptRunner(
+    @Value($$"${archipelobby.python.executable:python}") private val pythonExecutable: String = "python",
+) {
 
     private val logger = LoggerFactory.getLogger(PythonScriptRunner::class.java)
 
     /**
-     * Executes a Python script with the given arguments in an isolated GraalPy context.
-     * Stdout and stderr are captured and returned (or included in the exception message on failure).
-     * A fresh context is created per call, ensuring thread safety for concurrent invocations.
+     * Executes a Python script with the given arguments as a CPython subprocess.
+     * Stdout and stderr are merged and streamed to SLF4J in real time; the full
+     * captured output is returned on success, or embedded in the thrown
+     * ResponseStatusException on a non-zero exit.
      */
     fun run(scriptPath: String, vararg args: String, preamble: String = ""): String {
         val scriptFile = File(scriptPath).absoluteFile
-        val scriptDirectory = scriptFile.parent
-        val outputStream = LoggingStream()
-        GraalPyResources.contextBuilder()
-            .environment("PYTHONUNBUFFERED", "1")
-            .allowAllAccess(true)
-            .out(outputStream)
-            .err(outputStream)
-            .arguments("python", arrayOf(scriptFile.path, *args))
-            .build()
-            .use { context ->
-                try {
-                    context.getBindings("python").putMember("__archipelobby_script_directory__", scriptDirectory)
-                    context.eval(
-                        "python",
-                        """
-                        import sys
-                        script_directory = __archipelobby_script_directory__
-                        if script_directory and script_directory not in sys.path:
-                            sys.path.insert(0, script_directory)
-                        """.trimIndent(),
-                    )
-                    if (preamble.isNotBlank()) context.eval("python", preamble)
+        val wrapperFile = if (preamble.isNotBlank()) writeWrapper(scriptFile, args, preamble) else null
+        try {
+            val command = mutableListOf(pythonExecutable)
+            if (wrapperFile != null) {
+                command.add(wrapperFile.absolutePath)
+            } else {
+                command.add(scriptFile.path)
+                command.addAll(args)
+            }
 
-                    val source = Source.newBuilder("python", scriptFile).build()
-                    context.eval(source)
-                } catch (e: PolyglotException) {
-                    val output = outputStream.getOutput()
-                    if (!e.isExit || e.exitStatus != 0) {
-                        val detail = buildString {
-                            if (!e.isExit) e.message?.let { append(it).append("\n") }
-                            if (output.isNotEmpty()) append(output)
-                        }.trim()
-                        throw ResponseStatusException(
-                            HttpStatus.INTERNAL_SERVER_ERROR,
-                            "Python script failed (exit ${if (e.isExit) e.exitStatus else "n/a"}): $detail",
-                        )
-                    }
+            val process = ProcessBuilder(command)
+                .redirectErrorStream(true)
+                .also { it.environment()["PYTHONUNBUFFERED"] = "1" }
+                .start()
+            process.outputStream.close()
+
+            val output = StringBuilder()
+            BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
+                while (true) {
+                    val line = reader.readLine() ?: break
+                    logger.info("[python] {}", line)
+                    output.append(line).append('\n')
                 }
             }
-        return outputStream.getOutput()
+
+            val exitCode = process.waitFor()
+            val captured = output.toString()
+            if (exitCode != 0) {
+                throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Python script failed (exit $exitCode): ${captured.trim()}",
+                )
+            }
+            return captured
+        } finally {
+            wrapperFile?.delete()
+        }
     }
 
-    private inner class LoggingStream : OutputStream() {
-        private val lineBuffer = ByteArrayOutputStream()
-        private val fullOutput = ByteArrayOutputStream()
+    private fun writeWrapper(scriptFile: File, args: Array<out String>, preamble: String): File {
+        val wrapper = Files.createTempFile("archipelobby-py-wrapper-", ".py").toFile()
+        val argvList = (listOf(scriptFile.path) + args).joinToString(", ") { pythonLiteral(it) }
+        val scriptLit = pythonLiteral(scriptFile.path)
+        wrapper.writeText(
+            buildString {
+                append("import sys, os\n")
+                append("__ab_script = ").append(scriptLit).append('\n')
+                append("__ab_dir = os.path.dirname(os.path.abspath(__ab_script))\n")
+                append("if __ab_dir and __ab_dir not in sys.path:\n")
+                append("    sys.path.insert(0, __ab_dir)\n")
+                append("sys.argv = [").append(argvList).append("]\n")
+                append(preamble).append('\n')
+                append("with open(__ab_script, 'rb') as __ab_f:\n")
+                append("    __ab_code = compile(__ab_f.read(), __ab_script, 'exec')\n")
+                append("__file__ = __ab_script\n")
+                append("exec(__ab_code)\n")
+            },
+            Charsets.UTF_8,
+        )
+        return wrapper
+    }
 
-        override fun write(b: Int) {
-            fullOutput.write(b)
-            if (b == '\n'.code) {
-                writeLogLine()
-            } else {
-                lineBuffer.write(b)
-            }
-        }
-
-        override fun close() {
-            if (lineBuffer.size() > 0) {
-                writeLogLine()
-            }
-            super.close()
-        }
-
-        private fun writeLogLine() {
-            val line = lineBuffer.toString(Charsets.UTF_8).trimEnd('\r')
-            logger.info("[python] {}", line)
-            lineBuffer.reset()
-        }
-
-        fun getOutput(): String = fullOutput.toString(Charsets.UTF_8)
+    private fun pythonLiteral(value: String): String {
+        val escaped = value
+            .replace("\\", "\\\\")
+            .replace("'", "\\'")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+        return "'$escaped'"
     }
 }

@@ -62,7 +62,7 @@ class PythonScriptRunnerTest {
     }
 
     @Test
-    fun `pip is importable inside the GraalPy context`(@TempDir tempDir: Path) {
+    fun `pip is importable from the subprocess Python environment`(@TempDir tempDir: Path) {
         val script = tempDir.resolve("check_pip.py")
         script.writeText("import pip\nprint(pip.__version__)")
 
