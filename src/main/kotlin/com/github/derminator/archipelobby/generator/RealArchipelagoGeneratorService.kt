@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby.generator
 
+import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
@@ -12,8 +13,14 @@ import java.nio.file.Path
 @Service
 class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val scriptPath: String,
+    @Value($$"${archipelobby.archipelago.module-update-script-path:Archipelago/ModuleUpdate.py}") private val moduleUpdateScriptPath: String,
     private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
+
+    @PostConstruct
+    fun installDependencies() {
+        pythonScriptRunner.run(moduleUpdateScriptPath, "--yes")
+    }
 
     override suspend fun generate(
         yamlFiles: Map<String, ByteArray>,
