@@ -10,7 +10,7 @@ RUN ./gradlew bootJar --no-daemon
 FROM eclipse-temurin:25-jre
 WORKDIR /app
 
-RUN groupadd -r -g 1000 appuser && useradd -r -u 1000 -g appuser appuser
+RUN groupadd -r -g 10001 appuser && useradd -r -u 10001 -g appuser appuser
 RUN mkdir -p /data && chown -R appuser:appuser /data
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
