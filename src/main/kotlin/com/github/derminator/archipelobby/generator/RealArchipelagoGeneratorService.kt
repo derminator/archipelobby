@@ -2,8 +2,6 @@ package com.github.derminator.archipelobby.generator
 
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
@@ -20,8 +18,6 @@ class RealArchipelagoGeneratorService(
     private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
 
-    private val generationMutex = Mutex()
-
     @PostConstruct
     fun installDependencies() {
         pythonScriptRunner.run(moduleUpdateScriptPath, "--yes")
@@ -31,39 +27,36 @@ class RealArchipelagoGeneratorService(
         yamlFiles: Map<String, ByteArray>,
         apWorldFiles: Map<String, ByteArray>,
     ): ByteArray = withContext(Dispatchers.IO) {
-        generationMutex.withLock {
-            val workDir = Files.createTempDirectory("archipelago-generate-")
-            val customWorldsDir = File(scriptPath).absoluteFile.parentFile.resolve("custom_worlds").also { it.mkdirs() }
-            val addedApWorlds = mutableListOf<File>()
-            try {
-                val playersDir = workDir.resolve("Players").also { Files.createDirectories(it) }
-                val outputDir = workDir.resolve("output").also { Files.createDirectories(it) }
+        val workDir = Files.createTempDirectory("archipelago-generate-").toFile()
+        try {
+            val scriptFile = File(scriptPath).absoluteFile
+            scriptFile.parentFile.copyRecursively(workDir, overwrite = true)
 
-                for ((name, bytes) in yamlFiles) {
-                    Files.write(playersDir.resolve(name), bytes)
-                }
-                for ((name, bytes) in apWorldFiles) {
-                    val dest = customWorldsDir.resolve(name)
-                    dest.writeBytes(bytes)
-                    addedApWorlds.add(dest)
-                }
+            val playersDir = workDir.resolve("Players").also { it.mkdirs() }
+            val customWorldsDir = workDir.resolve("custom_worlds").also { it.mkdirs() }
+            val outputDir = workDir.resolve("output").also { it.mkdirs() }
 
-                pythonScriptRunner.run(
-                    scriptPath,
-                    "--player_files_path", playersDir.toString(),
-                    "--outputpath", outputDir.toString(),
-                )
-
-                val generatedFile = findGeneratedFile(outputDir)
-                    ?: throw ResponseStatusException(
-                        HttpStatus.INTERNAL_SERVER_ERROR,
-                        "Archipelago generation produced no output file",
-                    )
-                Files.readAllBytes(generatedFile)
-            } finally {
-                addedApWorlds.forEach { it.delete() }
-                workDir.toFile().deleteRecursively()
+            for ((name, bytes) in yamlFiles) {
+                playersDir.resolve(name).writeBytes(bytes)
             }
+            for ((name, bytes) in apWorldFiles) {
+                customWorldsDir.resolve(name).writeBytes(bytes)
+            }
+
+            pythonScriptRunner.run(
+                workDir.resolve(scriptFile.name).path,
+                "--player_files_path", playersDir.path,
+                "--outputpath", outputDir.path,
+            )
+
+            val generatedFile = findGeneratedFile(outputDir.toPath())
+                ?: throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Archipelago generation produced no output file",
+                )
+            Files.readAllBytes(generatedFile)
+        } finally {
+            workDir.deleteRecursively()
         }
     }
 
