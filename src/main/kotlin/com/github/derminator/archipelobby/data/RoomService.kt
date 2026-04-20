@@ -3,6 +3,8 @@ package com.github.derminator.archipelobby.data
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
+import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
+import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
@@ -20,7 +22,9 @@ class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
     private val apWorldRepository: ApWorldRepository,
-    private val discordService: DiscordService
+    private val discordService: DiscordService,
+    private val uploadsService: UploadsService,
+    private val archipelagoGeneratorService: ArchipelagoGeneratorService,
 ) {
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
@@ -81,6 +85,10 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot join this room")
         }
 
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game has already been generated for this room")
+        }
+
         if (entryName.isBlank()) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Entry name cannot be empty")
         }
@@ -129,6 +137,10 @@ class RoomService(
 
         if (entry.userId != userId && !isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's entry")
+        }
+
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete entries after the game has been generated")
         }
 
         entryRepository.deleteById(entryId).awaitSingleOrNull()
@@ -225,7 +237,62 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's APWorld")
         }
 
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete APWorlds after the game has been generated")
+        }
+
         apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
+    }
+
+    @Transactional
+    suspend fun generateGame(roomId: Long, userId: Long) {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game has already been generated for this room")
+        }
+
+        val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
+        if (entries.isEmpty()) {
+            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
+        }
+        val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
+
+        val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
+        val apWorldFiles = apWorlds.associate { it.fileName to uploadsService.getFile(it.filePath) }
+
+        val gameBytes = archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
+        val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
+        roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+    }
+
+    @Transactional
+    suspend fun deleteGeneratedGame(roomId: Long, userId: Long) {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        val filePath = room.generatedGameFilePath
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
+
+        runCatching { uploadsService.deleteFile(filePath) }
+        roomRepository.save(room.copy(generatedGameFilePath = null)).awaitSingle()
+    }
+
+    suspend fun getGeneratedGameForDownload(roomId: Long, userId: Long): Room {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        if (room.generatedGameFilePath == null) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
+        }
+        return room
     }
 
     suspend fun getRoomForPreview(roomId: Long): RoomPreview {

@@ -15,6 +15,11 @@
     </div>
 </div>
 
+<th:block th:fragment="favicon-links">
+    <link rel="icon" th:href="@{/favicon.svg}" type="image/svg+xml">
+    <link rel="stylesheet" th:href="@{/style.css}">
+</th:block>
+
 <form method="post"
       enctype="multipart/form-data"
       th:action="@{/rooms/{id}/entries(id=${roomId})}"

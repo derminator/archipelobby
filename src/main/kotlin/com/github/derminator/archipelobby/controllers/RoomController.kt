@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.http.codec.multipart.FilePart
+import org.springframework.security.authentication.AnonymousAuthenticationToken
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.*
@@ -83,7 +84,7 @@ class RoomController(
         principal: Principal?,
         model: Model
     ): Mono<String> = mono {
-        if (principal == null) {
+        if (principal == null || principal is AnonymousAuthenticationToken) {
             val preview = roomService.getRoomForPreview(roomId)
             model.addAttribute("preview", preview)
             return@mono "room-preview"
@@ -265,6 +266,48 @@ class RoomController(
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(zipBytes)
+    }
+
+    @PostMapping("/{roomId}/generate")
+    fun generateGame(
+        @PathVariable roomId: Long,
+        principal: Principal,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.generateGame(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/generated-game/delete")
+    fun deleteGeneratedGame(
+        @PathVariable roomId: Long,
+        principal: Principal,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.deleteGeneratedGame(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @GetMapping("/{roomId}/generated-game/download")
+    fun downloadGeneratedGame(
+        @PathVariable roomId: Long,
+        principal: Principal,
+    ): Mono<ResponseEntity<ByteArray>> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val room = roomService.getGeneratedGameForDownload(roomId, userId)
+        val filePath = room.generatedGameFilePath
+
+        if (filePath == null || !uploadsService.fileExists(filePath)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Generated game file not found")
+        }
+
+        val fileContent = uploadsService.getFile(filePath)
+        val filename = "${room.name}.archipelago"
+
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(fileContent)
     }
 
     @PostMapping("/{roomId}/delete")

@@ -112,10 +112,9 @@ The application will be available at `http://localhost:8080`
 
 # Run tests
 ./gradlew test
-
-# Build native image (GraalVM)
-./gradlew nativeCompile
 ```
+
+Running the app or its tests locally requires `python3` (3.11–3.13) with `pip` available on `PATH`; the app spawns CPython as a subprocess to run `Generate.py`.
 
 ### Project Structure
 

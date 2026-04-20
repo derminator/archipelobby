@@ -10,7 +10,8 @@ import reactor.core.publisher.Mono
 data class Room(
     @Id val id: Long? = null,
     val guildId: Long,
-    val name: String
+    val name: String,
+    val generatedGameFilePath: String? = null,
 )
 
 @Table("ENTRIES")

@@ -40,3 +40,4 @@ out/
 .kotlin
 
 uploads/
+/.claude/settings.local.json

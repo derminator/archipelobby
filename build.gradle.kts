@@ -1,11 +1,10 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.3.10"
-    kotlin("plugin.spring") version "2.3.10"
-    id("org.springframework.boot") version "4.0.2"
+    kotlin("jvm") version "2.3.20"
+    kotlin("plugin.spring") version "2.3.20"
+    id("org.springframework.boot") version "4.1.0-M4"
     id("io.spring.dependency-management") version "1.1.7"
-    id("org.graalvm.buildtools.native") version "0.11.4"
 }
 
 group = "com.github.derminator"
@@ -22,8 +21,6 @@ repositories {
     mavenCentral()
 }
 
-extra["springCloudVersion"] = "2025.1.0"
-
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
@@ -35,10 +32,9 @@ dependencies {
     implementation("io.projectreactor.kotlin:reactor-kotlin-extensions")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor")
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("tools.jackson.dataformat:jackson-dataformat-yaml")
-    implementation("com.discord4j:discord4j-core:3.3.1")
+    implementation("com.discord4j:discord4j-core:3.3.2")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
@@ -59,12 +55,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
-    }
-}
-
 kotlin {
     compilerOptions {
         jvmTarget = JvmTarget.JVM_25
@@ -74,21 +64,6 @@ kotlin {
 
 springBoot {
     mainClass.set("com.github.derminator.archipelobby.ArchipelobbyApplicationKt")
-}
-
-graalvmNative {
-    metadataRepository {
-        enabled.set(true)
-    }
-    binaries {
-        named("main") {
-            imageName.set("archipelobby")
-            buildArgs.addAll(
-                "--enable-url-protocols=https",
-                "-H:+ReportExceptionStackTraces",
-            )
-        }
-    }
 }
 
 tasks.withType<Test> {

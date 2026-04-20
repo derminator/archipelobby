@@ -1,0 +1,1 @@
+ALTER TABLE ROOMS ADD COLUMN generated_game_file_path VARCHAR(500) NULL;

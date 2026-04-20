@@ -202,3 +202,7 @@ form[action*="delete"] input[type="submit"]:hover {
     padding-top: 20px;
     border-top: 2px solid #e74c3c;
 }
+
+.output {
+    white-space: pre-wrap
+}
