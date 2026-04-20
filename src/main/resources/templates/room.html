@@ -7,7 +7,6 @@
     <meta property="og:description" th:content="|Archipelago room with ${#lists.size(entries)} entries|">
     <title th:text="${room.name}">Room Name</title>
     <th:block th:replace="~{layout :: favicon-links}"></th:block>
-    <link rel="stylesheet" th:href="@{/style.css}">
     <script th:src="@{/confirm.js}" defer></script>
 </head>
 <body>

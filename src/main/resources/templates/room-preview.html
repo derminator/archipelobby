@@ -8,7 +8,6 @@
     <meta property="og:description" th:content="|${preview.entryCount} ${preview.entryCount == 1 ? 'entry' : 'entries'}${not #lists.isEmpty(preview.games) ? ': ' + #strings.listJoin(preview.games, ', ') : ''}|">
     <title th:text="${preview.name}">Room</title>
     <th:block th:replace="~{layout :: favicon-links}"></th:block>
-    <link rel="stylesheet" th:href="@{/style.css}">
 </head>
 <body>
 <header>
