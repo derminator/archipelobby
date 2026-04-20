@@ -77,11 +77,14 @@
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
         <form method="post"
-              th:if="${room.generatedGameFilePath == null}"
+              th:if="${room.generatedGameFilePath == null and not #lists.isEmpty(entries)}"
               th:action="@{/rooms/{id}/generate(id=${room.id})}"
               th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
             <input type="submit" value="Generate Game"/>
         </form>
+        <p th:if="${room.generatedGameFilePath == null and #lists.isEmpty(entries)}">
+            At least one entry must be submitted before generating the game.
+        </p>
         <form method="post"
               th:unless="${room.generatedGameFilePath == null}"
               th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"

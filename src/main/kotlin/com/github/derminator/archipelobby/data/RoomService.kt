@@ -248,6 +248,9 @@ class RoomService(
         }
 
         val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
+        if (entries.isEmpty()) {
+            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
+        }
         val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
 
         val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
