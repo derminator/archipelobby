@@ -40,7 +40,7 @@
             <form method="post"
                   class="inline-form"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
-                  th:if="${entry.user.id == userId or isAdmin}"
+                  th:if="${(entry.user.id == userId or isAdmin) and room.generatedGameFilePath == null}"
                   th:attr="data-confirm=|Delete entry '${entry.name}'?|">
                 <input type="submit" value="Delete"/>
             </form>
@@ -59,7 +59,7 @@
             <form method="post"
                   class="inline-form"
                   th:action="@{/rooms/{roomId}/apworlds/{apworldId}/delete(roomId=${room.id},apworldId=${apWorld.id})}"
-                  th:if="${apWorld.user.id == userId or isAdmin}"
+                  th:if="${(apWorld.user.id == userId or isAdmin) and room.generatedGameFilePath == null}"
                   th:attr="data-confirm=|Delete APWorld '${apWorld.fileName}'?|">
                 <input type="submit" value="Delete"/>
             </form>

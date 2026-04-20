@@ -139,6 +139,10 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's entry")
         }
 
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete entries after the game has been generated")
+        }
+
         entryRepository.deleteById(entryId).awaitSingleOrNull()
     }
 
@@ -231,6 +235,10 @@ class RoomService(
 
         if (apWorld.userId != userId && !isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete another user's APWorld")
+        }
+
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Cannot delete APWorlds after the game has been generated")
         }
 
         apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
