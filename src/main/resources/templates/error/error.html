@@ -7,7 +7,8 @@
 </head>
 <body>
 <h1>An error occurred</h1>
-<p style="white-space: pre-wrap" th:text="${errorMessage} ?: 'Sorry, an unexpected error occurred. Please notify an administrator.'"></p>
+<p class="output"
+   th:text="${errorMessage} ?: 'Sorry, an unexpected error occurred. Please notify an administrator.'"></p>
 <a href="/">Go back to Home</a>
 </body>
 </html>
