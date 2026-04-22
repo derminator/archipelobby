@@ -1,6 +1,7 @@
 package com.github.derminator.archipelobby.data
 
 import org.springframework.data.annotation.Id
+import org.springframework.data.annotation.Version
 import org.springframework.data.relational.core.mapping.Table
 import org.springframework.data.repository.reactive.ReactiveCrudRepository
 import reactor.core.publisher.Flux
@@ -12,6 +13,7 @@ data class Room(
     val guildId: Long,
     val name: String,
     val generatedGameFilePath: String? = null,
+    @Version val version: Long = 0,
 )
 
 @Table("ENTRIES")

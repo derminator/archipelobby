@@ -3,15 +3,22 @@ package com.github.derminator.archipelobby
 import com.github.derminator.archipelobby.data.*
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
+import com.github.derminator.archipelobby.discord.UserInfo
+import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.`when`
+import org.springframework.dao.OptimisticLockingFailureException
+import java.io.ByteArrayOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
@@ -49,6 +56,9 @@ class WebTests {
     @MockitoBean
     lateinit var apWorldRepository: ApWorldRepository
 
+    @MockitoBean
+    lateinit var archipelagoGeneratorService: ArchipelagoGeneratorService
+
     @Autowired
     lateinit var context: ApplicationContext
 
@@ -63,6 +73,7 @@ class WebTests {
         `when`(discordService.isMemberOfAnyGuild(anyLong())).thenReturn(true)
         `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
         `when`(discordService.isAdminOfGuild(anyLong(), anyLong())).thenReturn(false)
+        `when`(discordService.getUserInfo(anyLong())).thenReturn(UserInfo(0L, "test-user"))
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
         `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
@@ -500,5 +511,229 @@ class WebTests {
             .get().uri("/rooms/$roomId")
             .exchange()
             .expectStatus().isOk
+    }
+
+    @Test
+    fun `uploadGame returns forbidden for non-admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+
+        val builder = MultipartBodyBuilder()
+        builder.part("gameFile", ByteArray(0)).filename("game.archipelago")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/upload-game")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(builder.build())
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `uploadGame with archipelago file redirects for admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val entry = Entry(1L, roomId, 0L, "Player", "Game", "path/to/file.yaml")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.just(entry))
+        `when`(roomRepository.save(any(Room::class.java))).thenReturn(Mono.just(room.copy(generatedGameFilePath = "path/to/game.archipelago")))
+
+        val builder = MultipartBodyBuilder()
+        builder.part("gameFile", "fake archipelago content".toByteArray()).filename("game.archipelago")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/upload-game")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(builder.build())
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+    }
+
+    @Test
+    fun `uploadGame with zip file redirects for admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val entry = Entry(1L, roomId, 0L, "Player", "Game", "path/to/file.yaml")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.just(entry))
+        `when`(roomRepository.save(any(Room::class.java))).thenReturn(Mono.just(room.copy(generatedGameFilePath = "path/to/game.archipelago")))
+
+        val zipBytes = ByteArrayOutputStream().also { baos ->
+            ZipOutputStream(baos).use { zos ->
+                zos.putNextEntry(ZipEntry("game.archipelago"))
+                zos.write("fake archipelago content".toByteArray())
+                zos.closeEntry()
+            }
+        }.toByteArray()
+
+        val builder = MultipartBodyBuilder()
+        builder.part("gameFile", zipBytes).filename("game.zip")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/upload-game")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(builder.build())
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+    }
+
+    @Test
+    fun `uploadGame returns conflict error banner when room already has generated game`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "existing/path.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+
+        val builder = MultipartBodyBuilder()
+        builder.part("gameFile", "fake content".toByteArray()).filename("game.archipelago")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/upload-game")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(builder.build())
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("already been generated") || body.contains("Conflict"))
+            }
+    }
+
+    @Test
+    fun `uploadGame returns error banner when room has no entries`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+
+        val builder = MultipartBodyBuilder()
+        builder.part("gameFile", "fake content".toByteArray()).filename("game.archipelago")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/upload-game")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(builder.build())
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("no entries") || body.contains("Unprocessable"))
+            }
+    }
+
+    @Test
+    fun `uploadGame returns conflict error banner on concurrent modification`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        val entry = Entry(1L, roomId, 0L, "Player", "Game", "path/to/file.yaml")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.just(entry))
+        `when`(roomRepository.save(any(Room::class.java))).thenThrow(OptimisticLockingFailureException("concurrent modification"))
+
+        val builder = MultipartBodyBuilder()
+        builder.part("gameFile", "fake content".toByteArray()).filename("game.archipelago")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/upload-game")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(builder.build())
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("concurrently") || body.contains("Conflict"))
+            }
+    }
+
+    @Test
+    fun `generateGame returns conflict when game already generated`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "existing/path.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/generate")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+    }
+
+    @Test
+    fun `deleteGeneratedGame redirects for admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(roomRepository.save(any(Room::class.java))).thenReturn(Mono.just(room.copy(generatedGameFilePath = null)))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/generated-game/delete")
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+    }
+
+    @Test
+    fun `deleteGeneratedGame returns forbidden for non-admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/generated-game/delete")
+            .exchange()
+            .expectStatus().isForbidden
     }
 }

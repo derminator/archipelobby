@@ -75,21 +75,40 @@
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
-        <form method="post"
-              th:if="${room.generatedGameFilePath == null and not #lists.isEmpty(entries)}"
-              th:action="@{/rooms/{id}/generate(id=${room.id})}"
-              th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
-            <input type="submit" value="Generate Game"/>
-        </form>
-        <p th:if="${room.generatedGameFilePath == null and #lists.isEmpty(entries)}">
-            At least one entry must be submitted before generating the game.
-        </p>
-        <form method="post"
-              th:unless="${room.generatedGameFilePath == null}"
-              th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
-              th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
-            <input type="submit" value="Delete Generated Game"/>
-        </form>
+
+        <div th:if="${room.generatedGameFilePath == null}">
+            <h3>Game Generation</h3>
+            <form method="post"
+                  th:if="${not #lists.isEmpty(entries)}"
+                  th:action="@{/rooms/{id}/generate(id=${room.id})}"
+                  th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
+                <input type="submit" value="Generate Game"/>
+            </form>
+            <form method="post"
+                  enctype="multipart/form-data"
+                  th:if="${not #lists.isEmpty(entries)}"
+                  th:action="@{/rooms/{id}/upload-game(id=${room.id})}">
+                <label>
+                    Upload game file (.archipelago or .zip):
+                    <input type="file" name="gameFile" accept=".archipelago,.zip" required/>
+                </label>
+                <input type="submit" value="Upload Game"/>
+            </form>
+            <p th:if="${#lists.isEmpty(entries)}">
+                At least one entry must be submitted before generating or uploading a game.
+            </p>
+        </div>
+
+        <div th:unless="${room.generatedGameFilePath == null}">
+            <h3>Generated Game</h3>
+            <form method="post"
+                  th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
+                  th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
+                <input type="submit" value="Delete Generated Game"/>
+            </form>
+        </div>
+
+        <h3>Room Management</h3>
         <form method="post"
               th:action="@{/rooms/{id}/delete(id=${room.id})}"
               th:attr="data-confirm=|Delete room '${room.name}'? This cannot be undone.|">

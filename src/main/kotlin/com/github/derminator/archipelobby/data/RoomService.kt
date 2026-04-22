@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -266,7 +267,57 @@ class RoomService(
 
         val gameBytes = archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
         val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
-        roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+        try {
+            roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+        } catch (e: OptimisticLockingFailureException) {
+            uploadsService.deleteFile(filePath)
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        }
+    }
+
+    @Transactional
+    suspend fun uploadGame(roomId: Long, userId: Long, gameBytes: ByteArray, filename: String) {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game has already been generated for this room")
+        }
+        val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
+        if (entries.isEmpty()) {
+            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot upload a game with no entries")
+        }
+        val archipelagoBytes = when {
+            filename.endsWith(".archipelago") -> gameBytes
+            filename.endsWith(".zip") -> extractArchipelagoFromZip(gameBytes)
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "ZIP file does not contain a .archipelago file")
+            else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a .archipelago file or a .zip containing one")
+        }
+        val filePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
+        try {
+            roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+        } catch (e: OptimisticLockingFailureException) {
+            uploadsService.deleteFile(filePath)
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        }
+    }
+
+    private fun extractArchipelagoFromZip(zipBytes: ByteArray): ByteArray? {
+        java.io.ByteArrayInputStream(zipBytes).use { bais ->
+            java.util.zip.ZipInputStream(bais).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    if (!entry.isDirectory && entry.name.endsWith(".archipelago")) {
+                        return zis.readBytes()
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+        }
+        return null
     }
 
     @Transactional
