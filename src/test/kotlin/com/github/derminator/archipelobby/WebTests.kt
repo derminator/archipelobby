@@ -736,4 +736,21 @@ class WebTests {
             .exchange()
             .expectStatus().isForbidden
     }
+
+    @Test
+    fun `deleteGeneratedGame returns conflict when generation is in progress`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = Room.GENERATING_SENTINEL)
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/generated-game/delete")
+            .exchange()
+            .expectStatus().isEqualTo(409)
+    }
 }

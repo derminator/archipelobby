@@ -17,11 +17,15 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
-    <div th:if="${room.generatedGameFilePath != null}">
+    <div th:if="${room.isGenerated}">
         <h2>Generated Game</h2>
         <a th:href="@{/rooms/{id}/generated-game/download(id=${room.id})}">
             <button type="button">Download Game</button>
         </a>
+    </div>
+    <div th:if="${room.isGenerating}">
+        <h2>Game Generation In Progress</h2>
+        <p>The game is currently being generated. Please check back shortly.</p>
     </div>
 
     <h2>Entries</h2>
@@ -69,7 +73,10 @@
         <h3>Add Entry</h3>
         <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
     </div>
-    <div th:unless="${room.generatedGameFilePath == null}">
+    <div th:if="${room.isGenerating}">
+        <p>Game generation is in progress — submissions are temporarily closed.</p>
+    </div>
+    <div th:if="${room.isGenerated}">
         <p>Submissions are closed — the game has been generated.</p>
     </div>
 
@@ -99,7 +106,12 @@
             </p>
         </div>
 
-        <div th:unless="${room.generatedGameFilePath == null}">
+        <div th:if="${room.isGenerating}">
+            <h3>Generation In Progress</h3>
+            <p>A game is currently being generated for this room.</p>
+        </div>
+
+        <div th:if="${room.isGenerated}">
             <h3>Generated Game</h3>
             <form method="post"
                   th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"

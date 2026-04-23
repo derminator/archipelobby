@@ -245,7 +245,6 @@ class RoomService(
         apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
     }
 
-    @Transactional
     suspend fun generateGame(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
@@ -265,12 +264,26 @@ class RoomService(
         val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
         val apWorldFiles = apWorlds.associate { it.fileName to uploadsService.getFile(it.filePath) }
 
-        val gameBytes = archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
+        // Lock the room immediately so entry/APWorld changes are blocked during generation.
+        val lockedRoom = try {
+            roomRepository.save(room.copy(generatedGameFilePath = Room.GENERATING_SENTINEL)).awaitSingle()
+        } catch (e: OptimisticLockingFailureException) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        }
+
+        val gameBytes = try {
+            archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
+        } catch (e: Exception) {
+            runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
+            throw e
+        }
+
         val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
         try {
-            roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+            roomRepository.save(lockedRoom.copy(generatedGameFilePath = filePath)).awaitSingle()
         } catch (e: OptimisticLockingFailureException) {
             uploadsService.deleteFile(filePath)
+            runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
     }
@@ -327,6 +340,9 @@ class RoomService(
         if (!discordService.isAdminOfGuild(userId, room.guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
         }
+        if (room.isGenerating) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game generation is in progress")
+        }
         val filePath = room.generatedGameFilePath
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
 
@@ -339,6 +355,9 @@ class RoomService(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         if (!discordService.isMemberOfGuild(userId, room.guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        if (room.isGenerating) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game generation is in progress")
         }
         if (room.generatedGameFilePath == null) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")

@@ -14,7 +14,13 @@ data class Room(
     val name: String,
     val generatedGameFilePath: String? = null,
     @Version val version: Long = 0,
-)
+) {
+    companion object {
+        const val GENERATING_SENTINEL = "__generating__"
+    }
+    val isGenerating: Boolean get() = generatedGameFilePath == GENERATING_SENTINEL
+    val isGenerated: Boolean get() = generatedGameFilePath != null && !isGenerating
+}
 
 @Table("ENTRIES")
 data class Entry(
