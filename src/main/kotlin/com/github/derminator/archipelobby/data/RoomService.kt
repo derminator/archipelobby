@@ -246,19 +246,7 @@ class RoomService(
     }
 
     suspend fun generateGame(roomId: Long, userId: Long) {
-        val room = roomRepository.findById(roomId).awaitSingleOrNull()
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
-        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
-            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
-        }
-        if (room.generatedGameFilePath != null) {
-            throw ResponseStatusException(HttpStatus.CONFLICT, "Game has already been generated for this room")
-        }
-
-        val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
-        if (entries.isEmpty()) {
-            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
-        }
+        val (room, entries) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
         val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
 
         val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
@@ -267,7 +255,7 @@ class RoomService(
         // Lock the room immediately so entry/APWorld changes are blocked during generation.
         val lockedRoom = try {
             roomRepository.save(room.copy(generatedGameFilePath = Room.GENERATING_SENTINEL)).awaitSingle()
-        } catch (e: OptimisticLockingFailureException) {
+        } catch (_: OptimisticLockingFailureException) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
 
@@ -281,15 +269,17 @@ class RoomService(
         val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
         try {
             roomRepository.save(lockedRoom.copy(generatedGameFilePath = filePath)).awaitSingle()
-        } catch (e: OptimisticLockingFailureException) {
+        } catch (_: OptimisticLockingFailureException) {
             uploadsService.deleteFile(filePath)
             runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
     }
 
-    @Transactional
-    suspend fun uploadGame(roomId: Long, userId: Long, gameBytes: ByteArray, filename: String) {
+    private suspend fun validateAndFetchRoomDetailsForGeneration(
+        roomId: Long,
+        userId: Long
+    ): Pair<Room, List<Entry>> {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         if (!discordService.isAdminOfGuild(userId, room.guildId)) {
@@ -298,10 +288,17 @@ class RoomService(
         if (room.generatedGameFilePath != null) {
             throw ResponseStatusException(HttpStatus.CONFLICT, "Game has already been generated for this room")
         }
+
         val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
         if (entries.isEmpty()) {
-            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot upload a game with no entries")
+            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
         }
+        return Pair(room, entries)
+    }
+
+    @Transactional
+    suspend fun uploadGame(roomId: Long, userId: Long, gameBytes: ByteArray, filename: String) {
+        val (room, _) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
         val archipelagoBytes = when {
             filename.endsWith(".archipelago") -> gameBytes
             filename.endsWith(".zip") -> extractArchipelagoFromZip(gameBytes)
@@ -311,7 +308,7 @@ class RoomService(
         val filePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
         try {
             roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
-        } catch (e: OptimisticLockingFailureException) {
+        } catch (_: OptimisticLockingFailureException) {
             uploadsService.deleteFile(filePath)
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
