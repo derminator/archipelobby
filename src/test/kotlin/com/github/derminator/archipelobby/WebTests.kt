@@ -3,6 +3,7 @@ package com.github.derminator.archipelobby
 import com.github.derminator.archipelobby.data.*
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
+import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
@@ -58,6 +59,9 @@ class WebTests {
     lateinit var apWorldRepository: ApWorldRepository
 
     @MockitoBean
+    lateinit var gameCatalogService: GameCatalogService
+
+    @MockitoBean
     lateinit var archipelagoGeneratorService: ArchipelagoGeneratorService
 
     @Autowired
@@ -81,6 +85,7 @@ class WebTests {
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
         `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
+        `when`(gameCatalogService.listCoreGames()).thenReturn(emptyList())
 
         webTestClient = WebTestClient.bindToApplicationContext(context)
             .apply(springSecurity())
@@ -405,7 +410,7 @@ class WebTests {
         val roomId = 1L
         val apWorldId = 1L
         val room = Room(roomId, 123, "Test Room")
-        val apWorld = ApWorld(apWorldId, roomId, userId, "test.apworld", "path/to/test.apworld")
+        val apWorld = ApWorld(apWorldId, roomId, userId, "test.apworld", "path/to/test.apworld", "Test Game")
         `when`(apWorldRepository.findById(apWorldId)).thenReturn(Mono.just(apWorld))
         `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
         `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
@@ -431,7 +436,7 @@ class WebTests {
         val roomId = 1L
         val apWorldId = 1L
         val room = Room(roomId, 123, "Test Room")
-        val apWorld = ApWorld(apWorldId, roomId, 999L, "test.apworld", "path/to/test.apworld")
+        val apWorld = ApWorld(apWorldId, roomId, 999L, "test.apworld", "path/to/test.apworld", "Test Game")
         `when`(apWorldRepository.findById(apWorldId)).thenReturn(Mono.just(apWorld))
         `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
         `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
