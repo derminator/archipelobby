@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby
 
+import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -8,6 +9,7 @@ import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTest
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockAuthentication
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 
 @SpringBootTest
@@ -15,6 +17,9 @@ import org.springframework.test.web.reactive.server.WebTestClient
 class TrailingSlashHandlingTest(
     @Autowired val webTestClient: WebTestClient
 ) {
+
+    @MockitoBean
+    lateinit var archipelagoGeneratorService: ArchipelagoGeneratorService
 
     private val testPrincipal = DiscordPrincipal(0L, "testUser")
     private val testAuthentication = UsernamePasswordAuthenticationToken(

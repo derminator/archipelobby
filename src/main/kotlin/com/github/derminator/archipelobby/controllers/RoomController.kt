@@ -99,6 +99,8 @@ class RoomController(
         val apworldFile: FilePart?,
     )
 
+    data class UploadGameForm(val gameFile: FilePart)
+
     @PostMapping("/{roomId}/entries")
     fun addEntry(
         @PathVariable roomId: Long,
@@ -276,6 +278,38 @@ class RoomController(
         val userId = principal.asDiscordPrincipal.userId
         roomService.generateGame(roomId, userId)
         "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/upload-game")
+    fun uploadGame(
+        @PathVariable roomId: Long,
+        principal: Principal,
+        @ModelAttribute form: UploadGameForm,
+        model: Model,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        try {
+            val filePart = form.gameFile
+            val filename = filePart.filename()
+            if (!filename.endsWith(".archipelago") && !filename.endsWith(".zip")) {
+                throw ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "File must be a .archipelago file or a .zip containing one"
+                )
+            }
+            val fileBytes = readFilePart(filePart)
+            roomService.uploadGame(roomId, userId, fileBytes, filename)
+            "redirect:/rooms/$roomId"
+        } catch (e: ResponseStatusException) {
+            if (e.statusCode == HttpStatus.BAD_REQUEST
+                || e.statusCode == HttpStatus.CONFLICT
+                || e.statusCode == HttpStatus.UNPROCESSABLE_ENTITY
+            ) {
+                loadRoomModel(roomId, userId, model)
+                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+                "room"
+            } else throw e
+        }
     }
 
     @PostMapping("/{roomId}/generated-game/delete")

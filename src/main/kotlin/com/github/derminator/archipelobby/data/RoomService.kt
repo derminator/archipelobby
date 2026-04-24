@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -244,8 +245,41 @@ class RoomService(
         apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
     }
 
-    @Transactional
     suspend fun generateGame(roomId: Long, userId: Long) {
+        val (room, entries) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
+        val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
+
+        val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
+        val apWorldFiles = apWorlds.associate { it.fileName to uploadsService.getFile(it.filePath) }
+
+        // Lock the room immediately so entry/APWorld changes are blocked during generation.
+        val lockedRoom = try {
+            roomRepository.save(room.copy(generatedGameFilePath = Room.GENERATING_SENTINEL)).awaitSingle()
+        } catch (_: OptimisticLockingFailureException) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        }
+
+        val gameBytes = try {
+            archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
+        } catch (e: Exception) {
+            runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
+            throw e
+        }
+
+        val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
+        try {
+            roomRepository.save(lockedRoom.copy(generatedGameFilePath = filePath)).awaitSingle()
+        } catch (_: OptimisticLockingFailureException) {
+            uploadsService.deleteFile(filePath)
+            runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        }
+    }
+
+    private suspend fun validateAndFetchRoomDetailsForGeneration(
+        roomId: Long,
+        userId: Long
+    ): Pair<Room, List<Entry>> {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         if (!discordService.isAdminOfGuild(userId, room.guildId)) {
@@ -259,14 +293,41 @@ class RoomService(
         if (entries.isEmpty()) {
             throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
         }
-        val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
+        return Pair(room, entries)
+    }
 
-        val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
-        val apWorldFiles = apWorlds.associate { it.fileName to uploadsService.getFile(it.filePath) }
+    @Transactional
+    suspend fun uploadGame(roomId: Long, userId: Long, gameBytes: ByteArray, filename: String) {
+        val (room, _) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
+        val archipelagoBytes = when {
+            filename.endsWith(".archipelago") -> gameBytes
+            filename.endsWith(".zip") -> extractArchipelagoFromZip(gameBytes)
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "ZIP file does not contain a .archipelago file")
+            else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a .archipelago file or a .zip containing one")
+        }
+        val filePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
+        try {
+            roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+        } catch (_: OptimisticLockingFailureException) {
+            uploadsService.deleteFile(filePath)
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        }
+    }
 
-        val gameBytes = archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
-        val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
-        roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+    private fun extractArchipelagoFromZip(zipBytes: ByteArray): ByteArray? {
+        java.io.ByteArrayInputStream(zipBytes).use { bais ->
+            java.util.zip.ZipInputStream(bais).use { zis ->
+                var entry = zis.nextEntry
+                while (entry != null) {
+                    if (!entry.isDirectory && entry.name.endsWith(".archipelago")) {
+                        return zis.readBytes()
+                    }
+                    zis.closeEntry()
+                    entry = zis.nextEntry
+                }
+            }
+        }
+        return null
     }
 
     @Transactional
@@ -275,6 +336,9 @@ class RoomService(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         if (!discordService.isAdminOfGuild(userId, room.guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        if (room.isGenerating) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game generation is in progress")
         }
         val filePath = room.generatedGameFilePath
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
@@ -288,6 +352,9 @@ class RoomService(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
         if (!discordService.isMemberOfGuild(userId, room.guildId)) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        if (room.isGenerating) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Game generation is in progress")
         }
         if (room.generatedGameFilePath == null) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")

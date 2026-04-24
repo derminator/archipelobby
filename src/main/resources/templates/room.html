@@ -17,11 +17,15 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
-    <div th:if="${room.generatedGameFilePath != null}">
+    <div th:if="${room.isGenerated}">
         <h2>Generated Game</h2>
         <a th:href="@{/rooms/{id}/generated-game/download(id=${room.id})}">
             <button type="button">Download Game</button>
         </a>
+    </div>
+    <div th:if="${room.isGenerating}">
+        <h2>Game Generation In Progress</h2>
+        <p>The game is currently being generated. Please check back shortly.</p>
     </div>
 
     <h2>Entries</h2>
@@ -69,27 +73,54 @@
         <h3>Add Entry</h3>
         <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
     </div>
-    <div th:unless="${room.generatedGameFilePath == null}">
+    <div th:if="${room.isGenerating}">
+        <p>Game generation is in progress — submissions are temporarily closed.</p>
+    </div>
+    <div th:if="${room.isGenerated}">
         <p>Submissions are closed — the game has been generated.</p>
     </div>
 
     <div class="admin-section" th:if="${isAdmin}">
         <h2>Admin Actions</h2>
-        <form method="post"
-              th:if="${room.generatedGameFilePath == null and not #lists.isEmpty(entries)}"
-              th:action="@{/rooms/{id}/generate(id=${room.id})}"
-              th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
-            <input type="submit" value="Generate Game"/>
-        </form>
-        <p th:if="${room.generatedGameFilePath == null and #lists.isEmpty(entries)}">
-            At least one entry must be submitted before generating the game.
-        </p>
-        <form method="post"
-              th:unless="${room.generatedGameFilePath == null}"
-              th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
-              th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
-            <input type="submit" value="Delete Generated Game"/>
-        </form>
+
+        <div th:if="${room.generatedGameFilePath == null}">
+            <h3>Game Generation</h3>
+            <form method="post"
+                  th:if="${not #lists.isEmpty(entries)}"
+                  th:action="@{/rooms/{id}/generate(id=${room.id})}"
+                  th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
+                <input type="submit" value="Generate Game"/>
+            </form>
+            <form method="post"
+                  enctype="multipart/form-data"
+                  th:if="${not #lists.isEmpty(entries)}"
+                  th:action="@{/rooms/{id}/upload-game(id=${room.id})}">
+                <label>
+                    Upload game file (.archipelago or .zip):
+                    <input type="file" name="gameFile" accept=".archipelago,.zip" required/>
+                </label>
+                <input type="submit" value="Upload Game"/>
+            </form>
+            <p th:if="${#lists.isEmpty(entries)}">
+                At least one entry must be submitted before generating or uploading a game.
+            </p>
+        </div>
+
+        <div th:if="${room.isGenerating}">
+            <h3>Generation In Progress</h3>
+            <p>A game is currently being generated for this room.</p>
+        </div>
+
+        <div th:if="${room.isGenerated}">
+            <h3>Generated Game</h3>
+            <form method="post"
+                  th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
+                  th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
+                <input type="submit" value="Delete Generated Game"/>
+            </form>
+        </div>
+
+        <h3>Room Management</h3>
         <form method="post"
               th:action="@{/rooms/{id}/delete(id=${room.id})}"
               th:attr="data-confirm=|Delete room '${room.name}'? This cannot be undone.|">
