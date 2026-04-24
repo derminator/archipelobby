@@ -33,6 +33,7 @@
             <strong th:text="${entry.name}">Entry Name</strong>
             (<span th:text="${entry.game}">Game</span>,
              <span th:text="${entry.user.username}">Username</span>)
+            <span th:if="${entry.locationCount != null}" th:text="| — ${entry.locationCount} locations|"></span>
             <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.id},entryId=${entry.id})}">
                 <button type="button">Download YAML</button>
             </a>

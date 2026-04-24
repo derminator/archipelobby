@@ -21,7 +21,8 @@ data class Entry(
     val userId: Long,
     val name: String,
     val game: String,
-    val yamlFilePath: String
+    val yamlFilePath: String,
+    val locationCount: Int? = null,
 )
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {

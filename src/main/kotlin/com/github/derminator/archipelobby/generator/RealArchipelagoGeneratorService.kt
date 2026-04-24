@@ -15,6 +15,7 @@ import java.nio.file.Path
 class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val scriptPath: String,
     @Value($$"${archipelobby.archipelago.module-update-script-path:Archipelago/ModuleUpdate.py}") private val moduleUpdateScriptPath: String,
+    @Value($$"${archipelobby.archipelago.location-count-script-path:python/get_location_count.py}") private val locationCountScriptPath: String,
     private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
 
@@ -59,6 +60,18 @@ class RealArchipelagoGeneratorService(
             workDir.deleteRecursively()
         }
     }
+
+    override suspend fun getLocationCount(yamlFilePath: String, apWorldFilePaths: List<String>): Int? =
+        withContext(Dispatchers.IO) {
+            try {
+                val archipelagoDir = File(scriptPath).absoluteFile.parent
+                val args = (listOf(archipelagoDir, yamlFilePath) + apWorldFilePaths).toTypedArray()
+                val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
+                output.trim().toIntOrNull()
+            } catch (e: Exception) {
+                null
+            }
+        }
 
     private fun findGeneratedFile(outputDir: Path): Path? =
         Files.list(outputDir).use { stream ->
