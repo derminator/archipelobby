@@ -3,6 +3,7 @@ package com.github.derminator.archipelobby.controllers
 import com.github.derminator.archipelobby.data.ApWorldFile
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.RoomService
+import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.Dispatchers
@@ -34,7 +35,8 @@ import java.util.zip.ZipOutputStream
 @RequestMapping("/rooms")
 class RoomController(
     private val roomService: RoomService,
-    private val uploadsService: UploadsService
+    private val uploadsService: UploadsService,
+    private val gameCatalogService: GameCatalogService,
 ) {
     private val yamlMapper = YAMLMapper.builder()
         .addModule(KotlinModule.Builder().build())
@@ -123,16 +125,24 @@ class RoomController(
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid YAML file: ${e.originalMessage}")
             }
 
-            val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
-
+            // Validate the apworld (if any) before saving anything to disk, so a bad
+            // apworld never leaves an orphaned YAML file behind.
             val apworldFilePart = form.apworldFile
-            val apWorldFile: ApWorldFile? = if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
-                val apworldBytes = readFilePart(apworldFilePart)
+            val pendingApWorld: Triple<String, ByteArray, String>? =
+                if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
+                    val apworldBytes = readFilePart(apworldFilePart)
+                    val gameName = gameCatalogService.extractApWorldGame(apworldBytes)
+                    Triple(apworldFilePart.filename(), apworldBytes, gameName)
+                } else null
+
+            val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
+            val apWorldFile: ApWorldFile? = pendingApWorld?.let { (name, bytes, gameName) ->
                 ApWorldFile(
-                    apworldFilePart.filename(),
-                    uploadsService.saveFile(apworldBytes, apworldFilePart.filename()),
+                    fileName = name,
+                    filePath = uploadsService.saveFile(bytes, name),
+                    gameName = gameName,
                 )
-            } else null
+            }
 
             val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
 
@@ -367,6 +377,7 @@ class RoomController(
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
+        model.addAttribute("roomGames", roomWithEntries.roomGames)
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {

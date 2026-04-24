@@ -50,10 +50,12 @@ data class ApWorld(
     val roomId: Long,
     val userId: Long,
     val fileName: String,
-    val filePath: String
+    val filePath: String,
+    val gameName: String,
 )
 
 interface ApWorldRepository : ReactiveCrudRepository<ApWorld, Long> {
     fun findByRoomId(roomId: Long): Flux<ApWorld>
     fun existsByRoomIdAndFileName(roomId: Long, fileName: String): Mono<Boolean>
+    fun findByRoomIdAndGameName(roomId: Long, gameName: String): Mono<ApWorld>
 }
