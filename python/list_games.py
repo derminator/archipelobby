@@ -1,6 +1,6 @@
-"""List Archipelago games registered in the current install.
+"""List Archipelago games registered in the current installation.
 
-Invoked by GameCatalogService to enumerate the core games that ship with the
+Invoked by GameCatalogService to list the core games that ship with the
 Archipelago submodule. Emits a JSON payload between sentinel markers so the
 Kotlin caller can parse it out of the merged stdout/log stream.
 
@@ -26,7 +26,7 @@ def _list_core_games():
     import ModuleUpdate
     ModuleUpdate.update()
 
-    import worlds  # noqa: F401  (import side-effect: populates AutoWorldRegister)
+    import worlds  # noqa: F401 (import side effect: populates AutoWorldRegister)
     from worlds.AutoWorld import AutoWorldRegister
 
     return sorted(AutoWorldRegister.world_types.keys())
