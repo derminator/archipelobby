@@ -11,6 +11,8 @@ group = "com.github.derminator"
 version = "0.0.1-SNAPSHOT"
 description = "archipelobby"
 
+private val mockitoAgent = configurations.create("mockitoAgent")
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
@@ -53,6 +55,7 @@ dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 }
 
 kotlin {
@@ -68,4 +71,10 @@ springBoot {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks {
+    test {
+        jvmArgs.add("-javaagent:${mockitoAgent.asPath}")
+    }
 }
