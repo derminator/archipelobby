@@ -43,6 +43,13 @@ class RealArchipelagoGeneratorService(
                 customWorldsDir.resolve(name).writeBytes(bytes)
             }
 
+            // Install any dependencies introduced by the current set of APWorlds.
+            val moduleUpdateFile = File(moduleUpdateScriptPath).absoluteFile
+            pythonScriptRunner.run(
+                workDir.resolve(moduleUpdateFile.name).path,
+                "--yes",
+            )
+
             pythonScriptRunner.run(
                 workDir.resolve(scriptFile.name).path,
                 "--player_files_path", playersDir.path,
