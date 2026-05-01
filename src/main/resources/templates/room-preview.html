@@ -15,6 +15,7 @@
 </header>
 <main>
     <h1 th:text="${preview.name}">Room Name</h1>
+    <p th:text="${pun}"></p>
     <p>
         <span th:text="${preview.entryCount}">0</span>
         <span th:text="${preview.entryCount == 1 ? 'entry' : 'entries'}">entries</span>
