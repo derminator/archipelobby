@@ -13,7 +13,7 @@ data class Room(
     val guildId: Long,
     val name: String,
     val generatedGameFilePath: String? = null,
-    @Version val version: Long = 0,
+    @Version val version: Long? = null,
 ) {
     companion object {
         const val GENERATING_SENTINEL = "__generating__"
