@@ -344,6 +344,27 @@ class RoomController(
             .body(fileContent)
     }
 
+    @GetMapping("/{roomId}/walkthrough/download")
+    fun downloadWalkthrough(
+        @PathVariable roomId: Long,
+        principal: Principal,
+    ): Mono<ResponseEntity<ByteArray>> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val room = roomService.getWalkthroughForDownload(roomId, userId)
+        val filePath = room.walkthroughFilePath!!
+
+        if (!uploadsService.fileExists(filePath)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Walkthrough file not found")
+        }
+
+        val fileContent = uploadsService.getFile(filePath)
+
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${room.name}_Spoiler.txt\"")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(fileContent)
+    }
+
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,

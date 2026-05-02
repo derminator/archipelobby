@@ -6,6 +6,7 @@ import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
+import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -58,6 +59,9 @@ class WebTests {
 
     @MockitoBean
     lateinit var archipelagoGeneratorService: ArchipelagoGeneratorService
+
+    @Autowired
+    lateinit var uploadsService: UploadsService
 
     @Autowired
     lateinit var context: ApplicationContext
@@ -752,5 +756,54 @@ class WebTests {
             .post().uri("/rooms/$roomId/generated-game/delete")
             .exchange()
             .expectStatus().isEqualTo(409)
+    }
+
+    @Test
+    fun `downloadWalkthrough returns walkthrough for admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val walkthroughContent = "spoiler content".toByteArray()
+        val walkthroughPath = uploadsService.saveFile(walkthroughContent, "Test Room_Spoiler.txt")
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+            walkthroughFilePath = walkthroughPath,
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/walkthrough/download")
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().valueMatches("Content-Disposition", ".*Test Room_Spoiler\\.txt.*")
+            .expectBody<ByteArray>().consumeWith { response ->
+                assert(response.responseBody != null)
+                assert(response.responseBody!!.contentEquals(walkthroughContent))
+            }
+    }
+
+    @Test
+    fun `downloadWalkthrough returns forbidden for non-admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+            walkthroughFilePath = "path/to/walkthrough.txt",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/walkthrough/download")
+            .exchange()
+            .expectStatus().isForbidden
     }
 }
