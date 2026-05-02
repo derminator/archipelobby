@@ -113,6 +113,10 @@
 
         <div th:if="${room.isGenerated}">
             <h3>Generated Game</h3>
+            <a th:if="${room.walkthroughFilePath != null}"
+               th:href="@{/rooms/{id}/walkthrough/download(id=${room.id})}">
+                <button type="button">Download Walkthrough</button>
+            </a>
             <form method="post"
                   th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
                   th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
