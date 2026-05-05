@@ -99,6 +99,17 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
+        if (apWorldFile != null && apWorldRepository.existsByRoomIdAndFileName(roomId, apWorldFile.fileName).awaitSingle()) {
+            throw ResponseStatusException(
+                HttpStatus.CONFLICT,
+                "An APWorld with filename '${apWorldFile.fileName}' already exists in this room",
+            )
+        }
+
+        val existingApWorldPaths = apWorldRepository.findByRoomId(roomId).asFlow().toList().map { it.filePath }
+        val allApWorldPaths = existingApWorldPaths + listOfNotNull(apWorldFile?.filePath)
+        val locationCount = archipelagoGeneratorService.getLocationCount(yamlFilePath, allApWorldPaths)
+
         val entry = entryRepository.save(
             Entry(
                 roomId = roomId,
@@ -106,16 +117,11 @@ class RoomService(
                 name = entryName,
                 game = game,
                 yamlFilePath = yamlFilePath,
+                locationCount = locationCount,
             ),
         ).awaitSingle()
 
         if (apWorldFile != null) {
-            if (apWorldRepository.existsByRoomIdAndFileName(roomId, apWorldFile.fileName).awaitSingle()) {
-                throw ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "An APWorld with filename '${apWorldFile.fileName}' already exists in this room",
-                )
-            }
             apWorldRepository.save(
                 ApWorld(
                     roomId = roomId,
@@ -173,7 +179,7 @@ class RoomService(
                 .collect { entry ->
                     launch {
                         if (entry.id == null) error("Entry ID is null after saving")
-                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId)))
+                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId), entry.locationCount))
                     }
                 }
         }
@@ -373,7 +379,7 @@ class RoomService(
 
 data class RoomPreview(val name: String, val entryCount: Int, val games: List<String>)
 data class ApWorldFile(val fileName: String, val filePath: String)
-data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
+data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo, val locationCount: Int?)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
