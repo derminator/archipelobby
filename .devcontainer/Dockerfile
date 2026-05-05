@@ -12,3 +12,5 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN python3 -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip
 
 ENV ARCHIPELOBBY_PYTHON_EXECUTABLE=/opt/venv/bin/python
+
+USER root
