@@ -21,6 +21,7 @@
       ]
     }
   },
+  "remoteUser": "root",
   "remoteEnv": {
     "ARCHIPELOBBY_PYTHON_EXECUTABLE": "/opt/venv/bin/python"
   },
