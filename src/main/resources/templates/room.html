@@ -17,6 +17,17 @@
 <main>
     <h1 th:text="${room.name}">Room Name</h1>
 
+    <details id="supported-games" th:if="${roomGames != null and not #lists.isEmpty(roomGames)}">
+        <summary th:text="|Supported games (${#lists.size(roomGames)})|">Supported games</summary>
+        <ul>
+            <li th:each="game : ${roomGames}">
+                <span th:text="${game.name}">Game name</span>
+                <em th:if="${game.apworldFileName != null}"
+                    th:text="|(apworld: ${game.apworldFileName})|">(apworld: file.apworld)</em>
+            </li>
+        </ul>
+    </details>
+
     <div th:if="${room.isGenerated}">
         <h2>Generated Game</h2>
         <a th:href="@{/rooms/{id}/generated-game/download(id=${room.id})}">
