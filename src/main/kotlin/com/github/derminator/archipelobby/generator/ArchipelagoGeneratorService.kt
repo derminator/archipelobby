@@ -8,7 +8,25 @@ package com.github.derminator.archipelobby.generator
  * for generated games (the generator is invoked with --spoiler 3) but may be null for games
  * that were uploaded without an accompanying spoiler file.
  */
-data class GeneratedGame(val archipelagoBytes: ByteArray, val walkthroughBytes: ByteArray)
+data class GeneratedGame(val archipelagoBytes: ByteArray, val walkthroughBytes: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as GeneratedGame
+
+        if (!archipelagoBytes.contentEquals(other.archipelagoBytes)) return false
+        if (!walkthroughBytes.contentEquals(other.walkthroughBytes)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = archipelagoBytes.contentHashCode()
+        result = 31 * result + walkthroughBytes.contentHashCode()
+        return result
+    }
+}
 
 interface ArchipelagoGeneratorService {
     /**
