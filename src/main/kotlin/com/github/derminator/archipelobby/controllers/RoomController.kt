@@ -351,9 +351,9 @@ class RoomController(
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val room = roomService.getWalkthroughForDownload(roomId, userId)
-        val filePath = room.walkthroughFilePath!!
+        val filePath = room.walkthroughFilePath
 
-        if (!uploadsService.fileExists(filePath)) {
+        if (filePath == null || !uploadsService.fileExists(filePath)) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "Walkthrough file not found")
         }
 
