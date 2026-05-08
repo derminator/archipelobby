@@ -1,6 +1,7 @@
 package com.github.derminator.archipelobby.data
 
 import com.github.derminator.archipelobby.discord.DiscordService
+import com.github.derminator.archipelobby.extractFilesFromZip
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
@@ -337,29 +338,6 @@ class RoomService(
             walkthroughFilePath?.let { uploadsService.deleteFile(it) }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
-    }
-
-    /**
-     * Extracts the .archipelago multidata and any .txt spoiler file from a zip.
-     * Follows the same file-type conventions as the upstream Archipelago WebHostLib.
-     */
-    private fun extractFilesFromZip(zipBytes: ByteArray): Pair<ByteArray?, ByteArray?> {
-        var archipelagoBytes: ByteArray? = null
-        var walkthroughBytes: ByteArray? = null
-        java.util.zip.ZipInputStream(zipBytes.inputStream()).use { zis ->
-            var entry = zis.nextEntry
-            while (entry != null) {
-                if (!entry.isDirectory) {
-                    when {
-                        entry.name.endsWith(".archipelago") -> archipelagoBytes = zis.readBytes()
-                        entry.name.endsWith(".txt") -> walkthroughBytes = zis.readBytes()
-                    }
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
-        }
-        return Pair(archipelagoBytes, walkthroughBytes)
     }
 
     @Transactional

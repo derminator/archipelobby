@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby.generator
 
+import com.github.derminator.archipelobby.extractFilesFromZip
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import java.io.File
 import java.nio.file.Files
-import java.util.zip.ZipInputStream
+import java.nio.file.Path
 
 @Service
 class RealArchipelagoGeneratorService(
@@ -75,29 +76,16 @@ class RealArchipelagoGeneratorService(
                     "Archipelago generation produced no walkthrough file",
                 )
 
-            val archipelagoBytes = extractArchipelagoFromZip(Files.readAllBytes(gameZip))
+            val (archipelagoBytes, _) = extractFilesFromZip(Files.readAllBytes(gameZip))
+            val archipelago = archipelagoBytes
                 ?: throw ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Game zip produced by Archipelago contains no .archipelago file",
                 )
 
-            GeneratedGame(archipelagoBytes, Files.readAllBytes(walkthroughFile))
+            GeneratedGame(archipelago, Files.readAllBytes(walkthroughFile))
         } finally {
             workDir.deleteRecursively()
         }
-    }
-
-    private fun extractArchipelagoFromZip(zipBytes: ByteArray): ByteArray? {
-        ZipInputStream(zipBytes.inputStream()).use { zis ->
-            var entry = zis.nextEntry
-            while (entry != null) {
-                if (!entry.isDirectory && entry.name.endsWith(".archipelago")) {
-                    return zis.readBytes()
-                }
-                zis.closeEntry()
-                entry = zis.nextEntry
-            }
-        }
-        return null
     }
 }
