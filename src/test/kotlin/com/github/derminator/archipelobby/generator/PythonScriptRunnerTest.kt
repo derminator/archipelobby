@@ -14,7 +14,9 @@ import kotlin.test.assertTrue
 
 class PythonScriptRunnerTest {
 
-    private val runner = PythonScriptRunner()
+    private val runner = PythonScriptRunner(
+        if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) "python" else "python3",
+    )
 
     @Test
     fun `error message includes Python exception details when script raises exception`(@TempDir tempDir: Path) {
