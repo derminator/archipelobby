@@ -50,12 +50,10 @@ class RealArchipelagoGeneratorService(
                 "--yes",
             )
 
-            // --spoiler 3 ensures the spoiler log is included inside the output zip.
             pythonScriptRunner.run(
                 workDir.resolve(scriptFile.name).path,
                 "--player_files_path", playersDir.path,
                 "--outputpath", outputDir.path,
-                "--spoiler", "3",
             )
 
             val gameZip = Files.list(outputDir.toPath()).use { stream ->
