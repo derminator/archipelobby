@@ -10,7 +10,6 @@ import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import java.io.File
 import java.nio.file.Files
-import java.nio.file.Path
 
 @Service
 class RealArchipelagoGeneratorService(
@@ -51,7 +50,7 @@ class RealArchipelagoGeneratorService(
                 "--yes",
             )
 
-            // --spoiler 3 ensures the spoiler log is always written alongside the output zip.
+            // --spoiler 3 ensures the spoiler log is included inside the output zip.
             pythonScriptRunner.run(
                 workDir.resolve(scriptFile.name).path,
                 "--player_files_path", playersDir.path,
@@ -59,31 +58,28 @@ class RealArchipelagoGeneratorService(
                 "--spoiler", "3",
             )
 
-            val outputFiles = Files.list(outputDir.toPath()).use { stream ->
-                stream.filter { Files.isRegularFile(it) }.toList()
-            }
+            val gameZip = Files.list(outputDir.toPath()).use { stream ->
+                stream.filter { Files.isRegularFile(it) && it.fileName.toString().endsWith(".zip") }
+                    .findFirst().orElse(null)
+            } ?: throw ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Archipelago generation produced no game zip",
+            )
 
-            // Generate.py writes AP_<seed>.zip and AP_<seed>_Spoiler.txt directly to --outputpath.
-            // The .archipelago multidata file lives inside the zip and must be extracted.
-            val gameZip = outputFiles.find { it.fileName.toString().endsWith(".zip") }
-                ?: throw ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Archipelago generation produced no game zip",
-                )
-            val walkthroughFile = outputFiles.find { it.fileName.toString().endsWith(".txt") }
-                ?: throw ResponseStatusException(
-                    HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Archipelago generation produced no walkthrough file",
-                )
-
-            val (archipelagoBytes, _) = extractFilesFromZip(Files.readAllBytes(gameZip))
+            // Both the .archipelago multidata and the spoiler log live inside the zip.
+            val (archipelagoBytes, walkthroughBytes) = extractFilesFromZip(Files.readAllBytes(gameZip))
             val archipelago = archipelagoBytes
                 ?: throw ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Game zip produced by Archipelago contains no .archipelago file",
                 )
+            val walkthrough = walkthroughBytes
+                ?: throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Game zip produced by Archipelago contains no walkthrough file",
+                )
 
-            GeneratedGame(archipelago, Files.readAllBytes(walkthroughFile))
+            GeneratedGame(archipelago, walkthrough)
         } finally {
             workDir.deleteRecursively()
         }
