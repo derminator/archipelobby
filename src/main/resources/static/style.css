@@ -203,6 +203,13 @@ form[action*="delete"] input[type="submit"]:hover {
     border-top: 2px solid #e74c3c;
 }
 
+.button-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
 .output {
     white-space: pre-wrap
 }
