@@ -1,6 +1,7 @@
 package com.github.derminator.archipelobby.data
 
 import com.github.derminator.archipelobby.discord.DiscordService
+import com.github.derminator.archipelobby.extractFilesFromZip
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
@@ -259,19 +260,29 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
 
-        val gameBytes = try {
+        val generatedGame = try {
             archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
         } catch (e: Exception) {
-            runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
+            runCatching {
+                roomRepository.save(lockedRoom.copy(generatedGameFilePath = null, walkthroughFilePath = null))
+                    .awaitSingle()
+            }
             throw e
         }
 
-        val filePath = uploadsService.saveFile(gameBytes, "${room.name}.archipelago")
+        val gameFilePath = uploadsService.saveFile(generatedGame.archipelagoBytes, "${room.name}.archipelago")
+        val walkthroughFilePath = uploadsService.saveFile(generatedGame.walkthroughBytes, "${room.name}_Spoiler.txt")
         try {
-            roomRepository.save(lockedRoom.copy(generatedGameFilePath = filePath)).awaitSingle()
+            roomRepository.save(
+                lockedRoom.copy(generatedGameFilePath = gameFilePath, walkthroughFilePath = walkthroughFilePath)
+            ).awaitSingle()
         } catch (_: OptimisticLockingFailureException) {
-            uploadsService.deleteFile(filePath)
-            runCatching { roomRepository.save(lockedRoom.copy(generatedGameFilePath = null)).awaitSingle() }
+            uploadsService.deleteFile(gameFilePath)
+            uploadsService.deleteFile(walkthroughFilePath)
+            runCatching {
+                roomRepository.save(lockedRoom.copy(generatedGameFilePath = null, walkthroughFilePath = null))
+                    .awaitSingle()
+            }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
     }
@@ -299,35 +310,34 @@ class RoomService(
     @Transactional
     suspend fun uploadGame(roomId: Long, userId: Long, gameBytes: ByteArray, filename: String) {
         val (room, _) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
-        val archipelagoBytes = when {
-            filename.endsWith(".archipelago") -> gameBytes
-            filename.endsWith(".zip") -> extractArchipelagoFromZip(gameBytes)
-                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "ZIP file does not contain a .archipelago file")
-            else -> throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a .archipelago file or a .zip containing one")
+
+        val (archipelagoBytes, walkthroughBytes) = when {
+            filename.endsWith(".archipelago") -> Pair(gameBytes, null)
+            filename.endsWith(".zip") -> extractFilesFromZip(gameBytes).also { (archipelago, _) ->
+                if (archipelago == null) throw ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "ZIP file does not contain a .archipelago file",
+                )
+            }
+            else -> throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "File must be a .archipelago file or a .zip containing one",
+            )
         }
-        val filePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
+
+        val gameFilePath = uploadsService.saveFile(archipelagoBytes!!, "${room.name}.archipelago")
+        val walkthroughFilePath = walkthroughBytes?.let {
+            uploadsService.saveFile(it, "${room.name}_Spoiler.txt")
+        }
         try {
-            roomRepository.save(room.copy(generatedGameFilePath = filePath)).awaitSingle()
+            roomRepository.save(
+                room.copy(generatedGameFilePath = gameFilePath, walkthroughFilePath = walkthroughFilePath)
+            ).awaitSingle()
         } catch (_: OptimisticLockingFailureException) {
-            uploadsService.deleteFile(filePath)
+            uploadsService.deleteFile(gameFilePath)
+            walkthroughFilePath?.let { uploadsService.deleteFile(it) }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
-    }
-
-    private fun extractArchipelagoFromZip(zipBytes: ByteArray): ByteArray? {
-        java.io.ByteArrayInputStream(zipBytes).use { bais ->
-            java.util.zip.ZipInputStream(bais).use { zis ->
-                var entry = zis.nextEntry
-                while (entry != null) {
-                    if (!entry.isDirectory && entry.name.endsWith(".archipelago")) {
-                        return zis.readBytes()
-                    }
-                    zis.closeEntry()
-                    entry = zis.nextEntry
-                }
-            }
-        }
-        return null
     }
 
     @Transactional
@@ -344,7 +354,8 @@ class RoomService(
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
 
         runCatching { uploadsService.deleteFile(filePath) }
-        roomRepository.save(room.copy(generatedGameFilePath = null)).awaitSingle()
+        room.walkthroughFilePath?.let { runCatching { uploadsService.deleteFile(it) } }
+        roomRepository.save(room.copy(generatedGameFilePath = null, walkthroughFilePath = null)).awaitSingle()
     }
 
     suspend fun getGeneratedGameForDownload(roomId: Long, userId: Long): Room {
@@ -358,6 +369,18 @@ class RoomService(
         }
         if (room.generatedGameFilePath == null) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
+        }
+        return room
+    }
+
+    suspend fun getWalkthroughForDownload(roomId: Long, userId: Long): Room {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        if (room.walkthroughFilePath == null) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "No walkthrough found for this room")
         }
         return room
     }

@@ -13,6 +13,7 @@ data class Room(
     val guildId: Long,
     val name: String,
     val generatedGameFilePath: String? = null,
+    val walkthroughFilePath: String? = null,
     @Version val version: Long? = null,
 ) {
     companion object {

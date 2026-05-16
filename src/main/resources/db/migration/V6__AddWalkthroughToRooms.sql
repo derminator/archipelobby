@@ -1,0 +1,1 @@
+ALTER TABLE ROOMS ADD COLUMN walkthrough_file_path VARCHAR(500) NULL;
