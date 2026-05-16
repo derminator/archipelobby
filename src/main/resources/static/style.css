@@ -208,6 +208,17 @@ form[action*="delete"] input[type="submit"]:hover {
     align-items: center;
     gap: 0.75rem;
     flex-wrap: wrap;
+    background-color: #f8f9fa;
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    margin: 15px 0;
+}
+
+.button-row input[type="submit"],
+.button-row button {
+    padding: 10px 20px;
+    font-size: 14px;
 }
 
 .output {
