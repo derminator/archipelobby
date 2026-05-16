@@ -215,6 +215,10 @@ form[action*="delete"] input[type="submit"]:hover {
     margin: 15px 0;
 }
 
+.button-row form {
+    margin: 0;
+}
+
 .button-row input[type="submit"],
 .button-row button {
     padding: 10px 20px;
