@@ -305,7 +305,7 @@ class RoomController(
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST
                 || e.statusCode == HttpStatus.CONFLICT
-                || e.statusCode == HttpStatus.UNPROCESSABLE_ENTITY
+                || e.statusCode == HttpStatus.UNPROCESSABLE_CONTENT
             ) {
                 loadRoomModel(roomId, userId, model)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
