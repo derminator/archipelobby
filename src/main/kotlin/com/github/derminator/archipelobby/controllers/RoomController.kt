@@ -2,6 +2,7 @@ package com.github.derminator.archipelobby.controllers
 
 import com.github.derminator.archipelobby.data.ApWorldFile
 import com.github.derminator.archipelobby.data.EntryYaml
+import com.github.derminator.archipelobby.data.Puns
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
@@ -87,6 +88,7 @@ class RoomController(
         if (principal == null || principal is AnonymousAuthenticationToken) {
             val preview = roomService.getRoomForPreview(roomId)
             model.addAttribute("preview", preview)
+            model.addAttribute("pun", Puns.forRoom(roomId))
             return@mono "room-preview"
         }
         val userId = principal.asDiscordPrincipal.userId
@@ -303,7 +305,7 @@ class RoomController(
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST
                 || e.statusCode == HttpStatus.CONFLICT
-                || e.statusCode == HttpStatus.UNPROCESSABLE_ENTITY
+                || e.statusCode == HttpStatus.UNPROCESSABLE_CONTENT
             ) {
                 loadRoomModel(roomId, userId, model)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
@@ -388,6 +390,7 @@ class RoomController(
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
+        model.addAttribute("pun", Puns.forRoom(roomId))
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
