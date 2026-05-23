@@ -59,16 +59,19 @@ class GameCatalogService(
                 var entry = zis.nextEntry
                 while (entry != null) {
                     if (!entry.isDirectory && entry.name.endsWith("archipelago.json")) {
-                        val manifest = jsonMapper.readValue(
-                            zis.readAllBytes(),
-                            ApWorldManifest::class.java,
-                        )
-                        val game = manifest.game.takeIf { it.isNotBlank() }
-                            ?: throw ResponseStatusException(
+                        val result = runCatching {
+                            val manifest = jsonMapper.readValue(
+                                zis.readAllBytes(),
+                                ApWorldManifest::class.java,
+                            )
+                            manifest.game.takeIf { it.isNotBlank() } ?: error("game field is blank")
+                        }
+                        return result.getOrElse {
+                            throw ResponseStatusException(
                                 HttpStatus.BAD_REQUEST,
                                 "APWorld manifest is missing a 'game' field",
                             )
-                        return game
+                        }
                     }
                     entry = zis.nextEntry
                 }
