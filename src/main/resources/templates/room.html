@@ -68,6 +68,7 @@
                         <th>Checks</th>
                         <th>%</th>
                         <th>Status</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -77,6 +78,12 @@
                         <td th:text="${p.checksDone + ' / ' + p.checksTotal}">0 / 0</td>
                         <td th:text="${#numbers.formatDecimal(p.percent, 1, 1) + '%'}">0.0%</td>
                         <td th:text="${p.status}">Unknown</td>
+                        <td th:if="${userEntryMap != null and userEntryMap.containsKey(p.name)}">
+                            <a th:href="@{/rooms/{roomId}/entries/{entryId}/locations(roomId=${room.id},entryId=${userEntryMap[p.name]})}">
+                                Check Locations
+                            </a>
+                        </td>
+                        <td th:unless="${userEntryMap != null and userEntryMap.containsKey(p.name)}"></td>
                     </tr>
                 </tbody>
             </table>

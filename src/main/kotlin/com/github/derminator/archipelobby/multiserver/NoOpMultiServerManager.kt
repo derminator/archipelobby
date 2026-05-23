@@ -9,4 +9,5 @@ class NoOpMultiServerManager : MultiServerManager {
     override suspend fun startServer(roomId: Long) {}
     override suspend fun stopServer(roomId: Long) {}
     override fun isRunning(roomId: Long): Boolean = false
+    override fun getServerPort(roomId: Long): Int? = null
 }

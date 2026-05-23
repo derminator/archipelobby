@@ -128,6 +128,8 @@ class ProcessMultiServerManager(
         return managed.process.isAlive
     }
 
+    override fun getServerPort(roomId: Long): Int? = processes[roomId]?.port
+
     private suspend fun allocatePort(): Int = allocationMutex.withLock {
         val usedPorts: Set<Int> = buildSet {
             roomRepository.findAll().asFlow().collect { room ->

@@ -382,6 +382,73 @@ class RoomController(
             .body(fileContent)
     }
 
+    @GetMapping("/{roomId}/entries/{entryId}/locations")
+    fun getLocations(
+        @PathVariable roomId: Long,
+        @PathVariable entryId: Long,
+        principal: Principal,
+        model: Model,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val entry = roomService.getEntry(entryId)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        if (entry.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        }
+        if (entry.userId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot view another player's locations")
+        }
+
+        val tracker = trackerService.getTrackerData(roomId)
+            ?: throw ResponseStatusException(
+                HttpStatus.SERVICE_UNAVAILABLE,
+                "Server is not running — start it first to view location data",
+            )
+        val playerSlot = tracker.players.find { it.name == entry.name }?.slot
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Player slot not found in tracker data")
+
+        val slotLocations = trackerService.getSlotLocations(roomId, playerSlot)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Location data not available")
+
+        val room = roomService.getRoom(roomId, userId)
+        model.addAttribute("room", room.room)
+        model.addAttribute("entry", entry)
+        model.addAttribute("slotLocations", slotLocations)
+        model.addAttribute("uncheckedLocations", slotLocations.locations.filter { !it.checked })
+        model.addAttribute("checkedLocations", slotLocations.locations.filter { it.checked })
+        "locations"
+    }
+
+    @PostMapping("/{roomId}/entries/{entryId}/check-locations")
+    fun checkLocations(
+        @PathVariable roomId: Long,
+        @PathVariable entryId: Long,
+        exchange: ServerWebExchange,
+        principal: Principal,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val entry = roomService.getEntry(entryId)
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        if (entry.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        }
+        if (entry.userId != userId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot check another player's locations")
+        }
+
+        val formData = exchange.formData.awaitSingle()
+        val locationIds = formData["locationIds"]?.mapNotNull { it.toLongOrNull() } ?: emptyList()
+
+        if (locationIds.isNotEmpty()) {
+            val success = trackerService.sendLocationChecks(roomId, entry.name, locationIds)
+            if (!success) {
+                throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to send location checks")
+            }
+        }
+
+        "redirect:/rooms/$roomId/entries/$entryId/locations"
+    }
+
     @PostMapping("/{roomId}/server/start")
     fun startServer(
         @PathVariable roomId: Long,
@@ -420,8 +487,9 @@ class RoomController(
 
     private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model, exchange: ServerWebExchange) {
         val roomWithEntries = roomService.getRoom(roomId, userId)
+        val entries = roomWithEntries.entries.toList()
         model.addAttribute("room", roomWithEntries.room)
-        model.addAttribute("entries", roomWithEntries.entries.toList())
+        model.addAttribute("entries", entries)
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
         model.addAttribute("userId", userId)
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
@@ -433,6 +501,9 @@ class RoomController(
         model.addAttribute("serverHost", host)
         model.addAttribute("serverScheme", if (uri.scheme == "https") "wss" else "ws")
         model.addAttribute("tracker", trackerService.getTrackerData(roomId))
+        model.addAttribute("userEntryMap", entries
+            .filter { it.user.id == userId }
+            .associate { it.name to it.id })
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="|Locations - ${entry.name}|">Locations</title>
+    <th:block th:replace="~{layout :: favicon-links}"></th:block>
+    <link rel="stylesheet" th:href="@{/style.css}"/>
+    <script th:src="@{/locations.js}" defer></script>
+</head>
+<body>
+<header>
+    <div th:replace="~{layout :: user-bar}"></div>
+    <a th:href="@{/rooms/{id}(id=${room.id})}">Back to Room</a>
+</header>
+<main>
+    <h1 th:text="|Locations for ${entry.name}|">Locations</h1>
+    <p>
+        <strong th:text="${slotLocations.game}">Game</strong> —
+        <span th:text="|${#lists.size(checkedLocations)} / ${#lists.size(checkedLocations) + #lists.size(uncheckedLocations)} checked|">0 / 0 checked</span>
+    </p>
+
+    <div th:if="${!#lists.isEmpty(uncheckedLocations)}">
+        <h2>Unchecked Locations</h2>
+        <form method="post"
+              th:action="@{/rooms/{roomId}/entries/{entryId}/check-locations(roomId=${room.id},entryId=${entry.id})}">
+            <div class="location-controls">
+                <button type="button" id="select-all">Select All</button>
+                <button type="button" id="deselect-all">Deselect All</button>
+                <input type="submit" value="Check Selected"/>
+            </div>
+            <ul class="location-list">
+                <li th:each="loc : ${uncheckedLocations}" class="location-item">
+                    <label>
+                        <input type="checkbox" name="locationIds" th:value="${loc.id}"/>
+                        <span th:text="${loc.name}">Location Name</span>
+                    </label>
+                </li>
+            </ul>
+            <div class="location-controls" th:if="${#lists.size(uncheckedLocations) > 10}">
+                <input type="submit" value="Check Selected"/>
+            </div>
+        </form>
+    </div>
+
+    <div th:if="${#lists.isEmpty(uncheckedLocations)}">
+        <h2>All locations checked!</h2>
+    </div>
+
+    <div th:if="${!#lists.isEmpty(checkedLocations)}">
+        <h2>Checked Locations</h2>
+        <ul class="location-list checked">
+            <li th:each="loc : ${checkedLocations}" class="location-item">
+                <span th:text="${loc.name}">Location Name</span>
+            </li>
+        </ul>
+    </div>
+</main>
+</body>
+</html>
