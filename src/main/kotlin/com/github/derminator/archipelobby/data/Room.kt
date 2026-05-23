@@ -14,6 +14,7 @@ data class Room(
     val name: String,
     val generatedGameFilePath: String? = null,
     val walkthroughFilePath: String? = null,
+    val serverPort: Int? = null,
     @Version val version: Long? = null,
 ) {
     companion object {
@@ -36,6 +37,7 @@ data class Entry(
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {
     fun findByGuildId(guildId: Long): Flux<Room>
     fun existsByGuildIdAndName(guildId: Long, name: String): Mono<Boolean>
+    fun findByGeneratedGameFilePathIsNotNull(): Flux<Room>
 }
 
 interface EntryRepository : ReactiveCrudRepository<Entry, Long> {

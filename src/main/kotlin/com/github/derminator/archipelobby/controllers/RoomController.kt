@@ -5,6 +5,7 @@ import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.Puns
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.generator.GameCatalogService
+import com.github.derminator.archipelobby.multiserver.MultiServerProperties
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService,
     private val gameCatalogService: GameCatalogService,
+    private val multiServerProperties: MultiServerProperties,
 ) {
     private val yamlMapper = YAMLMapper.builder()
         .addModule(KotlinModule.Builder().build())
@@ -377,6 +379,26 @@ class RoomController(
             .body(fileContent)
     }
 
+    @PostMapping("/{roomId}/server/start")
+    fun startServer(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.startServer(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/server/stop")
+    fun stopServer(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.stopServer(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,
@@ -402,6 +424,8 @@ class RoomController(
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
+        model.addAttribute("serverRunning", roomService.isServerRunning(roomId))
+        model.addAttribute("serverHost", multiServerProperties.displayHost)
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
