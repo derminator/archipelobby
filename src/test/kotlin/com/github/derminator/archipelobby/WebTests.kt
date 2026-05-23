@@ -7,6 +7,9 @@ import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
+import com.github.derminator.archipelobby.tracker.PlayerProgress
+import com.github.derminator.archipelobby.tracker.TrackerData
+import com.github.derminator.archipelobby.tracker.TrackerService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
@@ -69,6 +72,9 @@ class WebTests {
 
     @MockitoBean
     lateinit var multiServerManager: MultiServerManager
+
+    @MockitoBean
+    lateinit var trackerService: TrackerService
 
     @Autowired
     lateinit var uploadsService: UploadsService
@@ -979,7 +985,7 @@ class WebTests {
             .expectBody<String>().consumeWith { response ->
                 val body = response.responseBody!!
                 assert(body.contains("Running"))
-                assert(body.contains("localhost:38281"))
+                assert(body.contains("/rooms/$roomId/ws"))
             }
     }
 
@@ -1093,7 +1099,7 @@ class WebTests {
             .expectBody<String>().consumeWith { response ->
                 val body = response.responseBody!!
                 assert(body.contains("Running"))
-                assert(body.contains("localhost:38281"))
+                assert(body.contains("/rooms/$roomId/ws"))
                 assert(!body.contains("Start Server"))
                 assert(!body.contains("Stop Server"))
             }
@@ -1143,5 +1149,77 @@ class WebTests {
             .expectStatus().is3xxRedirection
 
         verify(multiServerManager).stopServer(roomId)
+    }
+
+    @Test
+    fun `room page shows tracker table when tracker data is available`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+            serverPort = 38281,
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(
+            TrackerData(
+                listOf(
+                    PlayerProgress(1, "Alice", "A Link to the Past", 42, 216, "Playing"),
+                    PlayerProgress(2, "Bob", "Factorio", 10, 50, "Connected"),
+                )
+            )
+        )
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Tracker"))
+                assert(body.contains("Alice"))
+                assert(body.contains("A Link to the Past"))
+                assert(body.contains("42 / 216"))
+                assert(body.contains("Playing"))
+                assert(body.contains("Bob"))
+                assert(body.contains("Factorio"))
+                assert(body.contains("10 / 50"))
+            }
+    }
+
+    @Test
+    fun `room page hides tracker when no tracker data`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(false)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(null)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(!body.contains("Tracker"))
+                assert(!body.contains("tracker-table"))
+            }
     }
 }
