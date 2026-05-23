@@ -23,6 +23,7 @@ RUN python3 -m venv /app/.venv && /app/.venv/bin/pip install --upgrade pip
 
 COPY --from=build /app/build/libs/*.jar app.jar
 COPY ./Archipelago ./Archipelago
+COPY ./python ./python
 
 RUN chown -R appuser:appuser /app
 USER appuser

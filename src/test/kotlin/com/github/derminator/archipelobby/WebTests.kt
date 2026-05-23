@@ -5,6 +5,7 @@ import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
+import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
@@ -16,15 +17,12 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.`when`
-import org.springframework.dao.OptimisticLockingFailureException
-import java.io.ByteArrayOutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -36,6 +34,9 @@ import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.io.ByteArrayOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @SpringBootTest
 @EnableAutoConfiguration(
@@ -56,6 +57,9 @@ class WebTests {
 
     @MockitoBean
     lateinit var apWorldRepository: ApWorldRepository
+
+    @MockitoBean
+    lateinit var gameCatalogService: GameCatalogService
 
     @MockitoBean
     lateinit var archipelagoGeneratorService: ArchipelagoGeneratorService
@@ -81,6 +85,7 @@ class WebTests {
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
         `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
+        `when`(gameCatalogService.listCoreGames()).thenReturn(emptyList())
 
         webTestClient = WebTestClient.bindToApplicationContext(context)
             .apply(springSecurity())
@@ -234,6 +239,8 @@ class WebTests {
         `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(roomId, 123, "Test Room")))
         `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(gameCatalogService.listCoreGames())
+            .thenReturn(listOf(com.github.derminator.archipelobby.generator.GameInfo("Test Game")))
 
         val bodyBuilder = MultipartBodyBuilder()
         bodyBuilder.part("yamlFile", "name: Duplicate Name\ngame: Test Game".toByteArray())
@@ -259,6 +266,43 @@ class WebTests {
                 assert(body != null)
                 assert(body!!.contains("class=\"error-banner\""))
                 assert(body.contains("Conflict") || body.contains("already exists"))
+            }
+    }
+
+    @Test
+    fun `adding entry with unsupported game is rejected`(): Unit = runBlocking {
+        val roomId = 1L
+        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(false))
+        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(roomId, 123, "Test Room")))
+        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(gameCatalogService.listCoreGames())
+            .thenReturn(listOf(com.github.derminator.archipelobby.generator.GameInfo("Known Game")))
+
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("yamlFile", "name: Player\ngame: Unknown Game".toByteArray())
+            .filename("test.yaml")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/entries")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("class=\"error-banner\""))
+                assert(body.contains("Unknown Game") && body.contains("not supported"))
             }
     }
 
@@ -405,7 +449,7 @@ class WebTests {
         val roomId = 1L
         val apWorldId = 1L
         val room = Room(roomId, 123, "Test Room")
-        val apWorld = ApWorld(apWorldId, roomId, userId, "test.apworld", "path/to/test.apworld")
+        val apWorld = ApWorld(apWorldId, roomId, userId, "test.apworld", "path/to/test.apworld", "Test Game")
         `when`(apWorldRepository.findById(apWorldId)).thenReturn(Mono.just(apWorld))
         `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
         `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
@@ -431,7 +475,7 @@ class WebTests {
         val roomId = 1L
         val apWorldId = 1L
         val room = Room(roomId, 123, "Test Room")
-        val apWorld = ApWorld(apWorldId, roomId, 999L, "test.apworld", "path/to/test.apworld")
+        val apWorld = ApWorld(apWorldId, roomId, 999L, "test.apworld", "path/to/test.apworld", "Test Game")
         `when`(apWorldRepository.findById(apWorldId)).thenReturn(Mono.just(apWorld))
         `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
         `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
@@ -575,8 +619,8 @@ class WebTests {
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.just(entry))
         `when`(roomRepository.save(any(Room::class.java))).thenReturn(Mono.just(room.copy(generatedGameFilePath = "path/to/game.archipelago")))
 
-        val zipBytes = ByteArrayOutputStream().also { baos ->
-            ZipOutputStream(baos).use { zos ->
+        val zipBytes = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { zos ->
                 zos.putNextEntry(ZipEntry("game.archipelago"))
                 zos.write("fake archipelago content".toByteArray())
                 zos.closeEntry()

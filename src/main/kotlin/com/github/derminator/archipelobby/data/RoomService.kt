@@ -1,10 +1,12 @@
 package com.github.derminator.archipelobby.data
 
 import com.github.derminator.archipelobby.discord.DiscordService
-import com.github.derminator.archipelobby.extractFilesFromZip
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
+import com.github.derminator.archipelobby.extractFilesFromZip
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
+import com.github.derminator.archipelobby.generator.GameCatalogService
+import com.github.derminator.archipelobby.generator.GameInfo
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -13,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
@@ -27,6 +30,7 @@ class RoomService(
     private val discordService: DiscordService,
     private val uploadsService: UploadsService,
     private val archipelagoGeneratorService: ArchipelagoGeneratorService,
+    private val gameCatalogService: GameCatalogService,
 ) {
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
@@ -100,6 +104,16 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
+        val supportedGames = buildRoomGames(roomId).map { it.name }.toMutableSet()
+        apWorldFile?.gameName?.takeIf { it.isNotBlank() }?.let { supportedGames.add(it) }
+        if (game !in supportedGames) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Game '$game' is not supported in this room. " +
+                    "Upload an apworld that provides it, or pick a game from the supported list.",
+            )
+        }
+
         val entry = entryRepository.save(
             Entry(
                 roomId = roomId,
@@ -117,14 +131,33 @@ class RoomService(
                     "An APWorld with filename '${apWorldFile.fileName}' already exists in this room",
                 )
             }
-            apWorldRepository.save(
-                ApWorld(
-                    roomId = roomId,
-                    userId = userId,
-                    fileName = apWorldFile.fileName,
-                    filePath = apWorldFile.filePath,
-                ),
-            ).awaitSingle()
+            val conflicting = apWorldRepository
+                .findByRoomIdAndGameName(roomId, apWorldFile.gameName)
+                .awaitSingleOrNull()
+            if (conflicting != null) {
+                throw ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "An APWorld for game '${apWorldFile.gameName}' is already uploaded to " +
+                        "this room (${conflicting.fileName}). Remove it before uploading a replacement.",
+                )
+            }
+            try {
+                apWorldRepository.save(
+                    ApWorld(
+                        roomId = roomId,
+                        userId = userId,
+                        fileName = apWorldFile.fileName,
+                        filePath = apWorldFile.filePath,
+                        gameName = apWorldFile.gameName,
+                    ),
+                ).awaitSingle()
+            } catch (e: DataIntegrityViolationException) {
+                throw ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "An APWorld for game '${apWorldFile.gameName}' is already uploaded to this room.",
+                    e,
+                )
+            }
         }
 
         return entry
@@ -178,7 +211,32 @@ class RoomService(
                     }
                 }
         }
-        return RoomWithEntries(room, entries, isAdmin)
+        val roomGames = buildRoomGames(roomId)
+        return RoomWithEntries(room, entries, isAdmin, roomGames)
+    }
+
+    private suspend fun buildRoomGames(roomId: Long): List<GameInfo> {
+        val coreGames = gameCatalogService.listCoreGames()
+        val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
+        val apWorldByGame = apWorlds
+            .filter { it.gameName.isNotBlank() }
+            .associateBy { it.gameName }
+        // Archipelago's loader uses the apworld's class at generation time when
+        // a game is provided by both a core world and an uploaded apworld, so
+        // swap the core entry in place when an apworld shadows it.
+        val merged = coreGames.map { core ->
+            apWorldByGame[core.name]
+                ?.let { GameInfo(core.name, apworldFileName = it.fileName) }
+                ?: core
+        }.toMutableList()
+        val coreNames = coreGames.map { it.name }.toSet()
+        for (apWorld in apWorlds) {
+            if (apWorld.gameName.isBlank()) continue
+            if (apWorld.gameName !in coreNames) {
+                merged.add(GameInfo(apWorld.gameName, apworldFileName = apWorld.fileName))
+            }
+        }
+        return merged.sortedBy { it.name.lowercase() }
     }
 
     suspend fun getEntry(entryId: Long): Entry? = entryRepository.findById(entryId).awaitSingleOrNull()
@@ -302,7 +360,7 @@ class RoomService(
 
         val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
         if (entries.isEmpty()) {
-            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
+            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Cannot generate a game with no entries")
         }
         return Pair(room, entries)
     }
@@ -395,11 +453,12 @@ class RoomService(
 }
 
 data class RoomPreview(val name: String, val entryCount: Int, val games: List<String>)
-data class ApWorldFile(val fileName: String, val filePath: String)
+data class ApWorldFile(val fileName: String, val filePath: String, val gameName: String)
 data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,
     val entries: Flow<EntryInfo>,
     val isAdmin: Boolean,
+    val roomGames: List<GameInfo>,
 )
