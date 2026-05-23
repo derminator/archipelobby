@@ -57,6 +57,30 @@
                 <input type="submit" value="Stop Server"/>
             </form>
         </div>
+
+        <div th:if="${tracker != null}">
+            <h3>Tracker</h3>
+            <table class="tracker-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Game</th>
+                        <th>Checks</th>
+                        <th>%</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${tracker.players}">
+                        <td th:text="${p.name}">Player</td>
+                        <td th:text="${p.game}">Game</td>
+                        <td th:text="${p.checksDone + ' / ' + p.checksTotal}">0 / 0</td>
+                        <td th:text="${#numbers.formatDecimal(p.percent, 1, 1) + '%'}">0.0%</td>
+                        <td th:text="${p.status}">Unknown</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
     <div th:if="${room.isGenerating}">
         <h2>Game Generation In Progress</h2>
