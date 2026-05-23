@@ -104,6 +104,16 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "An entry with this name already exists in this room")
         }
 
+        val supportedGames = buildRoomGames(roomId).map { it.name }.toMutableSet()
+        apWorldFile?.gameName?.takeIf { it.isNotBlank() }?.let { supportedGames.add(it) }
+        if (game !in supportedGames) {
+            throw ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Game '$game' is not supported in this room. " +
+                    "Upload an apworld that provides it, or pick a game from the supported list.",
+            )
+        }
+
         val entry = entryRepository.save(
             Entry(
                 roomId = roomId,

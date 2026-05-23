@@ -239,6 +239,8 @@ class WebTests {
         `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(roomId, 123, "Test Room")))
         `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(gameCatalogService.listCoreGames())
+            .thenReturn(listOf(com.github.derminator.archipelobby.generator.GameInfo("Test Game")))
 
         val bodyBuilder = MultipartBodyBuilder()
         bodyBuilder.part("yamlFile", "name: Duplicate Name\ngame: Test Game".toByteArray())
@@ -264,6 +266,43 @@ class WebTests {
                 assert(body != null)
                 assert(body!!.contains("class=\"error-banner\""))
                 assert(body.contains("Conflict") || body.contains("already exists"))
+            }
+    }
+
+    @Test
+    fun `adding entry with unsupported game is rejected`(): Unit = runBlocking {
+        val roomId = 1L
+        `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(false))
+        `when`(roomRepository.findById(anyLong())).thenReturn(Mono.just(Room(roomId, 123, "Test Room")))
+        `when`(discordService.isMemberOfGuild(anyLong(), anyLong())).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(gameCatalogService.listCoreGames())
+            .thenReturn(listOf(com.github.derminator.archipelobby.generator.GameInfo("Known Game")))
+
+        val bodyBuilder = MultipartBodyBuilder()
+        bodyBuilder.part("yamlFile", "name: Player\ngame: Unknown Game".toByteArray())
+            .filename("test.yaml")
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$roomId/entries")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .bodyValue(bodyBuilder.build())
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody
+                assert(body != null)
+                assert(body!!.contains("class=\"error-banner\""))
+                assert(body.contains("Unknown Game") && body.contains("not supported"))
             }
     }
 
