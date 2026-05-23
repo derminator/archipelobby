@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference
 import java.util.zip.ZipInputStream
 
 /**
- * Enumerates the games an Archipelago install can generate for.
+ * Lists the games an Archipelago installation can generate for.
  *
  * Core games (bundled in the Archipelago submodule under `worlds/`) are
  * discovered by running a Python helper that imports Archipelago's own
@@ -49,7 +49,7 @@ class GameCatalogService(
     }
 
     /**
-     * Extracts the single game name an apworld zip registers. Reads the
+     * Extracts the single game name that an apworld zip registers. Reads the
      * archipelago.json manifest in-process; does not run Python. Throws
      * BAD_REQUEST if the zip is missing a manifest or the `game` field.
      */
@@ -63,7 +63,7 @@ class GameCatalogService(
                             zis.readAllBytes(),
                             ApWorldManifest::class.java,
                         )
-                        val game = manifest.game?.takeIf { it.isNotBlank() }
+                        val game = manifest.game.takeIf { it.isNotBlank() }
                             ?: throw ResponseStatusException(
                                 HttpStatus.BAD_REQUEST,
                                 "APWorld manifest is missing a 'game' field",
@@ -143,7 +143,7 @@ internal data class CoreGamesPayload(
     val error: String? = null,
 )
 
-internal data class ApWorldManifest(val game: String? = null)
+internal data class ApWorldManifest(val game: String)
 
 /**
  * A game that can appear in a player's YAML `game:` field. `apworldFileName`

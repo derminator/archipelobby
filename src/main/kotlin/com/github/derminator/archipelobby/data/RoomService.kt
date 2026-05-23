@@ -1,9 +1,9 @@
 package com.github.derminator.archipelobby.data
 
 import com.github.derminator.archipelobby.discord.DiscordService
-import com.github.derminator.archipelobby.extractFilesFromZip
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
+import com.github.derminator.archipelobby.extractFilesFromZip
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.generator.GameInfo
@@ -350,7 +350,7 @@ class RoomService(
 
         val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
         if (entries.isEmpty()) {
-            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Cannot generate a game with no entries")
+            throw ResponseStatusException(HttpStatus.UNPROCESSABLE_CONTENT, "Cannot generate a game with no entries")
         }
         return Pair(room, entries)
     }
