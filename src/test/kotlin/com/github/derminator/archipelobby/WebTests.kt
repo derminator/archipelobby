@@ -3,9 +3,9 @@ package com.github.derminator.archipelobby
 import com.github.derminator.archipelobby.data.*
 import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
-import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
+import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
@@ -17,15 +17,12 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.`when`
-import org.springframework.dao.OptimisticLockingFailureException
-import java.io.ByteArrayOutputStream
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -37,6 +34,9 @@ import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import java.io.ByteArrayOutputStream
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 
 @SpringBootTest
 @EnableAutoConfiguration(
@@ -580,8 +580,8 @@ class WebTests {
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.just(entry))
         `when`(roomRepository.save(any(Room::class.java))).thenReturn(Mono.just(room.copy(generatedGameFilePath = "path/to/game.archipelago")))
 
-        val zipBytes = ByteArrayOutputStream().also { baos ->
-            ZipOutputStream(baos).use { zos ->
+        val zipBytes = ByteArrayOutputStream().also { out ->
+            ZipOutputStream(out).use { zos ->
                 zos.putNextEntry(ZipEntry("game.archipelago"))
                 zos.write("fake archipelago content".toByteArray())
                 zos.closeEntry()

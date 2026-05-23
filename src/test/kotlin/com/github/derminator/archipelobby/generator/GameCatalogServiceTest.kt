@@ -1,6 +1,7 @@
 package com.github.derminator.archipelobby.generator
 
 import kotlinx.coroutines.runBlocking
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -66,7 +67,7 @@ class GameCatalogServiceTest {
         val exception = assertThrows<ResponseStatusException> {
             runBlocking { service.listCoreGames() }
         }
-        assert(exception.reason?.contains("worlds import blew up") == true)
+        assertTrue(exception.reason?.contains("worlds import blew up") == true)
     }
 
     @Test
@@ -76,7 +77,7 @@ class GameCatalogServiceTest {
         val exception = assertThrows<ResponseStatusException> {
             runBlocking { service.listCoreGames() }
         }
-        assert(exception.reason?.contains("sentinel") == true)
+        assertTrue(exception.reason?.contains("sentinel") == true)
     }
 
     @Test
@@ -97,7 +98,7 @@ class GameCatalogServiceTest {
         val exception = assertThrows<ResponseStatusException> {
             service.extractApWorldGame(zipBytes)
         }
-        assert(exception.reason?.contains("archipelago.json") == true)
+        assertTrue(exception.reason?.contains("archipelago.json") == true)
     }
 
     @Test
@@ -108,7 +109,7 @@ class GameCatalogServiceTest {
         val exception = assertThrows<ResponseStatusException> {
             service.extractApWorldGame(zipBytes)
         }
-        assert(exception.reason?.contains("game") == true)
+        assertTrue(exception.reason?.contains("game") == true)
     }
 
     private fun buildService(
@@ -147,12 +148,12 @@ class GameCatalogServiceTest {
 
 /**
  * PythonScriptRunner is a concrete class with a `run(scriptPath, vararg args)` method.
- * We override it here so the tests don't need Mockito's open-class-magic and so we can
+ * We override it here so the tests don't need Mockito's open-class-magic, and so we can
  * count invocations deterministically.
  */
 private class FakePythonScriptRunner(private val stubbedOutput: String) : PythonScriptRunner() {
     var invocationCount: Int = 0
-        private set
+        protected set
 
     override fun run(scriptPath: String, vararg args: String): String {
         invocationCount++
