@@ -7,7 +7,9 @@ import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
+import com.github.derminator.archipelobby.tracker.LocationDetail
 import com.github.derminator.archipelobby.tracker.PlayerProgress
+import com.github.derminator.archipelobby.tracker.SlotLocations
 import com.github.derminator.archipelobby.tracker.TrackerData
 import com.github.derminator.archipelobby.tracker.TrackerService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
@@ -1301,6 +1303,137 @@ class WebTests {
                 val body = response.responseBody!!
                 assert(!body.contains("Tracker"))
                 assert(!body.contains("tracker-table"))
+            }
+    }
+
+    @Test
+    fun `locations page shows unchecked locations for entry owner`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 1L
+        val userId = 0L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        val entry = Entry(entryId, roomId, userId, "Alice", "Manual_TestGame", "path/to/file.yaml")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(discordService.isMemberOfGuild(userId, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(userId, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(
+            TrackerData(listOf(PlayerProgress(1, "Alice", "Manual_TestGame", 2, 5, "Playing")))
+        )
+        `when`(trackerService.getSlotLocations(roomId, 1)).thenReturn(
+            SlotLocations(1, "Manual_TestGame", listOf(
+                LocationDetail(100, "Location A", false),
+                LocationDetail(101, "Location B", true),
+                LocationDetail(102, "Location C", false),
+            ))
+        )
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/entries/$entryId/locations")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Location A"))
+                assert(body.contains("Location C"))
+                assert(body.contains("Location B"))
+                assert(body.contains("Check Selected"))
+            }
+    }
+
+    @Test
+    fun `locations page returns forbidden for non-owner`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 1L
+        val entry = Entry(entryId, roomId, 999L, "Other", "Manual_TestGame", "path/to/file.yaml")
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/entries/$entryId/locations")
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `check-locations redirects on success for entry owner`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 1L
+        val userId = 0L
+        val entry = Entry(entryId, roomId, userId, "Alice", "Manual_TestGame", "path/to/file.yaml")
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(trackerService.sendLocationChecks(roomId, "Alice", listOf(100L, 102L))).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/entries/$entryId/check-locations")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("locationIds", "100").with("locationIds", "102"))
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId/entries/$entryId/locations")
+    }
+
+    @Test
+    fun `check-locations returns forbidden for non-owner`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 1L
+        val entry = Entry(entryId, roomId, 999L, "Other", "Manual_TestGame", "path/to/file.yaml")
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/entries/$entryId/check-locations")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("locationIds", "100"))
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `room tracker table shows check locations link for user entries`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        val entry = Entry(1L, roomId, 0L, "Alice", "Manual_TestGame", "path/to/file.yaml")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.just(entry))
+        `when`(discordService.getUserInfo(0L)).thenReturn(UserInfo(0L, "admin"))
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(
+            TrackerData(listOf(PlayerProgress(1, "Alice", "Manual_TestGame", 2, 5, "Playing")))
+        )
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Check Locations"))
+                assert(body.contains("/rooms/$roomId/entries/1/locations"))
             }
     }
 }

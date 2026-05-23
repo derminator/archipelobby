@@ -15,3 +15,15 @@ data class PlayerProgress(
     val percent: Double
         get() = if (checksTotal > 0) checksDone.toDouble() / checksTotal * 100.0 else 0.0
 }
+
+data class LocationDetail(
+    val id: Long,
+    val name: String,
+    val checked: Boolean,
+)
+
+data class SlotLocations(
+    val slot: Int,
+    val game: String,
+    val locations: List<LocationDetail>,
+)
