@@ -1,4 +1,4 @@
-FROM docker.io/library/eclipse-temurin:25-jdk
+FROM docker.io/library/eclipse-temurin:25-jdk-noble
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
