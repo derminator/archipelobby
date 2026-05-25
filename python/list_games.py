@@ -23,6 +23,8 @@ def _emit(payload):
 
 
 def _list_core_games():
+    if "--yes" not in sys.argv:
+        sys.argv.append("--yes")
     import ModuleUpdate
     ModuleUpdate.update()
 
