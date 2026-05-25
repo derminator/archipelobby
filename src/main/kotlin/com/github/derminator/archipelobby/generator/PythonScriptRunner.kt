@@ -35,6 +35,7 @@ class PythonScriptRunner(
             .also {
                 it.environment()["PYTHONUNBUFFERED"] = "1"
                 it.environment()["DISPLAY"] = ""
+                it.environment()["PYTHONWARNINGS"] = "ignore::UserWarning:pkg_resources"
             }
             .start()
         process.outputStream.close()

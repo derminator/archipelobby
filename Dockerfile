@@ -14,12 +14,14 @@ RUN groupadd -r -g 10001 appuser && useradd -r -u 10001 -g appuser appuser
 RUN mkdir -p /data && chown -R appuser:appuser /data
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates python3 python3-venv python3-pip git cmake && \
+    ca-certificates python3 python3-venv python3-pip git cmake build-essential && \
     rm -rf /var/lib/apt/lists/*
 
 # Pre-create an empty venv so ModuleUpdate.py's pip install lands in a
 # writable, PEP 668-clean location. Archipelago deps install on first run.
 RUN python3 -m venv /app/.venv && /app/.venv/bin/pip install --upgrade pip
+
+ENV PIP_NO_CACHE_DIR=1
 
 COPY --from=build /app/build/libs/*.jar app.jar
 COPY ./Archipelago ./Archipelago
