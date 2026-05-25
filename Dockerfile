@@ -14,7 +14,7 @@ RUN groupadd -r -g 10001 appuser && useradd -r -u 10001 -g appuser appuser
 RUN mkdir -p /data && chown -R appuser:appuser /data
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates python3 python3-venv python3-pip && \
+    ca-certificates python3 python3-venv python3-pip git cmake && \
     rm -rf /var/lib/apt/lists/*
 
 # Pre-create an empty venv so ModuleUpdate.py's pip install lands in a
