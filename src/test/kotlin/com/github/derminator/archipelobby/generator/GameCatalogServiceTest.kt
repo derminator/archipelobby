@@ -81,35 +81,83 @@ class GameCatalogServiceTest {
     }
 
     @Test
-    fun `extractApWorldGame reads game from archipelago manifest`(@TempDir tempDir: Path) {
+    fun `extractApWorldGame reads game from archipelago manifest`(@TempDir tempDir: Path) = runBlocking {
         val service = buildService(tempDir, stubbedOutput = "unused")
         val zipBytes = buildZip(mapOf("factorio/archipelago.json" to """{"game":"Factorio"}"""))
 
-        val game = service.extractApWorldGame(zipBytes)
+        val game = service.extractApWorldGame(zipBytes, "factorio.apworld")
 
         assertEquals("Factorio", game)
     }
 
     @Test
-    fun `extractApWorldGame throws when manifest is missing`(@TempDir tempDir: Path) {
-        val service = buildService(tempDir, stubbedOutput = "unused")
-        val zipBytes = buildZip(mapOf("something.py" to "print('hi')"))
+    fun `extractApWorldGame falls back to Python when manifest is missing`(@TempDir tempDir: Path) = runBlocking {
+        val runner = SequentialFakePythonScriptRunner(
+            """
+            <<<ARCHIPELOBBY_GAMES_JSON>>>
+            {"games":["Factorio"]}
+            <<<END>>>
+            """.trimIndent(),
+            """
+            <<<ARCHIPELOBBY_GAMES_JSON>>>
+            {"games":["Factorio","My Custom Game"]}
+            <<<END>>>
+            """.trimIndent(),
+        )
+        val service = buildService(tempDir, runner)
+        service.listCoreGames()
 
-        val exception = assertThrows<ResponseStatusException> {
-            service.extractApWorldGame(zipBytes)
-        }
-        assertTrue(exception.reason?.contains("archipelago.json") == true)
+        val zipBytes = buildZip(mapOf("something.py" to "print('hi')"))
+        val game = service.extractApWorldGame(zipBytes, "mycustomgame.apworld")
+
+        assertEquals("My Custom Game", game)
     }
 
     @Test
-    fun `extractApWorldGame throws when manifest has no game field`(@TempDir tempDir: Path) {
-        val service = buildService(tempDir, stubbedOutput = "unused")
-        val zipBytes = buildZip(mapOf("x/archipelago.json" to """{"compatible_version":7}"""))
+    fun `extractApWorldGame falls back to Python when game field is blank`(@TempDir tempDir: Path) = runBlocking {
+        val runner = SequentialFakePythonScriptRunner(
+            """
+            <<<ARCHIPELOBBY_GAMES_JSON>>>
+            {"games":["Factorio"]}
+            <<<END>>>
+            """.trimIndent(),
+            """
+            <<<ARCHIPELOBBY_GAMES_JSON>>>
+            {"games":["Factorio","My Custom Game"]}
+            <<<END>>>
+            """.trimIndent(),
+        )
+        val service = buildService(tempDir, runner)
+        service.listCoreGames()
 
+        val zipBytes = buildZip(mapOf("x/archipelago.json" to """{"compatible_version":7}"""))
+        val game = service.extractApWorldGame(zipBytes, "mycustomgame.apworld")
+
+        assertEquals("My Custom Game", game)
+    }
+
+    @Test
+    fun `extractApWorldGame throws when apworld registers no new game`(@TempDir tempDir: Path) = runBlocking {
+        val runner = SequentialFakePythonScriptRunner(
+            """
+            <<<ARCHIPELOBBY_GAMES_JSON>>>
+            {"games":["Factorio"]}
+            <<<END>>>
+            """.trimIndent(),
+            """
+            <<<ARCHIPELOBBY_GAMES_JSON>>>
+            {"games":["Factorio"]}
+            <<<END>>>
+            """.trimIndent(),
+        )
+        val service = buildService(tempDir, runner)
+        service.listCoreGames()
+
+        val zipBytes = buildZip(mapOf("something.py" to "print('hi')"))
         val exception = assertThrows<ResponseStatusException> {
-            service.extractApWorldGame(zipBytes)
+            service.extractApWorldGame(zipBytes, "broken.apworld")
         }
-        assertTrue(exception.reason?.contains("game") == true)
+        assertTrue(exception.reason?.contains("did not register") == true)
     }
 
     private fun buildService(
@@ -158,5 +206,17 @@ private class FakePythonScriptRunner(private val stubbedOutput: String) : Python
     override fun run(scriptPath: String, vararg args: String): String {
         invocationCount++
         return stubbedOutput
+    }
+}
+
+/** Returns successive canned outputs in order; throws if called more times than outputs provided. */
+private class SequentialFakePythonScriptRunner(private vararg val outputs: String) : PythonScriptRunner() {
+    private var callIndex = 0
+
+    override fun run(scriptPath: String, vararg args: String): String {
+        val index = callIndex++
+        return outputs.getOrElse(index) {
+            error("SequentialFakePythonScriptRunner called ${callIndex} times but only ${outputs.size} outputs were configured")
+        }
     }
 }

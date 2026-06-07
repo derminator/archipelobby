@@ -133,7 +133,7 @@ class RoomController(
             val pendingApWorld: Triple<String, ByteArray, String>? =
                 if (apworldFilePart != null && apworldFilePart.filename().isNotEmpty()) {
                     val apworldBytes = readFilePart(apworldFilePart)
-                    val gameName = gameCatalogService.extractApWorldGame(apworldBytes)
+                    val gameName = gameCatalogService.extractApWorldGame(apworldBytes, apworldFilePart.filename())
                     Triple(apworldFilePart.filename(), apworldBytes, gameName)
                 } else null
 
