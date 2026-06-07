@@ -49,38 +49,79 @@ class GameCatalogService(
     }
 
     /**
-     * Extracts the single game name that an apworld zip registers. Reads the
-     * archipelago.json manifest in-process; does not run Python. Throws
-     * BAD_REQUEST if the zip is missing a manifest or the `game` field.
+     * Extracts the single game name that an apworld zip registers.
+     *
+     * Fast path: reads the archipelago.json manifest in-process (no Python).
+     * Fallback: if the manifest is absent or its `game` field is blank, runs
+     * the same Python helper used for core games with the apworld placed in
+     * custom_worlds/, then diffs the result against the core game list.
      */
-    fun extractApWorldGame(apworldBytes: ByteArray): String {
+    suspend fun extractApWorldGame(apworldBytes: ByteArray, fileName: String): String {
+        val manifestGame = readManifestGame(apworldBytes)
+        if (manifestGame != null) return manifestGame
+
+        val coreGames = listCoreGames().map { it.name }.toSet()
+        return withContext(Dispatchers.IO) { runApWorldHelper(apworldBytes, fileName, coreGames) }
+    }
+
+    private fun readManifestGame(apworldBytes: ByteArray): String? {
         ByteArrayInputStream(apworldBytes).use { bis ->
             ZipInputStream(bis).use { zis ->
                 var entry = zis.nextEntry
                 while (entry != null) {
                     if (!entry.isDirectory && entry.name.endsWith("archipelago.json")) {
-                        val result = runCatching {
+                        return runCatching {
                             val manifest = jsonMapper.readValue(
                                 zis.readAllBytes(),
                                 ApWorldManifest::class.java,
                             )
-                            manifest.game.takeIf { it.isNotBlank() } ?: error("game field is blank")
-                        }
-                        return result.getOrElse {
-                            throw ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "APWorld manifest is missing a 'game' field",
-                            )
-                        }
+                            manifest.game?.takeIf { it.isNotBlank() }
+                        }.getOrNull()
                     }
                     entry = zis.nextEntry
                 }
             }
         }
-        throw ResponseStatusException(
-            HttpStatus.BAD_REQUEST,
-            "APWorld is missing an archipelago.json manifest — upload a newer apworld that declares its game.",
-        )
+        return null
+    }
+
+    private fun runApWorldHelper(apworldBytes: ByteArray, fileName: String, coreGames: Set<String>): String {
+        val archipelagoRoot = File(archipelagoScriptPath).absoluteFile.parentFile
+            ?: throw ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Cannot locate Archipelago root from script path $archipelagoScriptPath",
+            )
+        val scriptSrc = File(listGamesScriptPath).absoluteFile
+        if (!scriptSrc.isFile) {
+            throw ResponseStatusException(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "list_games helper not found at ${scriptSrc.path}",
+            )
+        }
+
+        val workDir = Files.createTempDirectory("archipelago-apworld-games-").toFile()
+        try {
+            archipelagoRoot.copyRecursively(workDir, overwrite = true)
+            val customWorldsDir = workDir.resolve("custom_worlds").also { it.mkdirs() }
+            customWorldsDir.resolve(fileName).writeBytes(apworldBytes)
+            val scriptInWorkDir = workDir.resolve(scriptSrc.name)
+            scriptSrc.copyTo(scriptInWorkDir, overwrite = true)
+
+            val output = pythonScriptRunner.run(scriptInWorkDir.absolutePath, "core")
+            val allGames = parseCoreOutput(output).map { it.name }.toSet()
+            val apWorldGames = allGames - coreGames
+
+            return apWorldGames.singleOrNull()
+                ?: throw ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    if (apWorldGames.isEmpty())
+                        "APWorld did not register any new game"
+                    else
+                        "APWorld registered multiple games: ${apWorldGames.sorted().joinToString()}",
+                )
+        } finally {
+            workDir.deleteRecursively()
+        }
     }
 
     private fun runCoreHelper(): List<GameInfo> {
@@ -146,7 +187,7 @@ internal data class CoreGamesPayload(
     val error: String? = null,
 )
 
-internal data class ApWorldManifest(val game: String)
+internal data class ApWorldManifest(val game: String? = null)
 
 /**
  * A game that can appear in a player's YAML `game:` field. `apworldFileName`
