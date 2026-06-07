@@ -162,7 +162,7 @@ class GameCatalogServiceTest {
 
     private fun buildService(
         tempDir: Path,
-        runner: FakePythonScriptRunner,
+        runner: PythonScriptRunner,
     ): GameCatalogService {
         val archipelagoRoot = tempDir.resolve("Archipelago").also { it.createDirectories() }
         archipelagoRoot.resolve("ModuleUpdate.py").writeText("def update(): pass")
