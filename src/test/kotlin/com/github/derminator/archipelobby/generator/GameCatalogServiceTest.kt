@@ -216,7 +216,7 @@ private class SequentialFakePythonScriptRunner(private vararg val outputs: Strin
     override fun run(scriptPath: String, vararg args: String): String {
         val index = callIndex++
         return outputs.getOrElse(index) {
-            error("SequentialFakePythonScriptRunner called ${callIndex} times but only ${outputs.size} outputs were configured")
+            error("SequentialFakePythonScriptRunner called $callIndex times but only ${outputs.size} outputs were configured")
         }
     }
 }
