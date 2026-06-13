@@ -56,6 +56,9 @@ class WebTests {
     lateinit var entryRepository: EntryRepository
 
     @MockitoBean
+    lateinit var entryPatchFileRepository: EntryPatchFileRepository
+
+    @MockitoBean
     lateinit var apWorldRepository: ApWorldRepository
 
     @MockitoBean
@@ -84,6 +87,8 @@ class WebTests {
         `when`(discordService.getUserInfo(anyLong())).thenReturn(UserInfo(0L, "test-user"))
         `when`(entryRepository.findByUserId(anyLong())).thenReturn(Flux.empty())
         `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
+        `when`(entryRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
+        `when`(entryPatchFileRepository.findByEntryId(anyLong())).thenReturn(Flux.empty())
         `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
         `when`(gameCatalogService.listCoreGames()).thenReturn(emptyList())
 
@@ -849,5 +854,81 @@ class WebTests {
             .get().uri("/rooms/$roomId/walkthrough/download")
             .exchange()
             .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `downloadPatch returns patch for room member`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 5L
+        val patchId = 9L
+        val patchContent = "fake patch bytes".toByteArray()
+        val patchPath = uploadsService.saveFile(patchContent, "AP_1_P1_Alice.apz3")
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        val entry = Entry(entryId, roomId, 0L, "Alice", "A Link to the Past", "path/to/alice.yaml")
+        val patch = EntryPatchFile(patchId, entryId, "AP_1_P1_Alice.apz3", patchPath)
+        `when`(entryPatchFileRepository.findById(patchId)).thenReturn(Mono.just(patch))
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/patches/$patchId/download")
+            .exchange()
+            .expectStatus().isOk
+            .expectHeader().valueMatches("Content-Disposition", ".*AP_1_P1_Alice\\.apz3.*")
+            .expectBody<ByteArray>().consumeWith { response ->
+                assert(response.responseBody != null)
+                assert(response.responseBody!!.contentEquals(patchContent))
+            }
+    }
+
+    @Test
+    fun `downloadPatch returns forbidden for non-member`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 5L
+        val patchId = 9L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        val entry = Entry(entryId, roomId, 0L, "Alice", "A Link to the Past", "path/to/alice.yaml")
+        val patch = EntryPatchFile(patchId, entryId, "AP_1_P1_Alice.apz3", "path/to/patch.apz3")
+        `when`(entryPatchFileRepository.findById(patchId)).thenReturn(Mono.just(patch))
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/patches/$patchId/download")
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `downloadPatch returns not found when file is missing`(): Unit = runBlocking {
+        val roomId = 1L
+        val entryId = 5L
+        val patchId = 9L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        val entry = Entry(entryId, roomId, 0L, "Alice", "A Link to the Past", "path/to/alice.yaml")
+        val patch = EntryPatchFile(patchId, entryId, "AP_1_P1_Alice.apz3", "path/that/does/not/exist.apz3")
+        `when`(entryPatchFileRepository.findById(patchId)).thenReturn(Mono.just(patch))
+        `when`(entryRepository.findById(entryId)).thenReturn(Mono.just(entry))
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId/patches/$patchId/download")
+            .exchange()
+            .expectStatus().isNotFound
     }
 }
