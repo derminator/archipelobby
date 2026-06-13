@@ -8,23 +8,25 @@ class V9__BackfillLocationCounts : BaseJavaMigration() {
         val conn = context.connection
 
         data class EntryRow(val id: Long, val roomId: Long, val yamlFilePath: String)
-        val entries = mutableListOf<EntryRow>()
-        conn.createStatement().use { stmt ->
-            stmt.executeQuery(
-                "SELECT id, room_id, yaml_file_path FROM ENTRIES WHERE location_count IS NULL"
-            ).use { rs ->
-                while (rs.next()) {
-                    entries += EntryRow(rs.getLong("id"), rs.getLong("room_id"), rs.getString("yaml_file_path"))
+        val entries = buildList {
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery(
+                    "SELECT id, room_id, yaml_file_path FROM ENTRIES WHERE location_count IS NULL"
+                ).use { rs ->
+                    while (rs.next()) {
+                        add(EntryRow(rs.getLong("id"), rs.getLong("room_id"), rs.getString("yaml_file_path")))
+                    }
                 }
             }
         }
 
         for (entry in entries) {
-            val apWorldPaths = mutableListOf<String>()
-            conn.prepareStatement("SELECT file_path FROM APWORLDS WHERE room_id = ?").use { ps ->
-                ps.setLong(1, entry.roomId)
-                ps.executeQuery().use { rs ->
-                    while (rs.next()) apWorldPaths += rs.getString("file_path")
+            val apWorldPaths = buildList {
+                conn.prepareStatement("SELECT file_path FROM APWORLDS WHERE room_id = ?").use { ps ->
+                    ps.setLong(1, entry.roomId)
+                    ps.executeQuery().use { rs ->
+                        while (rs.next()) add(rs.getString("file_path"))
+                    }
                 }
             }
 
@@ -64,7 +66,7 @@ class V9__BackfillLocationCounts : BaseJavaMigration() {
             val output = process.inputStream.bufferedReader().readText()
             process.waitFor()
             if (process.exitValue() == 0) output.trim().toIntOrNull() ?: 0 else 0
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             0
         }
     }
