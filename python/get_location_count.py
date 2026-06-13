@@ -87,6 +87,9 @@ def main():
         for opt_name, opt_value in game_options_data.items():
             if not hasattr(options, opt_name):
                 continue
+            # 'random' means the actual value depends on the game seed — keep the default.
+            if opt_value == "random":
+                continue
             try:
                 opt_type = type(getattr(options, opt_name))
                 setattr(options, opt_name, opt_type.from_any(opt_value))
@@ -105,6 +108,7 @@ def main():
     world.generate_early()
     world.create_regions()
     world.create_items()
+    world.generate_basic()
 
     # Locations with address=None are events (goals, transitions) — not player checks.
     # Locations with item already placed are non-shuffled positions where the world
