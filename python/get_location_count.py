@@ -106,7 +106,11 @@ def main():
     world.create_regions()
     world.create_items()
 
-    print(len([loc for loc in multiworld.get_locations(1) if loc.address is not None]))
+    # Locations with address=None are events (goals, transitions) — not player checks.
+    # Locations with item already placed are non-shuffled positions where the world
+    # locked a vanilla item (e.g. OOT with tokensanity/pots/etc. off); the fill
+    # algorithm will only see locations where item is None.
+    print(len([loc for loc in multiworld.get_locations(1) if loc.address is not None and loc.item is None]))
 
 
 if __name__ == "__main__":
