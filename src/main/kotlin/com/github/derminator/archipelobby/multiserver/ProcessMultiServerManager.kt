@@ -2,7 +2,6 @@ package com.github.derminator.archipelobby.multiserver
 
 import com.github.derminator.archipelobby.data.RoomRepository
 import com.github.derminator.archipelobby.generator.PythonScriptRunner
-import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,14 +15,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.SmartLifecycle
 import org.springframework.stereotype.Service
 import java.io.BufferedReader
+import java.io.File
 import java.io.InputStreamReader
-import java.nio.file.Files
-import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -32,9 +29,8 @@ import java.util.concurrent.TimeUnit
 class ProcessMultiServerManager(
     private val properties: MultiServerProperties,
     private val roomRepository: RoomRepository,
-    private val uploadsService: UploadsService,
     private val pythonScriptRunner: PythonScriptRunner,
-    @Value($$"${app.data-dir:}") private val dataDir: String,
+    private val internalToken: InternalToken,
 ) : MultiServerManager, SmartLifecycle {
 
     private val logger = LoggerFactory.getLogger(ProcessMultiServerManager::class.java)
@@ -46,17 +42,10 @@ class ProcessMultiServerManager(
 
     private data class ManagedServer(val process: Process, val port: Int, val logThread: Thread)
 
-    private val serversDir: Path by lazy {
-        val dir = if (dataDir.isNotBlank()) {
-            Path.of(dataDir, "servers")
-        } else {
-            Files.createTempDirectory("archipelobby-servers")
-        }
-        Files.createDirectories(dir)
-        dir
-    }
-
     private fun lockFor(roomId: Long): Mutex = roomLocks.computeIfAbsent(roomId) { Mutex() }
+
+    private fun archipelagoDir(): String =
+        File(properties.scriptPath).absoluteFile.parent ?: "."
 
     override suspend fun startServer(roomId: Long) {
         lockFor(roomId).withLock {
@@ -73,15 +62,6 @@ class ProcessMultiServerManager(
                 throw IllegalStateException("Room $roomId does not have a generated game")
             }
 
-            val gameFilePath = room.generatedGameFilePath
-                ?: throw IllegalStateException("Room $roomId has no generated game file path")
-            val roomServerDir = serversDir.resolve(roomId.toString())
-            Files.createDirectories(roomServerDir)
-            val gameFile = roomServerDir.resolve("game.archipelago")
-
-            val gameBytes = uploadsService.getFile(gameFilePath)
-            Files.write(gameFile, gameBytes)
-
             val port = room.serverPort ?: allocatePort().also {
                 roomRepository.save(room.copy(serverPort = it)).awaitSingle()
             }
@@ -89,8 +69,11 @@ class ProcessMultiServerManager(
             logger.info("Starting MultiServer for room {} on port {}", roomId, port)
 
             val process = pythonScriptRunner.runInBackground(
-                properties.scriptPath,
-                gameFile.toAbsolutePath().toString(),
+                properties.wrapperScriptPath,
+                "--spring-url", properties.internalBaseUrl,
+                "--spring-token", internalToken.value,
+                "--room-id", roomId.toString(),
+                "--archipelago-dir", archipelagoDir(),
                 "--port", port.toString(),
                 "--host", properties.host,
             )

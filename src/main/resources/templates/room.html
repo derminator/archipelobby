@@ -38,9 +38,8 @@
         <h3>Server</h3>
         <p th:if="${serverRunning}">
             Status: <strong>Running</strong>
-            <span th:if="${room.serverPort != null}">
-                <br/>Connect at: <code th:text="${serverHost + ':' + room.serverPort}">localhost:38281</code>
-            </span>
+            <br/>Connect at:
+            <code th:text="|${serverScheme}://${serverHost}/rooms/${room.id}/ws|">ws://localhost/rooms/1/ws</code>
         </p>
         <p th:unless="${serverRunning}">
             Status: <strong>Stopped</strong>

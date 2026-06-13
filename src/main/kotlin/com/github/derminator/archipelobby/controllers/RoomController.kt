@@ -447,7 +447,10 @@ class RoomController(
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
         model.addAttribute("serverRunning", roomService.isServerRunning(roomId))
-        model.addAttribute("serverHost", exchange.request.uri.host)
+        val uri = exchange.request.uri
+        val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
+        model.addAttribute("serverHost", host)
+        model.addAttribute("serverScheme", if (uri.scheme == "https") "wss" else "ws")
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {

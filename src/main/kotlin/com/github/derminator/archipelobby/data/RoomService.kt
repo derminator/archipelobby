@@ -529,6 +529,12 @@ class RoomService(
         }
     }
 
+    suspend fun getGeneratedGameBytes(roomId: Long): ByteArray? {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull() ?: return null
+        val path = room.generatedGameFilePath?.takeUnless { it == Room.GENERATING_SENTINEL } ?: return null
+        return if (uploadsService.fileExists(path)) uploadsService.getFile(path) else null
+    }
+
     suspend fun getGeneratedGameForDownload(roomId: Long, userId: Long): Room {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
