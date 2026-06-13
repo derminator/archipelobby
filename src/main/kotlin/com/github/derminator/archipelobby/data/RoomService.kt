@@ -459,7 +459,7 @@ class RoomService(
 
 data class RoomPreview(val name: String, val entryCount: Int, val games: List<String>)
 data class ApWorldFile(val fileName: String, val filePath: String, val gameName: String)
-data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo, val locationCount: Int?)
+data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo, val locationCount: Int)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,

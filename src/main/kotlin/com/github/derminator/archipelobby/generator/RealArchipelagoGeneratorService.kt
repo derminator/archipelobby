@@ -84,15 +84,15 @@ class RealArchipelagoGeneratorService(
         }
     }
 
-    override suspend fun getLocationCount(yamlFilePath: String, apWorldFilePaths: List<String>): Int? =
+    override suspend fun getLocationCount(yamlFilePath: String, apWorldFilePaths: List<String>): Int =
         withContext(Dispatchers.IO) {
-            try {
-                val archipelagoDir = File(scriptPath).absoluteFile.parent
-                val args = (listOf(archipelagoDir, yamlFilePath) + apWorldFilePaths).toTypedArray()
-                val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
-                output.trim().toIntOrNull()
-            } catch (e: Exception) {
-                null
-            }
+            val archipelagoDir = File(scriptPath).absoluteFile.parent
+            val args = (listOf(archipelagoDir, yamlFilePath) + apWorldFilePaths).toTypedArray()
+            val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
+            output.trim().toIntOrNull()
+                ?: throw ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Location count script produced unexpected output: ${output.trim()}",
+                )
         }
 }

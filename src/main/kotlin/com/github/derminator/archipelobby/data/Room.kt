@@ -31,7 +31,7 @@ data class Entry(
     val name: String,
     val game: String,
     val yamlFilePath: String,
-    val locationCount: Int? = null,
+    val locationCount: Int = 0,
 )
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {
