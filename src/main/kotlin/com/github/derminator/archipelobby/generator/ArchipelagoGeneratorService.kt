@@ -46,8 +46,9 @@ interface ArchipelagoGeneratorService {
      * Throws [org.springframework.web.server.ResponseStatusException] if the count cannot be
      * determined (unknown game, uninitialized submodule, script error, etc.).
      *
-     * @param yamlFilePath path to the player's saved YAML file
-     * @param apWorldFilePaths paths to all APWorld files for the room (existing and newly uploaded)
+     * @param yamlContent raw bytes of the player's YAML file
+     * @param apWorldFilePaths real on-disk paths to APWorld files for the room; non-existent paths
+     *   are silently skipped by the script
      */
-    suspend fun getLocationCount(yamlFilePath: String, apWorldFilePaths: List<String>): Int
+    suspend fun getLocationCount(yamlContent: ByteArray, apWorldFilePaths: List<String>): Int
 }

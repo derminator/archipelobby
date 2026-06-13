@@ -116,7 +116,8 @@ class RoomService(
 
         val existingApWorldPaths = apWorldRepository.findByRoomId(roomId).asFlow().toList().map { it.filePath }
         val allApWorldPaths = existingApWorldPaths + listOfNotNull(apWorldFile?.filePath)
-        val locationCount = archipelagoGeneratorService.getLocationCount(yamlFilePath, allApWorldPaths)
+        val yamlContent = uploadsService.getFile(yamlFilePath)
+        val locationCount = archipelagoGeneratorService.getLocationCount(yamlContent, allApWorldPaths)
 
         val entry = entryRepository.save(
             Entry(
