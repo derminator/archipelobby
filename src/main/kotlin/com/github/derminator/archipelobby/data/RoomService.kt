@@ -352,10 +352,11 @@ class RoomService(
             }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
+        val savedRoomId = savedRoom.id ?: error("Room ID is null after save")
         try {
-            multiServerManager.startServer(savedRoom.id!!)
+            multiServerManager.startServer(savedRoomId)
         } catch (e: Exception) {
-            logger.error("Failed to auto-start server for room {} after generation", savedRoom.id, e)
+            logger.error("Failed to auto-start server for room {} after generation", savedRoomId, e)
         }
     }
 
@@ -410,10 +411,11 @@ class RoomService(
             walkthroughFilePath?.let { uploadsService.deleteFile(it) }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
+        val savedRoomId = savedRoom.id ?: error("Room ID is null after save")
         try {
-            multiServerManager.startServer(savedRoom.id!!)
+            multiServerManager.startServer(savedRoomId)
         } catch (e: Exception) {
-            logger.error("Failed to auto-start server for room {} after upload", savedRoom.id, e)
+            logger.error("Failed to auto-start server for room {} after upload", savedRoomId, e)
         }
     }
 
