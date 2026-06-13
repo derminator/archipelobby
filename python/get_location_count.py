@@ -96,6 +96,7 @@ def main():
 
     world.generate_early()
     world.create_regions()
+    world.create_items()
 
     print(len(list(multiworld.get_locations(1))))
 
