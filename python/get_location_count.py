@@ -72,6 +72,12 @@ def main():
     if hasattr(multiworld, "plando_texts"):
         multiworld.plando_texts = [[]]
 
+    # Some Archipelago versions don't initialise state in MultiWorld.__init__;
+    # push_precollected (called by create_items in some worlds) requires it.
+    if not hasattr(multiworld, "state"):
+        from BaseClasses import CollectionState  # noqa: E402
+        multiworld.state = CollectionState(multiworld)
+
     world = world_class(multiworld, 1)
     multiworld.worlds = {1: world}
 
