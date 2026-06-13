@@ -47,10 +47,12 @@
         </p>
         <div th:if="${isAdmin}" class="button-row">
             <form th:unless="${serverRunning}" method="post"
+                  class="inline-form"
                   th:action="@{/rooms/{id}/server/start(id=${room.id})}">
                 <input type="submit" value="Start Server"/>
             </form>
             <form th:if="${serverRunning}" method="post"
+                  class="inline-form"
                   th:action="@{/rooms/{id}/server/stop(id=${room.id})}"
                   th:attr="data-confirm='Stop the server? Connected players will be disconnected.'">
                 <input type="submit" value="Stop Server"/>

@@ -8,6 +8,5 @@ data class MultiServerProperties(
     val portRangeStart: Int = 38281,
     val portRangeEnd: Int = 38380,
     val host: String = "0.0.0.0",
-    val displayHost: String = "localhost",
     val scriptPath: String = "Archipelago/MultiServer.py",
 )

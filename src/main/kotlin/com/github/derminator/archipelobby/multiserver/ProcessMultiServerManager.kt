@@ -1,21 +1,26 @@
 package com.github.derminator.archipelobby.multiserver
 
 import com.github.derminator.archipelobby.data.RoomRepository
+import com.github.derminator.archipelobby.generator.PythonScriptRunner
 import com.github.derminator.archipelobby.storage.UploadsService
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.SmartLifecycle
 import org.springframework.stereotype.Service
 import java.io.BufferedReader
-import java.io.File
 import java.io.InputStreamReader
 import java.nio.file.Files
 import java.nio.file.Path
@@ -28,13 +33,15 @@ class ProcessMultiServerManager(
     private val properties: MultiServerProperties,
     private val roomRepository: RoomRepository,
     private val uploadsService: UploadsService,
-    @Value($$"${archipelobby.python.executable:python}") private val pythonExecutable: String,
+    private val pythonScriptRunner: PythonScriptRunner,
     @Value($$"${app.data-dir:}") private val dataDir: String,
 ) : MultiServerManager, SmartLifecycle {
 
     private val logger = LoggerFactory.getLogger(ProcessMultiServerManager::class.java)
     private val processes = ConcurrentHashMap<Long, ManagedServer>()
     private val roomLocks = ConcurrentHashMap<Long, Mutex>()
+    private val allocationMutex = Mutex()
+    private val lifecycleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var running = false
 
     private data class ManagedServer(val process: Process, val port: Int, val logThread: Thread)
@@ -66,7 +73,8 @@ class ProcessMultiServerManager(
                 throw IllegalStateException("Room $roomId does not have a generated game")
             }
 
-            val gameFilePath = room.generatedGameFilePath!!
+            val gameFilePath = room.generatedGameFilePath
+                ?: throw IllegalStateException("Room $roomId has no generated game file path")
             val roomServerDir = serversDir.resolve(roomId.toString())
             Files.createDirectories(roomServerDir)
             val gameFile = roomServerDir.resolve("game.archipelago")
@@ -74,33 +82,18 @@ class ProcessMultiServerManager(
             val gameBytes = uploadsService.getFile(gameFilePath)
             Files.write(gameFile, gameBytes)
 
-            val port = room.serverPort ?: allocatePort()
-            if (room.serverPort == null) {
-                roomRepository.save(room.copy(serverPort = port)).awaitSingle()
+            val port = room.serverPort ?: allocatePort().also {
+                roomRepository.save(room.copy(serverPort = it)).awaitSingle()
             }
 
-            val scriptFile = File(properties.scriptPath).absoluteFile
-            val command = listOf(
-                pythonExecutable,
-                scriptFile.path,
+            logger.info("Starting MultiServer for room {} on port {}", roomId, port)
+
+            val process = pythonScriptRunner.runInBackground(
+                properties.scriptPath,
                 gameFile.toAbsolutePath().toString(),
                 "--port", port.toString(),
                 "--host", properties.host,
             )
-
-            logger.info("Starting MultiServer for room {} on port {}: {}", roomId, port, command.joinToString(" "))
-
-            val process = ProcessBuilder(command)
-                .redirectErrorStream(true)
-                .also {
-                    it.environment()["PYTHONUNBUFFERED"] = "1"
-                    it.environment()["DISPLAY"] = ""
-                }
-                .start()
-            process.outputStream.close()
-
-            val managed = ManagedServer(process, port, Thread.currentThread())
-            processes[roomId] = managed
 
             val logThread = Thread({
                 BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
@@ -110,7 +103,7 @@ class ProcessMultiServerManager(
                     }
                 }
                 val exitCode = process.waitFor()
-                processes.remove(roomId, managed)
+                processes.remove(roomId)
                 if (exitCode != 0) {
                     logger.error("MultiServer for room {} exited with code {}", roomId, exitCode)
                 } else {
@@ -137,7 +130,10 @@ class ProcessMultiServerManager(
 
             logger.info("Stopping MultiServer for room {} (port {})", roomId, managed.port)
             managed.process.destroy()
-            if (!managed.process.waitFor(10, TimeUnit.SECONDS)) {
+            val stopped = withContext(Dispatchers.IO) {
+                managed.process.waitFor(10, TimeUnit.SECONDS)
+            }
+            if (!stopped) {
                 logger.warn("MultiServer for room {} did not stop gracefully, forcing", roomId)
                 managed.process.destroyForcibly()
             }
@@ -149,19 +145,15 @@ class ProcessMultiServerManager(
         return managed.process.isAlive
     }
 
-    private suspend fun allocatePort(): Int {
-        val usedPorts = mutableSetOf<Int>()
-        roomRepository.findAll().asFlow().collect { room ->
-            room.serverPort?.let { usedPorts.add(it) }
+    private suspend fun allocatePort(): Int = allocationMutex.withLock {
+        val usedPorts: Set<Int> = buildSet {
+            roomRepository.findAll().asFlow().collect { room ->
+                room.serverPort?.let(::add)
+            }
+            processes.values.forEach { add(it.port) }
         }
-        processes.values.forEach { usedPorts.add(it.port) }
-
-        for (port in properties.portRangeStart..properties.portRangeEnd) {
-            if (port !in usedPorts) return port
-        }
-        throw IllegalStateException(
-            "No available ports in range ${properties.portRangeStart}-${properties.portRangeEnd}"
-        )
+        (properties.portRangeStart..properties.portRangeEnd).firstOrNull { it !in usedPorts }
+            ?: error("No available ports in range ${properties.portRangeStart}-${properties.portRangeEnd}")
     }
 
     // SmartLifecycle
@@ -169,7 +161,7 @@ class ProcessMultiServerManager(
     override fun start() {
         running = true
         logger.info("Auto-starting MultiServers for rooms with generated games")
-        runBlocking(Dispatchers.IO) {
+        lifecycleScope.launch {
             roomRepository.findByGeneratedGameFilePathIsNotNull().asFlow().collect { room ->
                 if (room.isGenerated && room.id != null) {
                     try {
@@ -182,23 +174,29 @@ class ProcessMultiServerManager(
         }
     }
 
-    override fun stop() {
+    override fun stop(callback: Runnable) {
         logger.info("Shutting down all MultiServers")
-        val entries = processes.entries.toList()
-        for ((roomId, managed) in entries) {
-            if (managed.process.isAlive) {
-                logger.info("Stopping MultiServer for room {}", roomId)
-                managed.process.destroy()
+        lifecycleScope.launch {
+            try {
+                stopAll()
+            } finally {
+                running = false
+                callback.run()
             }
         }
-        for ((roomId, managed) in entries) {
-            if (!managed.process.waitFor(10, TimeUnit.SECONDS)) {
-                logger.warn("MultiServer for room {} did not stop gracefully, forcing", roomId)
-                managed.process.destroyForcibly()
-            }
-            processes.remove(roomId, managed)
-        }
+    }
+
+    override fun stop() {
+        // SmartLifecycle.stop(Runnable) is preferred; this fallback supports direct
+        // invocation of the synchronous variant.
+        runBlocking { stopAll() }
         running = false
+    }
+
+    private suspend fun stopAll() = coroutineScope {
+        processes.keys.toList().forEach { roomId ->
+            launch { runCatching { stopServer(roomId) } }
+        }
     }
 
     override fun isRunning(): Boolean = running
