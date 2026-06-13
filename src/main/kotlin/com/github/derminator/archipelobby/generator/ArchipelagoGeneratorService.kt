@@ -47,8 +47,7 @@ interface ArchipelagoGeneratorService {
      * determined (unknown game, uninitialized submodule, script error, etc.).
      *
      * @param yamlContent raw bytes of the player's YAML file
-     * @param apWorldFilePaths real on-disk paths to APWorld files for the room; non-existent paths
-     *   are silently skipped by the script
+     * @param apWorldContents map of filename → bytes for each APWorld in the room; may be empty
      */
-    suspend fun getLocationCount(yamlContent: ByteArray, apWorldFilePaths: List<String>): Int
+    suspend fun getLocationCount(yamlContent: ByteArray, apWorldContents: Map<String, ByteArray>): Int
 }

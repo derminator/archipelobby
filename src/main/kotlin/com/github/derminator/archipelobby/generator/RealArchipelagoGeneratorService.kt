@@ -84,13 +84,16 @@ class RealArchipelagoGeneratorService(
         }
     }
 
-    override suspend fun getLocationCount(yamlContent: ByteArray, apWorldFilePaths: List<String>): Int =
+    override suspend fun getLocationCount(yamlContent: ByteArray, apWorldContents: Map<String, ByteArray>): Int =
         withContext(Dispatchers.IO) {
-            val tempFile = Files.createTempFile("archipelago-yaml-", ".yaml").toFile()
+            val tempDir = Files.createTempDirectory("archipelago-loc-count-").toFile()
             try {
-                tempFile.writeBytes(yamlContent)
+                val yamlFile = tempDir.resolve("player.yaml").also { it.writeBytes(yamlContent) }
+                val apWorldPaths = apWorldContents.map { (name, bytes) ->
+                    tempDir.resolve(name).also { it.writeBytes(bytes) }.absolutePath
+                }
                 val archipelagoDir = File(scriptPath).absoluteFile.parent
-                val args = (listOf(archipelagoDir, tempFile.absolutePath) + apWorldFilePaths).toTypedArray()
+                val args = (listOf(archipelagoDir, yamlFile.absolutePath) + apWorldPaths).toTypedArray()
                 val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
                 output.trim().toIntOrNull()
                     ?: throw ResponseStatusException(
@@ -98,7 +101,7 @@ class RealArchipelagoGeneratorService(
                         "Location count script produced unexpected output: ${output.trim()}",
                     )
             } finally {
-                tempFile.delete()
+                tempDir.deleteRecursively()
             }
         }
 }
