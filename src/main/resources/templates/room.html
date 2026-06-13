@@ -34,6 +34,60 @@
         <a th:href="@{/rooms/{id}/generated-game/download(id=${room.id})}">
             <button type="button">Download Game</button>
         </a>
+
+        <h3>Server</h3>
+        <p th:if="${serverRunning}">
+            Status: <strong>Running</strong>
+            <br/>Connect at:
+            <code th:text="|${serverScheme}://${serverHost}/rooms/${room.id}/ws|">ws://localhost/rooms/1/ws</code>
+        </p>
+        <p th:unless="${serverRunning}">
+            Status: <strong>Stopped</strong>
+        </p>
+        <div th:if="${isAdmin}" class="button-row">
+            <form th:unless="${serverRunning}" method="post"
+                  class="inline-form"
+                  th:action="@{/rooms/{id}/server/start(id=${room.id})}">
+                <input type="submit" value="Start Server"/>
+            </form>
+            <form th:if="${serverRunning}" method="post"
+                  class="inline-form"
+                  th:action="@{/rooms/{id}/server/stop(id=${room.id})}"
+                  th:attr="data-confirm='Stop the server? Connected players will be disconnected.'">
+                <input type="submit" value="Stop Server"/>
+            </form>
+        </div>
+
+        <div th:if="${tracker != null}">
+            <h3>Tracker</h3>
+            <table class="tracker-table">
+                <thead>
+                    <tr>
+                        <th>Player</th>
+                        <th>Game</th>
+                        <th>Checks</th>
+                        <th>%</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="p : ${tracker.players}">
+                        <td th:text="${p.name}">Player</td>
+                        <td th:text="${p.game}">Game</td>
+                        <td th:text="${p.checksDone + ' / ' + p.checksTotal}">0 / 0</td>
+                        <td th:text="${#numbers.formatDecimal(p.percent, 1, 1) + '%'}">0.0%</td>
+                        <td th:text="${p.status}">Unknown</td>
+                        <td th:if="${userEntryMap != null and userEntryMap.containsKey(p.name)}">
+                            <a th:href="@{/rooms/{roomId}/entries/{entryId}/locations(roomId=${room.id},entryId=${userEntryMap[p.name]})}">
+                                Check Locations
+                            </a>
+                        </td>
+                        <td th:unless="${userEntryMap != null and userEntryMap.containsKey(p.name)}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
     <div th:if="${room.isGenerating}">
         <h2>Game Generation In Progress</h2>

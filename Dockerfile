@@ -34,5 +34,5 @@ USER appuser
 # pip installs land in /app/.venv (writable by appuser, PEP 668 clean).
 ENV ARCHIPELOBBY_PYTHON_EXECUTABLE=/app/.venv/bin/python
 
-EXPOSE 8080
+EXPOSE 8080 38281-38380
 ENTRYPOINT ["java", "-jar", "app.jar", "--spring.profiles.active=prod"]
