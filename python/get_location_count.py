@@ -106,7 +106,7 @@ def main():
     world.create_regions()
     world.create_items()
 
-    print(len(list(multiworld.get_locations(1))))
+    print(len([loc for loc in multiworld.get_locations(1) if loc.address is not None]))
 
 
 if __name__ == "__main__":
