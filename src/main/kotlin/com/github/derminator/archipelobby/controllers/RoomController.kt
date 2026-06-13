@@ -6,6 +6,7 @@ import com.github.derminator.archipelobby.data.Puns
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
+import com.github.derminator.archipelobby.tracker.TrackerService
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
@@ -38,6 +39,7 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService,
     private val gameCatalogService: GameCatalogService,
+    private val trackerService: TrackerService,
 ) {
     private val yamlMapper = YAMLMapper.builder()
         .addModule(KotlinModule.Builder().build())
@@ -85,6 +87,7 @@ class RoomController(
     fun getRoom(
         @PathVariable roomId: Long,
         principal: Principal?,
+        exchange: ServerWebExchange,
         model: Model
     ): Mono<String> = mono {
         if (principal == null || principal is AnonymousAuthenticationToken) {
@@ -94,7 +97,7 @@ class RoomController(
             return@mono "room-preview"
         }
         val userId = principal.asDiscordPrincipal.userId
-        loadRoomModel(roomId, userId, model)
+        loadRoomModel(roomId, userId, model, exchange)
         "room"
     }
 
@@ -110,6 +113,7 @@ class RoomController(
         @PathVariable roomId: Long,
         principal: Principal,
         @ModelAttribute form: AddEntryForm,
+        exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
@@ -165,7 +169,7 @@ class RoomController(
             "redirect:/rooms/$roomId"
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
-                loadRoomModel(roomId, userId, model)
+                loadRoomModel(roomId, userId, model, exchange)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
                 "room"
             } else throw e
@@ -297,6 +301,7 @@ class RoomController(
         @PathVariable roomId: Long,
         principal: Principal,
         @ModelAttribute form: UploadGameForm,
+        exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
@@ -317,7 +322,7 @@ class RoomController(
                 || e.statusCode == HttpStatus.CONFLICT
                 || e.statusCode == HttpStatus.UNPROCESSABLE_CONTENT
             ) {
-                loadRoomModel(roomId, userId, model)
+                loadRoomModel(roomId, userId, model, exchange)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
                 "room"
             } else throw e
@@ -377,6 +382,26 @@ class RoomController(
             .body(fileContent)
     }
 
+    @PostMapping("/{roomId}/server/start")
+    fun startServer(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.startServer(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
+    @PostMapping("/{roomId}/server/stop")
+    fun stopServer(
+        @PathVariable roomId: Long,
+        principal: Principal
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        roomService.stopServer(roomId, userId)
+        "redirect:/rooms/$roomId"
+    }
+
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,
@@ -393,7 +418,7 @@ class RoomController(
         model.addAttribute("joinableRooms", roomService.getJoinableRooms(userId))
     }
 
-    private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model) {
+    private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model, exchange: ServerWebExchange) {
         val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries.toList())
@@ -402,6 +427,12 @@ class RoomController(
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
+        model.addAttribute("serverRunning", roomService.isServerRunning(roomId))
+        val uri = exchange.request.uri
+        val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
+        model.addAttribute("serverHost", host)
+        model.addAttribute("serverScheme", if (uri.scheme == "https") "wss" else "ws")
+        model.addAttribute("tracker", trackerService.getTrackerData(roomId))
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
