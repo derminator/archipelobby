@@ -17,14 +17,7 @@ class PythonScriptRunner(
 
     private val logger = LoggerFactory.getLogger(PythonScriptRunner::class.java)
 
-    /**
-     * Executes a Python script with the given arguments as a CPython subprocess.
-     * Stdout and stderr are merged and streamed to SLF4J in real time; the full
-     * captured output is returned on success or embedded in the thrown
-     * ResponseStatusException on a non-zero exit.
-     */
-    @Blocking
-    fun run(scriptPath: String, vararg args: String): String {
+    private fun spawn(scriptPath: String, args: Array<out String>): Process {
         val scriptFile = File(scriptPath).absoluteFile
         val command = mutableListOf(pythonExecutable)
         command.add(scriptFile.path)
@@ -39,6 +32,18 @@ class PythonScriptRunner(
             }
             .start()
         process.outputStream.close()
+        return process
+    }
+
+    /**
+     * Executes a Python script with the given arguments as a CPython subprocess.
+     * Stdout and stderr are merged and streamed to SLF4J in real time; the full
+     * captured output is returned on success or embedded in the thrown
+     * ResponseStatusException on a non-zero exit.
+     */
+    @Blocking
+    fun run(scriptPath: String, vararg args: String): String {
+        val process = spawn(scriptPath, args)
 
         val output = StringBuilder()
         BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
@@ -60,4 +65,12 @@ class PythonScriptRunner(
         }
         return captured
     }
+
+    /**
+     * Spawns a Python script as a long-running background subprocess. Stdout and
+     * stderr are merged. The caller owns the returned Process: it must drain the
+     * input stream and invoke waitFor/destroy to clean up.
+     */
+    fun runInBackground(scriptPath: String, vararg args: String): Process =
+        spawn(scriptPath, args)
 }
