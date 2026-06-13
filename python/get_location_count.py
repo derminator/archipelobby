@@ -72,12 +72,6 @@ def main():
     if hasattr(multiworld, "plando_texts"):
         multiworld.plando_texts = [[]]
 
-    # Some Archipelago versions don't initialize state in MultiWorld.__init__;
-    # push_precollected (called by create_items in some worlds) requires it.
-    if not hasattr(multiworld, "state"):
-        from BaseClasses import CollectionState  # noqa: E402
-        multiworld.state = CollectionState(multiworld)
-
     world = world_class(multiworld, 1)
     multiworld.worlds = {1: world}
 
@@ -99,6 +93,14 @@ def main():
             except Exception:
                 pass
         world.options = options
+
+    # Some Archipelago versions don't initialize state in MultiWorld.__init__;
+    # push_precollected (called by create_items in some worlds) requires it.
+    # CollectionState asserts that multiworld.worlds is already populated, so
+    # this must run after the world is constructed and registered above.
+    if not hasattr(multiworld, "state"):
+        from BaseClasses import CollectionState  # noqa: E402
+        multiworld.state = CollectionState(multiworld)
 
     world.generate_early()
     world.create_regions()
