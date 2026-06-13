@@ -15,6 +15,7 @@ data class Room(
     val generatedGameFilePath: String? = null,
     val walkthroughFilePath: String? = null,
     val serverPort: Int? = null,
+    val savedGameFilePath: String? = null,
     @Version val version: Long? = null,
 ) {
     companion object {
