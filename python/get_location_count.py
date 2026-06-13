@@ -6,12 +6,13 @@ Usage: get_location_count.py <archipelago_dir> <yaml_path> [<apworld_path>...]
 
 Prints the integer location count on stdout.
 Exits non-zero if the game is unknown or initialization fails.
-APWorld paths are loaded before built-in worlds so custom games are registered.
+APWorld paths are loaded before built-in worlds, so custom games are registered.
 """
 import importlib
 import os
 import random as rand_module
 import sys
+import typing
 
 
 def main():
@@ -40,7 +41,7 @@ def main():
             print(f"Warning: could not load APWorld {apworld_path!r}: {e}", file=sys.stderr)
 
     # Importing worlds registers all built-in game world classes.
-    import worlds  # noqa: E402
+    import worlds  # noqa: E402, F401
     from worlds.AutoWorld import AutoWorldRegister
 
     import yaml
@@ -57,8 +58,7 @@ def main():
         print(f"Unknown game: {game_name!r}", file=sys.stderr)
         sys.exit(1)
 
-    from BaseClasses import MultiWorld, PlandoOptions
-
+    from BaseClasses import MultiWorld, PlandoOptions  # noqa: E402
     multiworld = MultiWorld(1)
     multiworld.game = {1: game_name}
     multiworld.player_name = {1: player_data.get("name", "Player")}
@@ -79,7 +79,11 @@ def main():
     # option-dependent location groups are correctly included or excluded.
     game_options_data = player_data.get(game_name) or {}
     if hasattr(world_class, "options_dataclass"):
-        options = world_class.options_dataclass()
+        options = world_class.options_dataclass(**{
+            option_key: option.from_any(option.default)
+            for option_key, option in typing.get_type_hints(world_class.options_dataclass).items()
+            if hasattr(option, "from_any")
+        })
         for opt_name, opt_value in game_options_data.items():
             if not hasattr(options, opt_name):
                 continue
@@ -93,7 +97,7 @@ def main():
     world.generate_early()
     world.create_regions()
 
-    print(len(multiworld.get_locations(1)))
+    print(len(list(multiworld.get_locations(1))))
 
 
 if __name__ == "__main__":
