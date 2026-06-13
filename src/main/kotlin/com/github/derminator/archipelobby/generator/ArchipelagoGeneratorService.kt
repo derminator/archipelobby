@@ -47,7 +47,7 @@ interface ArchipelagoGeneratorService {
      * determined (unknown game, uninitialized submodule, script error, etc.).
      *
      * @param yamlFilePath path to the player's saved YAML file
-     * @param apWorldFilePaths paths to all APWorld files for the room (existing + newly uploaded)
+     * @param apWorldFilePaths paths to all APWorld files for the room (existing and newly uploaded)
      */
     suspend fun getLocationCount(yamlFilePath: String, apWorldFilePaths: List<String>): Int
 }
