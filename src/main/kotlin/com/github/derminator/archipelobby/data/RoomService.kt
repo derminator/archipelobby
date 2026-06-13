@@ -4,6 +4,7 @@ import com.github.derminator.archipelobby.discord.DiscordService
 import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.extractFilesFromZip
+import com.github.derminator.archipelobby.matchPatchesToEntries
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.generator.GameInfo
@@ -26,6 +27,7 @@ import org.springframework.web.server.ResponseStatusException
 class RoomService(
     private val roomRepository: RoomRepository,
     private val entryRepository: EntryRepository,
+    private val entryPatchFileRepository: EntryPatchFileRepository,
     private val apWorldRepository: ApWorldRepository,
     private val discordService: DiscordService,
     private val uploadsService: UploadsService,
@@ -207,7 +209,17 @@ class RoomService(
                 .collect { entry ->
                     launch {
                         if (entry.id == null) error("Entry ID is null after saving")
-                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId)))
+                        val patches = entryPatchFileRepository.findByEntryId(entry.id).asFlow().toList()
+                            .mapNotNull { patch -> patch.id?.let { PatchFileInfo(it, patch.fileName) } }
+                        send(
+                            EntryInfo(
+                                entry.id,
+                                entry.name,
+                                entry.game,
+                                discordService.getUserInfo(entry.userId),
+                                patches,
+                            ),
+                        )
                     }
                 }
         }
@@ -272,6 +284,21 @@ class RoomService(
     }
 
     suspend fun getApWorld(apWorldId: Long): ApWorld? = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
+
+    suspend fun getPatchForDownload(patchId: Long, roomId: Long, userId: Long): EntryPatchFile {
+        val patch = entryPatchFileRepository.findById(patchId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Patch file not found")
+        val entry = entryRepository.findById(patch.entryId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Patch file not found")
+        if (entry.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Patch does not belong to this room")
+        }
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        return patch
+    }
 
     suspend fun getApWorldForDownload(apWorldId: Long, roomId: Long, userId: Long): ApWorld {
         val apWorld = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
@@ -343,6 +370,29 @@ class RoomService(
             }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
+
+        // Persist per-slot patch files once the game is committed. Entries can no longer be
+        // mutated (generatedGameFilePath is set), so doing this last keeps the rollback above
+        // simple. A failure here propagates rather than silently dropping a patch.
+        persistPatchFiles(entries, generatedGame.patchFiles)
+    }
+
+    /**
+     * Saves each patch file extracted from a generated/uploaded game and records it against the
+     * owning slot. Failures propagate: it is better to surface an error than to silently lose a
+     * patch file.
+     */
+    private suspend fun persistPatchFiles(entries: List<Entry>, patchFiles: Map<String, ByteArray>) {
+        if (patchFiles.isEmpty()) return
+        val byEntryId = matchPatchesToEntries(entries, patchFiles)
+        for ((entryId, patches) in byEntryId) {
+            for (patch in patches) {
+                val path = uploadsService.saveFile(patch.bytes, patch.fileName)
+                entryPatchFileRepository.save(
+                    EntryPatchFile(entryId = entryId, fileName = patch.fileName, filePath = path),
+                ).awaitSingle()
+            }
+        }
     }
 
     private suspend fun validateAndFetchRoomDetailsForGeneration(
@@ -367,15 +417,26 @@ class RoomService(
 
     @Transactional
     suspend fun uploadGame(roomId: Long, userId: Long, gameBytes: ByteArray, filename: String) {
-        val (room, _) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
+        val (room, entries) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
 
-        val (archipelagoBytes, walkthroughBytes) = when {
-            filename.endsWith(".archipelago") -> Pair(gameBytes, null)
-            filename.endsWith(".zip") -> extractFilesFromZip(gameBytes).also { (archipelago, _) ->
-                if (archipelago == null) throw ResponseStatusException(
+        val archipelagoBytes: ByteArray?
+        val walkthroughBytes: ByteArray?
+        val patchFiles: Map<String, ByteArray>
+        when {
+            filename.endsWith(".archipelago") -> {
+                archipelagoBytes = gameBytes
+                walkthroughBytes = null
+                patchFiles = emptyMap()
+            }
+            filename.endsWith(".zip") -> {
+                val extracted = extractFilesFromZip(gameBytes)
+                if (extracted.archipelagoBytes == null) throw ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
                     "ZIP file does not contain a .archipelago file",
                 )
+                archipelagoBytes = extracted.archipelagoBytes
+                walkthroughBytes = extracted.walkthroughBytes
+                patchFiles = extracted.patchFiles
             }
             else -> throw ResponseStatusException(
                 HttpStatus.BAD_REQUEST,
@@ -396,6 +457,8 @@ class RoomService(
             walkthroughFilePath?.let { uploadsService.deleteFile(it) }
             throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
         }
+
+        persistPatchFiles(entries, patchFiles)
     }
 
     @Transactional
@@ -413,6 +476,17 @@ class RoomService(
 
         runCatching { uploadsService.deleteFile(filePath) }
         room.walkthroughFilePath?.let { runCatching { uploadsService.deleteFile(it) } }
+
+        // Remove the per-slot patch files and their records too, so submissions reopen cleanly.
+        val entries = entryRepository.findByRoomId(roomId).asFlow().toList()
+        for (entry in entries) {
+            val entryId = entry.id ?: continue
+            entryPatchFileRepository.findByEntryId(entryId).asFlow().collect { patch ->
+                runCatching { uploadsService.deleteFile(patch.filePath) }
+                patch.id?.let { entryPatchFileRepository.deleteById(it).awaitSingleOrNull() }
+            }
+        }
+
         roomRepository.save(room.copy(generatedGameFilePath = null, walkthroughFilePath = null)).awaitSingle()
     }
 
@@ -454,7 +528,14 @@ class RoomService(
 
 data class RoomPreview(val name: String, val entryCount: Int, val games: List<String>)
 data class ApWorldFile(val fileName: String, val filePath: String, val gameName: String)
-data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
+data class EntryInfo(
+    val id: Long,
+    val name: String,
+    val game: String,
+    val user: UserInfo,
+    val patches: List<PatchFileInfo> = emptyList(),
+)
+data class PatchFileInfo(val id: Long, val fileName: String)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,

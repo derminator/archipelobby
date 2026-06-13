@@ -206,6 +206,27 @@ class RoomController(
             .body(fileContent)
     }
 
+    @GetMapping("/{roomId}/patches/{patchId}/download")
+    fun downloadPatch(
+        @PathVariable roomId: Long,
+        @PathVariable patchId: Long,
+        principal: Principal,
+    ): Mono<ResponseEntity<ByteArray>> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        val patch = roomService.getPatchForDownload(patchId, roomId, userId)
+
+        if (!uploadsService.fileExists(patch.filePath)) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Patch file not found")
+        }
+
+        val fileContent = uploadsService.getFile(patch.filePath)
+
+        ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${patch.fileName}\"")
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .body(fileContent)
+    }
+
     @GetMapping("/{roomId}/apworlds/{apworldId}/download")
     fun downloadApWorld(
         @PathVariable roomId: Long,
