@@ -46,6 +46,18 @@ interface EntryRepository : ReactiveCrudRepository<Entry, Long> {
     fun existsByRoomIdAndName(roomId: Long, name: String): Mono<Boolean>
 }
 
+@Table("ENTRY_PATCH_FILES")
+data class EntryPatchFile(
+    @Id val id: Long? = null,
+    val entryId: Long,
+    val fileName: String,
+    val filePath: String,
+)
+
+interface EntryPatchFileRepository : ReactiveCrudRepository<EntryPatchFile, Long> {
+    fun findByEntryId(entryId: Long): Flux<EntryPatchFile>
+}
+
 @Table("APWORLDS")
 data class ApWorld(
     @Id val id: Long? = null,
