@@ -84,11 +84,24 @@ def main():
             for option_key, option in typing.get_type_hints(world_class.options_dataclass).items()
             if hasattr(option, "from_any")
         })
+        try:
+            from Options import Range as APRange  # noqa: E402
+        except ImportError:
+            APRange = None
         for opt_name, opt_value in game_options_data.items():
             if not hasattr(options, opt_name):
                 continue
-            # 'random' means the actual value depends on the game seed — keep the default.
             if opt_value == "random":
+                # For integer Range options use the maximum value so that cross-option
+                # validation (e.g. "number_of_islands too small for prioritized games")
+                # cannot fail.  For Toggle/Choice options keep the initialized default.
+                opt_instance = getattr(options, opt_name)
+                if APRange is not None and isinstance(opt_instance, APRange):
+                    try:
+                        opt_type = type(opt_instance)
+                        setattr(options, opt_name, opt_type(opt_type.range_end))
+                    except Exception:
+                        pass
                 continue
             try:
                 opt_type = type(getattr(options, opt_name))
@@ -105,11 +118,14 @@ def main():
         from BaseClasses import CollectionState  # noqa: E402
         multiworld.state = CollectionState(multiworld)
 
-    world.generate_early()
-    world.create_regions()
-    world.create_items()
-    world.generate_basic()
-    world.pre_fill()
+    try:
+        world.generate_early()
+        world.create_regions()
+        world.create_items()
+        world.generate_basic()
+        world.pre_fill()
+    except Exception as e:
+        print(f"Warning: generation step raised {type(e).__name__}: {e}", file=sys.stderr)
 
     # Locations with address=None are events or non-sendable locations (converted by
     # pre_fill for games like OOT that call loc.address = None for vanilla-locked slots).
