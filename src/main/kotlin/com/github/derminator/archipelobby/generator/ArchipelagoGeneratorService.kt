@@ -40,4 +40,14 @@ interface ArchipelagoGeneratorService {
         yamlFiles: Map<String, ByteArray>,
         apWorldFiles: Map<String, ByteArray>,
     ): GeneratedGame
+
+    /**
+     * Returns the number of locations in the player's game as determined by their YAML options.
+     * Throws [org.springframework.web.server.ResponseStatusException] if the count cannot be
+     * determined (unknown game, uninitialized submodule, script error, etc.).
+     *
+     * @param yamlContent raw bytes of the player's YAML file
+     * @param apWorldContents map of filename → bytes for each APWorld in the room; may be empty
+     */
+    suspend fun getLocationCount(yamlContent: ByteArray, apWorldContents: Map<String, ByteArray>): Int
 }
