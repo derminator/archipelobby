@@ -84,24 +84,8 @@ def main():
             for option_key, option in typing.get_type_hints(world_class.options_dataclass).items()
             if hasattr(option, "from_any")
         })
-        try:
-            from Options import Range as APRange  # noqa: E402
-        except ImportError:
-            APRange = None
         for opt_name, opt_value in game_options_data.items():
             if not hasattr(options, opt_name):
-                continue
-            if opt_value == "random":
-                # For integer Range options use the maximum value so that cross-option
-                # validation (e.g. "number_of_islands too small for prioritized games")
-                # cannot fail.  For Toggle/Choice options keep the initialized default.
-                opt_instance = getattr(options, opt_name)
-                if APRange is not None and isinstance(opt_instance, APRange):
-                    try:
-                        opt_type = type(opt_instance)
-                        setattr(options, opt_name, opt_type(opt_type.range_end))
-                    except Exception:
-                        pass
                 continue
             try:
                 opt_type = type(getattr(options, opt_name))
