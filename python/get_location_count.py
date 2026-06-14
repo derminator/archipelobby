@@ -111,11 +111,10 @@ def main():
     world.generate_basic()
     world.pre_fill()
 
-    # Locations with address=None are events (goals, transitions) — not player checks.
-    # Locations with item already placed are non-shuffled positions where the world
-    # locked a vanilla item (e.g. OOT with tokensanity/pots/etc. off); the fill
-    # algorithm will only see locations where item is None.
-    print(len([loc for loc in multiworld.get_locations(1) if loc.address is not None and loc.item is None]))
+    # Locations with address=None are events or non-sendable locations (converted by
+    # pre_fill for games like OOT that call loc.address = None for vanilla-locked slots).
+    # All remaining locations with address is not None are real player checks.
+    print(len([loc for loc in multiworld.get_locations(1) if loc.address is not None]))
 
 
 if __name__ == "__main__":
