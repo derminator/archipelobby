@@ -109,6 +109,7 @@ def main():
     world.create_regions()
     world.create_items()
     world.generate_basic()
+    world.pre_fill()
 
     # Locations with address=None are events (goals, transitions) — not player checks.
     # Locations with item already placed are non-shuffled positions where the world
