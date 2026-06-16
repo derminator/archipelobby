@@ -87,20 +87,22 @@ def main():
         for opt_name, opt_value in game_options_data.items():
             if not hasattr(options, opt_name):
                 continue
-            # Resolve weighted option dicts/lists using Archipelago's get_choice logic:
-            # {value: weight, ...} → pick one key by weight (0-weight excluded);
-            # [a, b, ...] → pick uniformly; scalars pass through unchanged.
-            if isinstance(opt_value, dict):
-                nonzero = {k: int(v) for k, v in opt_value.items() if int(v) > 0}
-                if not nonzero:
-                    continue
-                opt_value = rand_module.choices(list(nonzero.keys()), weights=list(nonzero.values()))[0]
-            elif isinstance(opt_value, list):
-                if not opt_value:
-                    continue
-                opt_value = rand_module.choices(opt_value)[0]
+            # Mirror Archipelago's handle_option: only apply weighted dict/list selection
+            # for options that support weighting (Toggle, Range, Choice).
+            # OptionList, OptionDict, and similar complex options pass the raw value
+            # directly to from_any() because supports_weighting = False on those classes.
+            opt_type = type(getattr(options, opt_name))
+            if getattr(opt_type, "supports_weighting", True):
+                if isinstance(opt_value, dict):
+                    nonzero = {k: int(v) for k, v in opt_value.items() if int(v) > 0}
+                    if not nonzero:
+                        continue
+                    opt_value = rand_module.choices(list(nonzero.keys()), weights=list(nonzero.values()))[0]
+                elif isinstance(opt_value, list):
+                    if not opt_value:
+                        continue
+                    opt_value = rand_module.choices(opt_value)[0]
             try:
-                opt_type = type(getattr(options, opt_name))
                 setattr(options, opt_name, opt_type.from_any(opt_value))
             except Exception:
                 pass
