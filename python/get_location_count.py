@@ -1,0 +1,135 @@
+#!/usr/bin/env python3
+"""
+Get the location count for an Archipelago player YAML.
+
+Usage: get_location_count.py <archipelago_dir> <yaml_path> [<apworld_path>...]
+
+Prints the integer location count on stdout.
+Exits non-zero if the game is unknown or initialization fails.
+APWorld paths are loaded before built-in worlds, so custom games are registered.
+"""
+import importlib
+import os
+import random as rand_module
+import sys
+import typing
+
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: get_location_count.py <archipelago_dir> <yaml_path> [<apworld_path>...]",
+              file=sys.stderr)
+        sys.exit(1)
+
+    archipelago_dir = os.path.abspath(sys.argv[1])
+    yaml_path = os.path.abspath(sys.argv[2])
+    apworld_paths = [os.path.abspath(p) for p in sys.argv[3:]]
+
+    sys.path.insert(0, archipelago_dir)
+
+    # Load APWorlds before built-in worlds so custom game classes are registered.
+    # .apworld files are ZIP packages; adding them to sys.path lets Python import
+    # them directly. Importing triggers the AutoWorld metaclass registration.
+    for apworld_path in apworld_paths:
+        if not os.path.isfile(apworld_path):
+            continue
+        sys.path.insert(0, apworld_path)
+        package_name = os.path.basename(apworld_path).removesuffix(".apworld")
+        try:
+            importlib.import_module(package_name)
+        except Exception as e:
+            print(f"Warning: could not load APWorld {apworld_path!r}: {e}", file=sys.stderr)
+
+    # Importing worlds registers all built-in game world classes.
+    import worlds  # noqa: E402, F401
+    from worlds.AutoWorld import AutoWorldRegister
+
+    import yaml
+    with open(yaml_path, "r", encoding="utf-8") as f:
+        player_data = yaml.safe_load(f)
+
+    game_name = player_data.get("game")
+    if not isinstance(game_name, str):
+        print(f"Unsupported game field type: {type(game_name)}", file=sys.stderr)
+        sys.exit(1)
+
+    world_class = AutoWorldRegister.world_types.get(game_name)
+    if world_class is None:
+        print(f"Unknown game: {game_name!r}", file=sys.stderr)
+        sys.exit(1)
+
+    from BaseClasses import MultiWorld, PlandoOptions  # noqa: E402
+    multiworld = MultiWorld(1)
+    multiworld.game = {1: game_name}
+    multiworld.player_name = {1: player_data.get("name", "Player")}
+    multiworld.plando_options = PlandoOptions.none
+    multiworld.plando_items = [[]]
+    multiworld.plando_connections = [[]]
+    multiworld.re_gen_passthrough = {}
+    multiworld.random = rand_module.Random()
+
+    # plando_texts was added in a later Archipelago version; set it if present.
+    if hasattr(multiworld, "plando_texts"):
+        multiworld.plando_texts = [[]]
+
+    world = world_class(multiworld, 1)
+    multiworld.worlds = {1: world}
+
+    # Apply the player's options from the YAML game section so that
+    # option-dependent location groups are correctly included or excluded.
+    game_options_data = player_data.get(game_name) or {}
+    if hasattr(world_class, "options_dataclass"):
+        options = world_class.options_dataclass(**{
+            option_key: option.from_any(option.default)
+            for option_key, option in typing.get_type_hints(world_class.options_dataclass).items()
+            if hasattr(option, "from_any")
+        })
+        for opt_name, opt_value in game_options_data.items():
+            if not hasattr(options, opt_name):
+                continue
+            # Mirror Archipelago's handle_option: only apply weighted dict/list selection
+            # for options that support weighting (Toggle, Range, Choice).
+            # OptionList, OptionDict, and similar complex options pass the raw value
+            # directly to from_any() because supports_weighting = False on those classes.
+            opt_type = type(getattr(options, opt_name))
+            if getattr(opt_type, "supports_weighting", True):
+                if isinstance(opt_value, dict):
+                    nonzero = {k: int(v) for k, v in opt_value.items() if int(v) > 0}
+                    if not nonzero:
+                        continue
+                    opt_value = rand_module.choices(list(nonzero.keys()), weights=list(nonzero.values()))[0]
+                elif isinstance(opt_value, list):
+                    if not opt_value:
+                        continue
+                    opt_value = rand_module.choices(opt_value)[0]
+            try:
+                setattr(options, opt_name, opt_type.from_any(opt_value))
+            except Exception:
+                pass
+        world.options = options
+
+    # Some Archipelago versions don't initialize state in MultiWorld.__init__;
+    # push_precollected (called by create_items in some worlds) requires it.
+    # CollectionState asserts that multiworld.worlds is already populated, so
+    # this must run after the world is constructed and registered above.
+    if not hasattr(multiworld, "state"):
+        from BaseClasses import CollectionState  # noqa: E402
+        multiworld.state = CollectionState(multiworld)
+
+    try:
+        world.generate_early()
+        world.create_regions()
+        world.create_items()
+        world.generate_basic()
+        world.pre_fill()
+    except Exception as e:
+        print(f"Warning: generation step raised {type(e).__name__}: {e}", file=sys.stderr)
+
+    # Locations with address=None are events or non-sendable locations (converted by
+    # pre_fill for games like OOT that call loc.address = None for vanilla-locked slots).
+    # All remaining locations with address is not None are real player checks.
+    print(len([loc for loc in multiworld.get_locations(1) if loc.address is not None]))
+
+
+if __name__ == "__main__":
+    main()

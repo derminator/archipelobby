@@ -114,6 +114,14 @@ class RoomService(
             )
         }
 
+        val existingApWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
+        val apWorldContents = buildMap {
+            for (aw in existingApWorlds) put(aw.fileName, uploadsService.getFile(aw.filePath))
+            if (apWorldFile != null) put(apWorldFile.fileName, uploadsService.getFile(apWorldFile.filePath))
+        }
+        val yamlContent = uploadsService.getFile(yamlFilePath)
+        val locationCount = archipelagoGeneratorService.getLocationCount(yamlContent, apWorldContents)
+
         val entry = entryRepository.save(
             Entry(
                 roomId = roomId,
@@ -121,6 +129,7 @@ class RoomService(
                 name = entryName,
                 game = game,
                 yamlFilePath = yamlFilePath,
+                locationCount = locationCount,
             ),
         ).awaitSingle()
 
@@ -207,7 +216,7 @@ class RoomService(
                 .collect { entry ->
                     launch {
                         if (entry.id == null) error("Entry ID is null after saving")
-                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId)))
+                        send(EntryInfo(entry.id, entry.name, entry.game, discordService.getUserInfo(entry.userId), entry.locationCount))
                     }
                 }
         }
@@ -454,7 +463,7 @@ class RoomService(
 
 data class RoomPreview(val name: String, val entryCount: Int, val games: List<String>)
 data class ApWorldFile(val fileName: String, val filePath: String, val gameName: String)
-data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo)
+data class EntryInfo(val id: Long, val name: String, val game: String, val user: UserInfo, val locationCount: Int)
 data class ApWorldInfo(val id: Long, val fileName: String, val user: UserInfo)
 data class RoomWithEntries(
     val room: Room,

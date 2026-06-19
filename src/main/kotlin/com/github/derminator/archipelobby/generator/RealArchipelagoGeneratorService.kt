@@ -15,6 +15,7 @@ import java.nio.file.Files
 class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val scriptPath: String,
     @Value($$"${archipelobby.archipelago.module-update-script-path:Archipelago/ModuleUpdate.py}") private val moduleUpdateScriptPath: String,
+    @Value($$"${archipelobby.archipelago.location-count-script-path:python/get_location_count.py}") private val locationCountScriptPath: String,
     private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
 
@@ -82,4 +83,25 @@ class RealArchipelagoGeneratorService(
             workDir.deleteRecursively()
         }
     }
+
+    override suspend fun getLocationCount(yamlContent: ByteArray, apWorldContents: Map<String, ByteArray>): Int =
+        withContext(Dispatchers.IO) {
+            val tempDir = Files.createTempDirectory("archipelago-loc-count-").toFile()
+            try {
+                val yamlFile = tempDir.resolve("player.yaml").also { it.writeBytes(yamlContent) }
+                val apWorldPaths = apWorldContents.map { (name, bytes) ->
+                    tempDir.resolve(name).also { it.writeBytes(bytes) }.absolutePath
+                }
+                val archipelagoDir = File(scriptPath).absoluteFile.parent
+                val args = (listOf(archipelagoDir, yamlFile.absolutePath) + apWorldPaths).toTypedArray()
+                val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
+                output.trim().toIntOrNull()
+                    ?: throw ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "Location count script produced unexpected output: ${output.trim()}",
+                    )
+            } finally {
+                tempDir.deleteRecursively()
+            }
+        }
 }
