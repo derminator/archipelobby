@@ -42,8 +42,8 @@ fun playerNumberFromPatchFilename(fileName: String): Int? =
  * Assigns every patch file to a slot ([Entry]). The guiding principle is that no patch is ever
  * discarded: a confident match is made by the file-safe slot name, and anything that can't be
  * matched confidently (templated `{number}`/`{player}` names, sanitization collisions, or no
- * matching entry) falls back to the player number embedded in the filename — a best guess that
- * is logged so a possible mis-match is visible.
+ * matching entry) falls back to the player number embedded in the filename — the best guess
+ * is logged so a possible mismatch is visible.
  *
  * @return a map from entry id to the patch files assigned to it. Every input patch appears
  *   exactly once across the returned lists. Returns an empty map when [entries] is empty.
@@ -68,7 +68,7 @@ fun matchPatchesToEntries(
         val matches = slotName?.let { entriesBySafeName[it] }
 
         val entryId = if (matches != null && matches.size == 1) {
-            matches.single().id!!
+            matches.single().id ?: error("Entry is not saved")
         } else {
             // Never drop: fall back to the player number, else the first slot.
             val playerNumber = playerNumberFromPatchFilename(fileName)
