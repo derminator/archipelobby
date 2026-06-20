@@ -454,7 +454,7 @@ class RoomService(
             )
         }
 
-        val gameFilePath = uploadsService.saveFile(archipelagoBytes!!, "${room.name}.archipelago")
+        val gameFilePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
         val walkthroughFilePath = walkthroughBytes?.let {
             uploadsService.saveFile(it, "${room.name}_Spoiler.txt")
         }
@@ -543,7 +543,7 @@ data class EntryInfo(
     val name: String,
     val game: String,
     val user: UserInfo,
-    val locationCount: Int
+    val locationCount: Int,
     val patches: List<PatchFileInfo> = emptyList(),
 )
 data class PatchFileInfo(val id: Long, val fileName: String)
