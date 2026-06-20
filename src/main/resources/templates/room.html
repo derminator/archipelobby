@@ -53,6 +53,10 @@
             <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.id},entryId=${entry.id})}">
                 <button type="button">Download YAML</button>
             </a>
+            <a th:each="patch : ${entry.patches}"
+               th:href="@{/rooms/{roomId}/patches/{patchId}/download(roomId=${room.id},patchId=${patch.id})}">
+                <button type="button" th:text="|Download ${patch.fileName}|">Download Patch</button>
+            </a>
             <form method="post"
                   class="inline-form"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"

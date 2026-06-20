@@ -65,8 +65,9 @@ class RealArchipelagoGeneratorService(
                 "Archipelago generation produced no game zip",
             )
 
-            // Both the .archipelago multidata and the spoiler log live inside the zip.
-            val (archipelagoBytes, walkthroughBytes) = extractFilesFromZip(Files.readAllBytes(gameZip))
+            // The .archipelago multidata, the spoiler log, and the per-slot patch files all
+            // live inside the zip.
+            val (archipelagoBytes, walkthroughBytes, patchFiles) = extractFilesFromZip(Files.readAllBytes(gameZip))
             val archipelago = archipelagoBytes
                 ?: throw ResponseStatusException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
@@ -78,7 +79,7 @@ class RealArchipelagoGeneratorService(
                     "Game zip produced by Archipelago contains no walkthrough file",
                 )
 
-            GeneratedGame(archipelago, walkthrough)
+            GeneratedGame(archipelago, walkthrough, patchFiles)
         } finally {
             workDir.deleteRecursively()
         }
