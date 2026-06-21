@@ -26,10 +26,12 @@ import urllib.error
 import urllib.request
 import zlib
 
+HTTP_TIMEOUT = 30  # seconds
+
 
 def fetch_game_data(base_url: str, token: str, room_id: int, target_path: str) -> None:
     url = f"{base_url}/internal/multiserver/{token}/game/{room_id}"
-    with urllib.request.urlopen(url) as resp:
+    with urllib.request.urlopen(url, timeout=HTTP_TIMEOUT) as resp:
         data = resp.read()
     with open(target_path, "wb") as f:
         f.write(data)
@@ -54,7 +56,7 @@ def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
                 method="PUT",
                 headers={"Content-Type": "application/octet-stream"},
             )
-            with urllib.request.urlopen(req):
+            with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT):
                 pass
             return True
         except Exception as e:
@@ -66,7 +68,7 @@ def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
         if not self.saving:
             return
         try:
-            with urllib.request.urlopen(save_url) as resp:
+            with urllib.request.urlopen(save_url, timeout=HTTP_TIMEOUT) as resp:
                 save_bytes = resp.read()
             save_data = restricted_loads(zlib.decompress(save_bytes))
             self.set_save(save_data)

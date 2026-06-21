@@ -36,6 +36,7 @@ class ProcessMultiServerManager(
     private val processes = ConcurrentHashMap<Long, ManagedServer>()
     private val roomLocks = ConcurrentHashMap<Long, Mutex>()
     private val allocationMutex = Mutex()
+    private val pendingPorts = ConcurrentHashMap.newKeySet<Int>()
     private val lifecycleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var running = false
 
@@ -62,44 +63,51 @@ class ProcessMultiServerManager(
             }
 
             val port = allocatePort()
+            try {
+                logger.info("Starting MultiServer for room {} on port {}", roomId, port)
 
-            logger.info("Starting MultiServer for room {} on port {}", roomId, port)
+                val process = pythonScriptRunner.runInBackground(
+                    properties.wrapperScriptPath,
+                    "--spring-url", properties.internalBaseUrl,
+                    "--spring-token", internalToken.value,
+                    "--room-id", roomId.toString(),
+                    "--archipelago-dir", archipelagoDir(),
+                    "--port", port.toString(),
+                    "--host", properties.host,
+                )
 
-            val process = pythonScriptRunner.runInBackground(
-                properties.wrapperScriptPath,
-                "--spring-url", properties.internalBaseUrl,
-                "--spring-token", internalToken.value,
-                "--room-id", roomId.toString(),
-                "--archipelago-dir", archipelagoDir(),
-                "--port", port.toString(),
-                "--host", properties.host,
-            )
-
-            val logThread = Thread({
-                BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
-                    while (true) {
-                        val line = reader.readLine() ?: break
-                        logger.info("[multiserver:{}] {}", roomId, line)
+                lateinit var managed: ManagedServer
+                val logThread = Thread({
+                    BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
+                        while (true) {
+                            val line = reader.readLine() ?: break
+                            logger.info("[multiserver:{}] {}", roomId, line)
+                        }
                     }
-                }
-                val exitCode = process.waitFor()
-                processes.remove(roomId)
-                if (exitCode != 0) {
-                    logger.error("MultiServer for room {} exited with code {}", roomId, exitCode)
-                } else {
-                    logger.info("MultiServer for room {} stopped", roomId)
-                }
-            }, "multiserver-log-$roomId").apply { isDaemon = true }
+                    val exitCode = process.waitFor()
+                    // CAS remove so a racing startServer that already put a fresh
+                    // ManagedServer for this room isn't clobbered.
+                    processes.remove(roomId, managed)
+                    if (exitCode != 0) {
+                        logger.error("MultiServer for room {} exited with code {}", roomId, exitCode)
+                    } else {
+                        logger.info("MultiServer for room {} stopped", roomId)
+                    }
+                }, "multiserver-log-$roomId").apply { isDaemon = true }
 
-            processes[roomId] = ManagedServer(process, port, logThread)
-            logThread.start()
+                managed = ManagedServer(process, port, logThread)
+                processes[roomId] = managed
+                logThread.start()
 
-            if (!process.isAlive) {
-                processes.remove(roomId)
-                throw IllegalStateException("MultiServer for room $roomId exited immediately")
+                if (!process.isAlive) {
+                    processes.remove(roomId, managed)
+                    throw IllegalStateException("MultiServer for room $roomId exited immediately")
+                }
+
+                logger.info("MultiServer for room {} started on port {}", roomId, port)
+            } finally {
+                pendingPorts.remove(port)
             }
-
-            logger.info("MultiServer for room {} started on port {}", roomId, port)
         }
     }
 
@@ -129,8 +137,13 @@ class ProcessMultiServerManager(
 
     private suspend fun allocatePort(): Int = allocationMutex.withLock {
         val usedPorts = processes.values.mapTo(mutableSetOf()) { it.port }
-        (properties.portRangeStart..properties.portRangeEnd).firstOrNull { it !in usedPorts }
+        usedPorts.addAll(pendingPorts)
+        val port = (properties.portRangeStart..properties.portRangeEnd).firstOrNull { it !in usedPorts }
             ?: error("No available ports in range ${properties.portRangeStart}-${properties.portRangeEnd}")
+        // Reserve the port so a concurrent allocation for a different room doesn't
+        // pick it before this caller can put a ManagedServer in `processes`.
+        pendingPorts.add(port)
+        port
     }
 
     // SmartLifecycle

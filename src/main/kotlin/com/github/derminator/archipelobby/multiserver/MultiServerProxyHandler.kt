@@ -2,6 +2,7 @@ package com.github.derminator.archipelobby.multiserver
 
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
+import org.springframework.core.io.buffer.DataBufferUtils
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.CloseStatus
 import org.springframework.web.reactive.socket.WebSocketHandler
@@ -51,6 +52,7 @@ class MultiServerProxyHandler(
         val payload = message.payload
         val bytes = ByteArray(payload.readableByteCount())
         payload.read(bytes)
+        DataBufferUtils.release(payload)
         return WebSocketMessage(message.type, target.bufferFactory().wrap(bytes))
     }
 
