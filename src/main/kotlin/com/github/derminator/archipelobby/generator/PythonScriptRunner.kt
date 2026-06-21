@@ -17,7 +17,7 @@ class PythonScriptRunner(
 
     private val logger = LoggerFactory.getLogger(PythonScriptRunner::class.java)
 
-    private fun spawn(scriptPath: String, args: Array<out String>): Process {
+    private fun spawn(scriptPath: String, args: Array<out String>, extraEnv: Map<String, String> = emptyMap()): Process {
         val scriptFile = File(scriptPath).absoluteFile
         val command = mutableListOf(pythonExecutable)
         command.add(scriptFile.path)
@@ -26,9 +26,11 @@ class PythonScriptRunner(
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)
             .also {
-                it.environment()["PYTHONUNBUFFERED"] = "1"
-                it.environment()["DISPLAY"] = ""
-                it.environment()["PYTHONWARNINGS"] = "ignore"
+                val env = it.environment()
+                env["PYTHONUNBUFFERED"] = "1"
+                env["DISPLAY"] = ""
+                env["PYTHONWARNINGS"] = "ignore"
+                env.putAll(extraEnv)
             }
             .start()
         process.outputStream.close()
@@ -69,8 +71,10 @@ class PythonScriptRunner(
     /**
      * Spawns a Python script as a long-running background subprocess. Stdout and
      * stderr are merged. The caller owns the returned Process: it must drain the
-     * input stream and invoke waitFor/destroy to clean up.
+     * input stream and invoke waitFor/destroy to clean up. `extraEnv` is appended
+     * to the inherited environment — use it to pass secrets that should not show
+     * up in `ps` argv listings.
      */
-    fun runInBackground(scriptPath: String, vararg args: String): Process =
-        spawn(scriptPath, args)
+    fun runInBackground(scriptPath: String, extraEnv: Map<String, String> = emptyMap(), vararg args: String): Process =
+        spawn(scriptPath, args, extraEnv)
 }

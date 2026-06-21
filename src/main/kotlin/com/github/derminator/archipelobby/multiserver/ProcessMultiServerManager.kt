@@ -67,9 +67,9 @@ class ProcessMultiServerManager(
                 logger.info("Starting MultiServer for room {} on port {}", roomId, port)
 
                 val process = pythonScriptRunner.runInBackground(
-                    properties.wrapperScriptPath,
+                    scriptPath = properties.wrapperScriptPath,
+                    extraEnv = mapOf("ARCHIPELOBBY_SPRING_TOKEN" to internalToken.value),
                     "--spring-url", properties.internalBaseUrl,
-                    "--spring-token", internalToken.value,
                     "--room-id", roomId.toString(),
                     "--archipelago-dir", archipelagoDir(),
                     "--port", port.toString(),

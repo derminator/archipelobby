@@ -94,10 +94,15 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
 def main() -> None:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("--spring-url", required=True)
-    parser.add_argument("--spring-token", required=True)
     parser.add_argument("--room-id", required=True, type=int)
     parser.add_argument("--archipelago-dir", required=True)
     args, rest = parser.parse_known_args()
+
+    # Read the token from the environment so it doesn't leak via ps/argv.
+    token = os.environ.get("ARCHIPELOBBY_SPRING_TOKEN")
+    if not token:
+        print("ARCHIPELOBBY_SPRING_TOKEN env var is required", file=sys.stderr)
+        sys.exit(1)
 
     sys.path.insert(0, os.path.abspath(args.archipelago_dir))
 
@@ -108,10 +113,10 @@ def main() -> None:
 
     atexit.register(shutil.rmtree, tmpdir, onerror=_log_cleanup_error)
     data_path = os.path.join(tmpdir, "game.archipelago")
-    fetch_game_data(args.spring_url, args.spring_token, args.room_id, data_path)
+    fetch_game_data(args.spring_url, token, args.room_id, data_path)
 
     import MultiServer
-    install_save_hooks(args.spring_url, args.spring_token, args.room_id, MultiServer)
+    install_save_hooks(args.spring_url, token, args.room_id, MultiServer)
 
     sys.argv = [sys.argv[0], "--multidata", data_path] + rest
     asyncio.run(MultiServer.main(MultiServer.parse_args()))
