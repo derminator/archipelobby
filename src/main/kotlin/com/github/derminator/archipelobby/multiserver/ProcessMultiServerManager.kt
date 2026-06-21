@@ -8,7 +8,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
-import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -62,9 +61,7 @@ class ProcessMultiServerManager(
                 throw IllegalStateException("Room $roomId does not have a generated game")
             }
 
-            val port = room.serverPort ?: allocatePort().also {
-                roomRepository.save(room.copy(serverPort = it)).awaitSingle()
-            }
+            val port = allocatePort()
 
             logger.info("Starting MultiServer for room {} on port {}", roomId, port)
 
@@ -128,13 +125,10 @@ class ProcessMultiServerManager(
         return managed.process.isAlive
     }
 
+    override fun getServerPort(roomId: Long): Int? = processes[roomId]?.port
+
     private suspend fun allocatePort(): Int = allocationMutex.withLock {
-        val usedPorts: Set<Int> = buildSet {
-            roomRepository.findAll().asFlow().collect { room ->
-                room.serverPort?.let(::add)
-            }
-            processes.values.forEach { add(it.port) }
-        }
+        val usedPorts = processes.values.mapTo(mutableSetOf()) { it.port }
         (properties.portRangeStart..properties.portRangeEnd).firstOrNull { it !in usedPorts }
             ?: error("No available ports in range ${properties.portRangeStart}-${properties.portRangeEnd}")
     }

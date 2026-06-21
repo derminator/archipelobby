@@ -4,11 +4,11 @@ bytes with the surrounding Spring app over HTTP, instead of reading and
 writing files on disk.
 
 The wrapper:
-  - downloads the .archipelago multidata for a room from Spring at startup,
+  - Downloads the .archipelago multidata for a room from Spring at startup,
     writes it to a temp file (MultiServer.load() expects a file path),
-  - monkey-patches MultiServer.Context._save to PUT the pickled+zlib save
+  - Monkey-patches MultiServer.Context._save to PUT the pickled+zlib save
     blob to Spring instead of writing it to a .apsave file,
-  - monkey-patches MultiServer.Context.init_save to GET that blob from
+  - Monkey-patches MultiServer.Context.init_save to GET that blob from
     Spring instead of reading it from disk.
 
 The temp file is deleted on exit. Arguments after `--` are forwarded to
@@ -41,7 +41,7 @@ def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
 
     save_url = f"{base_url}/internal/multiserver/{token}/save/{room_id}"
 
-    def _save(self, exit_save: bool = False) -> bool:
+    def _save(self, *_) -> bool:
         try:
             payload = zlib.compress(pickle.dumps(self.get_save()))
         except Exception as e:
@@ -94,7 +94,11 @@ def main() -> None:
     sys.path.insert(0, os.path.abspath(args.archipelago_dir))
 
     tmpdir = tempfile.mkdtemp(prefix="archipelobby-")
-    atexit.register(shutil.rmtree, tmpdir, ignore_errors=True)
+
+    def _log_cleanup_error(func, path, exc_info):
+        print(f"cleanup: {func.__name__}({path}) failed: {exc_info[1]}", file=sys.stderr)
+
+    atexit.register(shutil.rmtree, tmpdir, onerror=_log_cleanup_error)
     data_path = os.path.join(tmpdir, "game.archipelago")
     fetch_game_data(args.spring_url, args.spring_token, args.room_id, data_path)
 

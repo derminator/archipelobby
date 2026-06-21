@@ -4,4 +4,5 @@ interface MultiServerManager {
     suspend fun startServer(roomId: Long)
     suspend fun stopServer(roomId: Long)
     fun isRunning(roomId: Long): Boolean
+    fun getServerPort(roomId: Long): Int?
 }

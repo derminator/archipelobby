@@ -1,7 +1,5 @@
 package com.github.derminator.archipelobby.multiserver
 
-import com.github.derminator.archipelobby.data.RoomRepository
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
@@ -22,7 +20,6 @@ import java.net.URI
 @Component
 class MultiServerProxyHandler(
     private val multiServerManager: MultiServerManager,
-    private val roomRepository: RoomRepository,
     private val properties: MultiServerProperties,
 ) : WebSocketHandler {
 
@@ -31,14 +28,14 @@ class MultiServerProxyHandler(
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         val roomId = extractRoomId(session) ?: return session.close(CloseStatus.NOT_ACCEPTABLE)
-        return mono {
-            val room = roomRepository.findById(roomId).awaitSingleOrNull()
-            val port = room?.serverPort
-            if (port == null || !multiServerManager.isRunning(roomId)) null else port
-        }.flatMap { port ->
-            if (port == null) session.close(CloseStatus.SERVICE_RESTARTED)
-            else proxy(session, port)
-        }
+        return mono { activePort(roomId) }
+            .flatMap { port -> proxy(session, port) }
+            .switchIfEmpty(session.close(CloseStatus.SERVICE_RESTARTED).then(Mono.empty()))
+    }
+
+    private suspend fun activePort(roomId: Long): Int? {
+        if (!multiServerManager.isRunning(roomId)) return null
+        return multiServerManager.getServerPort(roomId)
     }
 
     private fun proxy(downstream: WebSocketSession, port: Int): Mono<Void> {
