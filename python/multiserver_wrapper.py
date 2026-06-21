@@ -29,19 +29,25 @@ import zlib
 HTTP_TIMEOUT = 30  # seconds
 
 
+def _authed_request(url: str, token: str, *, data=None, method=None, content_type=None):
+    headers = {"Authorization": f"Bearer {token}"}
+    if content_type:
+        headers["Content-Type"] = content_type
+    return urllib.request.Request(url, data=data, method=method, headers=headers)
+
+
 def fetch_game_data(base_url: str, token: str, room_id: int, target_path: str) -> None:
-    url = f"{base_url}/internal/multiserver/{token}/game/{room_id}"
-    with urllib.request.urlopen(url, timeout=HTTP_TIMEOUT) as resp:
+    req = _authed_request(f"{base_url}/internal/multiserver/game/{room_id}", token)
+    with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
         data = resp.read()
     with open(target_path, "wb") as f:
         f.write(data)
 
 
-def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
-    import MultiServer
+def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) -> None:
     from Utils import restricted_loads
 
-    save_url = f"{base_url}/internal/multiserver/{token}/save/{room_id}"
+    save_url = f"{base_url}/internal/multiserver/save/{room_id}"
 
     def _save(self, *_) -> bool:
         try:
@@ -50,11 +56,10 @@ def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
             self.logger.exception(e)
             return False
         try:
-            req = urllib.request.Request(
-                save_url,
-                data=payload,
-                method="PUT",
-                headers={"Content-Type": "application/octet-stream"},
+            req = _authed_request(
+                save_url, token,
+                data=payload, method="PUT",
+                content_type="application/octet-stream",
             )
             with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT):
                 pass
@@ -68,7 +73,8 @@ def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
         if not self.saving:
             return
         try:
-            with urllib.request.urlopen(save_url, timeout=HTTP_TIMEOUT) as resp:
+            req = _authed_request(save_url, token)
+            with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
                 save_bytes = resp.read()
             save_data = restricted_loads(zlib.decompress(save_bytes))
             self.set_save(save_data)
@@ -81,8 +87,8 @@ def install_save_hooks(base_url: str, token: str, room_id: int) -> None:
             self.logger.exception(e)
         self._start_async_saving()
 
-    MultiServer.Context._save = _save
-    MultiServer.Context.init_save = init_save
+    multi_server.Context._save = _save
+    multi_server.Context.init_save = init_save
 
 
 def main() -> None:
@@ -104,9 +110,9 @@ def main() -> None:
     data_path = os.path.join(tmpdir, "game.archipelago")
     fetch_game_data(args.spring_url, args.spring_token, args.room_id, data_path)
 
-    install_save_hooks(args.spring_url, args.spring_token, args.room_id)
-
     import MultiServer
+    install_save_hooks(args.spring_url, args.spring_token, args.room_id, MultiServer)
+
     sys.argv = [sys.argv[0], "--multidata", data_path] + rest
     asyncio.run(MultiServer.main(MultiServer.parse_args()))
 

@@ -65,6 +65,9 @@ class WebTests {
     lateinit var apWorldRepository: ApWorldRepository
 
     @MockitoBean
+    lateinit var apSaveRepository: ApSaveRepository
+
+    @MockitoBean
     lateinit var gameCatalogService: GameCatalogService
 
     @MockitoBean
@@ -96,6 +99,7 @@ class WebTests {
         `when`(entryRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
         `when`(entryPatchFileRepository.findByEntryId(anyLong())).thenReturn(Flux.empty())
         `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
+        `when`(apSaveRepository.deleteByRoomId(anyLong())).thenReturn(Mono.empty())
         `when`(gameCatalogService.listCoreGames()).thenReturn(emptyList())
 
         webTestClient = WebTestClient.bindToApplicationContext(context)

@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby.multiserver
 
+import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBufferUtils
@@ -10,6 +11,8 @@ import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
 import reactor.core.publisher.Mono
+import reactor.netty.http.client.HttpClient
+import reactor.netty.resources.ConnectionProvider
 import java.net.URI
 
 /**
@@ -25,7 +28,13 @@ class MultiServerProxyHandler(
 ) : WebSocketHandler {
 
     private val logger = LoggerFactory.getLogger(MultiServerProxyHandler::class.java)
-    private val client = ReactorNettyWebSocketClient()
+    private val connectionProvider = ConnectionProvider.create("multiserver-proxy")
+    private val client = ReactorNettyWebSocketClient(HttpClient.create(connectionProvider))
+
+    @PreDestroy
+    fun shutdown() {
+        connectionProvider.dispose()
+    }
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         val roomId = extractRoomId(session) ?: return session.close(CloseStatus.NOT_ACCEPTABLE)

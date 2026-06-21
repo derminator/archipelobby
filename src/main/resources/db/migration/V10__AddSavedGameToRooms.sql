@@ -1,1 +1,0 @@
-ALTER TABLE ROOMS ADD COLUMN saved_game_data BLOB NULL;

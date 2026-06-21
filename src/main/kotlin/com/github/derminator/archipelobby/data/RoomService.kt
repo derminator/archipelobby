@@ -9,6 +9,7 @@ import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.generator.GameInfo
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
+import com.github.derminator.archipelobby.multiserver.SaveDataService
 import com.github.derminator.archipelobby.storage.UploadsService
 import org.slf4j.LoggerFactory
 import kotlinx.coroutines.flow.Flow
@@ -36,6 +37,7 @@ class RoomService(
     private val archipelagoGeneratorService: ArchipelagoGeneratorService,
     private val gameCatalogService: GameCatalogService,
     private val multiServerManager: MultiServerManager,
+    private val saveDataService: SaveDataService,
 ) {
     private val logger = LoggerFactory.getLogger(RoomService::class.java)
 
@@ -510,6 +512,7 @@ class RoomService(
         roomRepository.save(
             room.copy(generatedGameFilePath = null, walkthroughFilePath = null)
         ).awaitSingle()
+        saveDataService.clear(roomId)
         try {
             multiServerManager.stopServer(roomId)
         } catch (e: Exception) {

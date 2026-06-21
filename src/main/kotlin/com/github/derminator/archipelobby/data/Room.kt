@@ -14,7 +14,6 @@ data class Room(
     val name: String,
     val generatedGameFilePath: String? = null,
     val walkthroughFilePath: String? = null,
-    val savedGameData: ByteArray? = null,
     @Version val version: Long? = null,
 ) {
     companion object {
