@@ -516,11 +516,17 @@ class RoomController(
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
-        model.addAttribute("serverRunning", roomService.isServerRunning(roomId))
-        val uri = exchange.request.uri
-        val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
-        model.addAttribute("serverHost", host)
-        model.addAttribute("serverScheme", if (uri.scheme == "https") "wss" else "ws")
+        // Full WebSocket connect address when the server is running, otherwise null.
+        // The UI derives the running/stopped state from whether this is present.
+        val serverAddress = if (roomService.isServerRunning(roomId)) {
+            val uri = exchange.request.uri
+            val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
+            val scheme = if (uri.scheme == "https") "wss" else "ws"
+            "$scheme://$host/rooms/$roomId/ws"
+        } else {
+            null
+        }
+        model.addAttribute("serverAddress", serverAddress)
         model.addAttribute("tracker", trackerService.getTrackerData(roomId))
         model.addAttribute("userEntryMap", entries
             .filter { it.user.id == userId }
