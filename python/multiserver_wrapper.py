@@ -108,10 +108,13 @@ def main() -> None:
 
     tmpdir = tempfile.mkdtemp(prefix="archipelobby-")
 
-    def _log_cleanup_error(func, path, exc_info):
-        print(f"cleanup: {func.__name__}({path}) failed: {exc_info[1]}", file=sys.stderr)
+    def _cleanup_tmpdir():
+        try:
+            shutil.rmtree(tmpdir)
+        except OSError as e:
+            print(f"cleanup: failed to remove {tmpdir}: {e}", file=sys.stderr)
 
-    atexit.register(shutil.rmtree, tmpdir, onerror=_log_cleanup_error)
+    atexit.register(_cleanup_tmpdir)
     data_path = os.path.join(tmpdir, "game.archipelago")
     fetch_game_data(args.spring_url, token, args.room_id, data_path)
 

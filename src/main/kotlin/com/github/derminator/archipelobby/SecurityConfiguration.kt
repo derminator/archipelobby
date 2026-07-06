@@ -13,7 +13,6 @@ import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHe
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.anyExchange
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers
-import reactor.core.publisher.Mono
 
 @Configuration
 @EnableWebFluxSecurity
