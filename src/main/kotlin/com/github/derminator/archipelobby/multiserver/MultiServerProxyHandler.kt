@@ -38,9 +38,18 @@ class MultiServerProxyHandler(
 
     override fun handle(session: WebSocketSession): Mono<Void> {
         val roomId = extractRoomId(session) ?: return session.close(CloseStatus.NOT_ACCEPTABLE)
-        return mono { activePort(roomId) }
-            .flatMap { port -> proxy(session, port) }
-            .switchIfEmpty(session.close(CloseStatus.SERVICE_RESTARTED).then(Mono.empty()))
+        // Branch inside the coroutine and flatten the resulting Mono<Void>. A prior
+        // version used switchIfEmpty to handle the "no running server" case, but
+        // switchIfEmpty on a Mono<Void> also fires on the *normal* empty completion
+        // of a successful proxy() session, spuriously closing it as SERVICE_RESTARTED.
+        return mono {
+            val port = activePort(roomId)
+            if (port == null) {
+                session.close(CloseStatus.SERVICE_RESTARTED)
+            } else {
+                proxy(session, port)
+            }
+        }.flatMap { it }
     }
 
     private suspend fun activePort(roomId: Long): Int? {

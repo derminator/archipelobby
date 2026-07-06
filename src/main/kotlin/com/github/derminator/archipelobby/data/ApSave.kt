@@ -11,7 +11,17 @@ import reactor.core.publisher.Mono
 data class ApSave(
     @Id val roomId: Long,
     val data: ByteArray,
-)
+) {
+    // Data classes compare ByteArray by reference; override so two saves with the
+    // same room and identical bytes are equal (and hash consistently).
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ApSave) return false
+        return roomId == other.roomId && data.contentEquals(other.data)
+    }
+
+    override fun hashCode(): Int = 31 * roomId.hashCode() + data.contentHashCode()
+}
 
 interface ApSaveRepository : ReactiveCrudRepository<ApSave, Long> {
 
