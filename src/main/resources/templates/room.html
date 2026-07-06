@@ -36,21 +36,21 @@
         </a>
 
         <h3>Server</h3>
-        <p th:if="${serverRunning}">
+        <p th:if="${serverAddress != null}">
             Status: <strong>Running</strong>
             <br/>Connect at:
-            <code th:text="|${serverScheme}://${serverHost}/rooms/${room.id}/ws|">ws://localhost/rooms/1/ws</code>
+            <code th:text="${serverAddress}">ws://localhost/rooms/1/ws</code>
         </p>
-        <p th:unless="${serverRunning}">
+        <p th:if="${serverAddress == null}">
             Status: <strong>Stopped</strong>
         </p>
         <div th:if="${isAdmin}" class="button-row">
-            <form th:unless="${serverRunning}" method="post"
+            <form th:if="${serverAddress == null}" method="post"
                   class="inline-form"
                   th:action="@{/rooms/{id}/server/start(id=${room.id})}">
                 <input type="submit" value="Start Server"/>
             </form>
-            <form th:if="${serverRunning}" method="post"
+            <form th:if="${serverAddress != null}" method="post"
                   class="inline-form"
                   th:action="@{/rooms/{id}/server/stop(id=${room.id})}"
                   th:attr="data-confirm='Stop the server? Connected players will be disconnected.'">
