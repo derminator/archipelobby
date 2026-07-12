@@ -1,6 +1,5 @@
 package com.github.derminator.archipelobby.multiserver
 
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 import java.util.UUID
 
@@ -16,8 +15,6 @@ import java.util.UUID
  * invalidated on every restart.
  */
 @Component
-class InternalToken(
-    @Value("\${archipelobby.multiserver.internal-token:}") configuredToken: String,
-) {
-    val value: String = configuredToken.ifBlank { UUID.randomUUID().toString() }
+class InternalToken(properties: MultiServerProperties) {
+    val value: String = properties.internalToken.ifBlank { UUID.randomUUID().toString() }
 }
