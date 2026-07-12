@@ -17,14 +17,7 @@ class PythonScriptRunner(
 
     private val logger = LoggerFactory.getLogger(PythonScriptRunner::class.java)
 
-    /**
-     * Executes a Python script with the given arguments as a CPython subprocess.
-     * Stdout and stderr are merged and streamed to SLF4J in real time; the full
-     * captured output is returned on success or embedded in the thrown
-     * ResponseStatusException on a non-zero exit.
-     */
-    @Blocking
-    fun run(scriptPath: String, vararg args: String): String {
+    private fun spawn(scriptPath: String, args: Array<out String>, extraEnv: Map<String, String> = emptyMap()): Process {
         val scriptFile = File(scriptPath).absoluteFile
         val command = mutableListOf(pythonExecutable)
         command.add(scriptFile.path)
@@ -33,12 +26,26 @@ class PythonScriptRunner(
         val process = ProcessBuilder(command)
             .redirectErrorStream(true)
             .also {
-                it.environment()["PYTHONUNBUFFERED"] = "1"
-                it.environment()["DISPLAY"] = ""
-                it.environment()["PYTHONWARNINGS"] = "ignore"
+                val env = it.environment()
+                env["PYTHONUNBUFFERED"] = "1"
+                env["DISPLAY"] = ""
+                env["PYTHONWARNINGS"] = "ignore"
+                env.putAll(extraEnv)
             }
             .start()
         process.outputStream.close()
+        return process
+    }
+
+    /**
+     * Executes a Python script with the given arguments as a CPython subprocess.
+     * Stdout and stderr are merged and streamed to SLF4J in real time; the full
+     * captured output is returned on success or embedded in the thrown
+     * ResponseStatusException on a non-zero exit.
+     */
+    @Blocking
+    fun run(scriptPath: String, vararg args: String): String {
+        val process = spawn(scriptPath, args)
 
         val output = StringBuilder()
         BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
@@ -60,4 +67,14 @@ class PythonScriptRunner(
         }
         return captured
     }
+
+    /**
+     * Spawns a Python script as a long-running background subprocess. Stdout and
+     * stderr are merged. The caller owns the returned Process: it must drain the
+     * input stream and invoke waitFor/destroy to clean up. `extraEnv` is appended
+     * to the inherited environment — use it to pass secrets that should not show
+     * up in `ps` argv listings.
+     */
+    fun runInBackground(scriptPath: String, extraEnv: Map<String, String> = emptyMap(), vararg args: String): Process =
+        spawn(scriptPath, args, extraEnv)
 }
