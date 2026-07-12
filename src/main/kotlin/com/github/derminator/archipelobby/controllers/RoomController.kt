@@ -354,6 +354,10 @@ class RoomController(
         principal: Principal,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
+        // Stop the server first (outside the delete's transaction) so its up-to-10s
+        // shutdown wait doesn't hold the DB connection, and a late autosave can't
+        // resurrect the save state deleteGeneratedGame is about to clear.
+        roomService.stopServer(roomId, userId)
         roomService.deleteGeneratedGame(roomId, userId)
         "redirect:/rooms/$roomId"
     }
@@ -427,6 +431,9 @@ class RoomController(
         principal: Principal
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
+        // Stop the server first (outside the delete's transaction) so its shutdown
+        // wait doesn't hold the DB connection open.
+        roomService.stopServer(roomId, userId)
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
     }

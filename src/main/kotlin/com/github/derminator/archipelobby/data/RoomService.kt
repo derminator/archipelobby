@@ -198,17 +198,14 @@ class RoomService(
         entryRepository.deleteById(entryId).awaitSingleOrNull()
     }
 
+    // Callers stop the room's server (RoomController) before invoking this, so the
+    // server's up-to-10s shutdown wait stays out of this transaction.
     @Transactional
     suspend fun deleteRoom(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingle()
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
         if (!isAdmin) {
             throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
-        }
-        try {
-            multiServerManager.stopServer(roomId)
-        } catch (e: Exception) {
-            logger.error("Failed to stop server for room {}", roomId, e)
         }
         roomRepository.deleteById(roomId).awaitSingleOrNull()
     }
@@ -496,6 +493,9 @@ class RoomService(
         }
     }
 
+    // Callers stop the room's server (RoomController) before invoking this, so the
+    // server is confirmed dead before the save state is cleared (a late autosave
+    // can't resurrect it) and the shutdown wait stays out of this transaction.
     @Transactional
     suspend fun deleteGeneratedGame(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
@@ -513,11 +513,6 @@ class RoomService(
             room.copy(generatedGameFilePath = null, walkthroughFilePath = null)
         ).awaitSingle()
         saveDataService.clear(roomId)
-        try {
-            multiServerManager.stopServer(roomId)
-        } catch (e: Exception) {
-            logger.error("Failed to stop server for room {}", roomId, e)
-        }
         runCatching { uploadsService.deleteFile(filePath) }
         room.walkthroughFilePath?.let { runCatching { uploadsService.deleteFile(it) } }
 

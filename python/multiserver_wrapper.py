@@ -79,12 +79,12 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
             save_data = restricted_loads(zlib.decompress(save_bytes))
             self.set_save(save_data)
         except urllib.error.HTTPError as e:
-            if e.code == 404:
-                self.logger.error("No save data found, starting a new game")
-            else:
-                self.logger.exception(e)
-        except Exception as e:
-            self.logger.exception(e)
+            if e.code != 404:
+                # Anything other than "no save yet" (404) is a real failure. Fail
+                # loudly instead of silently starting with an empty save and
+                # overwriting the player's progress on the next autosave.
+                raise
+            self.logger.error("No save data found, starting a new game")
         self._start_async_saving()
 
     multi_server.Context._save = _save
