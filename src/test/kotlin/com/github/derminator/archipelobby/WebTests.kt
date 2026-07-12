@@ -6,6 +6,7 @@ import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
+import com.github.derminator.archipelobby.multiserver.InternalToken
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
 import com.github.derminator.archipelobby.tracker.LocationDetail
 import com.github.derminator.archipelobby.tracker.PlayerProgress
@@ -86,6 +87,9 @@ class WebTests {
 
     @Autowired
     lateinit var uploadsService: UploadsService
+
+    @Autowired
+    lateinit var internalToken: InternalToken
 
     @Autowired
     lateinit var context: ApplicationContext
@@ -1435,5 +1439,38 @@ class WebTests {
                 assert(body.contains("Check Locations"))
                 assert(body.contains("/rooms/$roomId/entries/1/locations"))
             }
+    }
+
+    @Test
+    fun `internal save endpoint returns data for the correct token`(): Unit = runBlocking {
+        val roomId = 1L
+        val saveBytes = "save-bytes".toByteArray()
+        `when`(apSaveRepository.findDataByRoomId(roomId)).thenReturn(Mono.just(saveBytes))
+
+        webTestClient
+            .get().uri("/internal/multiserver/save/$roomId")
+            .header("Authorization", "Bearer ${internalToken.value}")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<ByteArray>().consumeWith { response ->
+                assert(response.responseBody!!.contentEquals(saveBytes))
+            }
+    }
+
+    @Test
+    fun `internal save endpoint returns 404 for a wrong token`(): Unit = runBlocking {
+        webTestClient
+            .get().uri("/internal/multiserver/save/1")
+            .header("Authorization", "Bearer not-the-real-token")
+            .exchange()
+            .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `internal save endpoint returns 404 when the auth header is missing`(): Unit = runBlocking {
+        webTestClient
+            .get().uri("/internal/multiserver/save/1")
+            .exchange()
+            .expectStatus().isNotFound
     }
 }
