@@ -133,7 +133,17 @@ class ProcessMultiServerManager(
         return managed.process.isAlive
     }
 
-    override fun getServerPort(roomId: Long): Int? = processes[roomId]?.port
+    override fun getServerPort(roomId: Long): Int? {
+        val managed = processes[roomId] ?: return null
+        if (!managed.process.isAlive) {
+            // The log thread removes the entry when the process exits, but that
+            // happens asynchronously. Drop the stale entry here so we never hand
+            // out a port for a dead (or since-reused) process.
+            processes.remove(roomId, managed)
+            return null
+        }
+        return managed.port
+    }
 
     private suspend fun allocatePort(): Int = allocationMutex.withLock {
         val usedPorts = processes.values.mapTo(mutableSetOf()) { it.port }
