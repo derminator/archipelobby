@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import reactor.core.publisher.Mono
+import java.security.MessageDigest
 
 @RestController
 @RequestMapping("/internal/multiserver")
@@ -26,7 +27,13 @@ class MultiServerInternalController(
 
     private fun checkAuth(authHeader: String?) {
         val expected = "Bearer ${internalToken.value}"
-        if (authHeader != expected) {
+        // Constant-time comparison so a matching token prefix can't be recovered
+        // by timing the response.
+        val authorized = MessageDigest.isEqual(
+            (authHeader ?: "").toByteArray(Charsets.UTF_8),
+            expected.toByteArray(Charsets.UTF_8),
+        )
+        if (!authorized) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND)
         }
     }
