@@ -128,21 +128,23 @@ class ProcessMultiServerManager(
         }
     }
 
-    override fun isRunning(roomId: Long): Boolean {
-        val managed = processes[roomId] ?: return false
-        return managed.process.isAlive
-    }
+    override fun isRunning(roomId: Long): Boolean = aliveServer(roomId) != null
 
-    override fun getServerPort(roomId: Long): Int? {
+    override fun getServerPort(roomId: Long): Int? = aliveServer(roomId)?.port
+
+    /**
+     * The room's managed server, but only while its process is alive. If the
+     * process has exited, drops the stale entry (the log thread also removes it,
+     * but asynchronously) so callers never observe a dead — or since-reused —
+     * server.
+     */
+    private fun aliveServer(roomId: Long): ManagedServer? {
         val managed = processes[roomId] ?: return null
         if (!managed.process.isAlive) {
-            // The log thread removes the entry when the process exits, but that
-            // happens asynchronously. Drop the stale entry here so we never hand
-            // out a port for a dead (or since-reused) process.
             processes.remove(roomId, managed)
             return null
         }
-        return managed.port
+        return managed
     }
 
     private suspend fun allocatePort(): Int = allocationMutex.withLock {
