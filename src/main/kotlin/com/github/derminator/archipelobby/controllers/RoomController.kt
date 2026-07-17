@@ -408,21 +408,41 @@ class RoomController(
     @PostMapping("/{roomId}/server/start")
     fun startServer(
         @PathVariable roomId: Long,
-        principal: Principal
+        principal: Principal,
+        exchange: ServerWebExchange,
+        model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        roomService.startServer(roomId, userId)
-        "redirect:/rooms/$roomId"
+        try {
+            roomService.startServer(roomId, userId)
+            "redirect:/rooms/$roomId"
+        } catch (e: ResponseStatusException) {
+            if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
+                loadRoomModel(roomId, userId, model, exchange)
+                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+                "room"
+            } else throw e
+        }
     }
 
     @PostMapping("/{roomId}/server/stop")
     fun stopServer(
         @PathVariable roomId: Long,
-        principal: Principal
+        principal: Principal,
+        exchange: ServerWebExchange,
+        model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        roomService.stopServer(roomId, userId)
-        "redirect:/rooms/$roomId"
+        try {
+            roomService.stopServer(roomId, userId)
+            "redirect:/rooms/$roomId"
+        } catch (e: ResponseStatusException) {
+            if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
+                loadRoomModel(roomId, userId, model, exchange)
+                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+                "room"
+            } else throw e
+        }
     }
 
     @PostMapping("/{roomId}/delete")

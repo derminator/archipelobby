@@ -47,12 +47,6 @@ DISCORD_CLIENT_SECRET=your_discord_client_secret
 
 # Discord bot token (for guild membership/admin checks)
 DISCORD_BOT_TOKEN=your_discord_bot_token
-
-# Internal MultiServer token (required by the prod profile / Docker, which enables
-# the Archipelago MultiServer). Pin a stable random secret so wrapper processes keep
-# authenticating across redeploys/restarts; startup fails fast if it is unset.
-ARCHIPELOBBY_MULTISERVER_TOKEN=your_random_secret
-
 # Optional: Data directory for uploads and database
 DATA_DIR=/path/to/data  # Defaults to ./data
 ```

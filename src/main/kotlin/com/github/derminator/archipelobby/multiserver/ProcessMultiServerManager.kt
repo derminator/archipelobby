@@ -16,7 +16,9 @@ import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.SmartLifecycle
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
+import org.springframework.web.server.ResponseStatusException
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
@@ -48,6 +50,16 @@ class ProcessMultiServerManager(
         File(properties.scriptPath).absoluteFile.parent ?: "."
 
     override suspend fun startServer(roomId: Long) {
+        try {
+            startServerLocked(roomId)
+        } catch (e: IllegalArgumentException) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, e.message ?: "Unable to start MultiServer", e)
+        } catch (e: IllegalStateException) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, e.message ?: "Unable to start MultiServer", e)
+        }
+    }
+
+    private suspend fun startServerLocked(roomId: Long) {
         lockFor(roomId).withLock {
             val existing = processes[roomId]
             if (existing != null && existing.process.isAlive) {

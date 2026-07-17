@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.anyString
+import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
@@ -27,6 +28,7 @@ import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -36,6 +38,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.web.server.ResponseStatusException
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
@@ -986,7 +989,7 @@ class WebTests {
     }
 
     @Test
-    fun `startServer returns conflict when no game generated`(): Unit = runBlocking {
+    fun `startServer renders conflict when no game generated`(): Unit = runBlocking {
         val roomId = 1L
         val room = Room(roomId, 123, "Test Room")
         `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
@@ -999,9 +1002,37 @@ class WebTests {
         ).mutateWith(csrf())
             .post().uri("/rooms/$roomId/server/start")
             .exchange()
-            .expectStatus().isEqualTo(409)
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("No generated game"))
+            }
 
         verify(multiServerManager, never()).startServer(anyLong())
+    }
+
+    @Test
+    fun `startServer renders manager conflict`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        doThrow(ResponseStatusException(HttpStatus.CONFLICT, "No available ports")).`when`(multiServerManager).startServer(roomId)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/start")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("No available ports"))
+            }
     }
 
     @Test
@@ -1022,6 +1053,29 @@ class WebTests {
             .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
 
         verify(multiServerManager).stopServer(roomId)
+    }
+
+    @Test
+    fun `stopServer renders conflict`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        doThrow(ResponseStatusException(HttpStatus.CONFLICT, "Server state changed")).`when`(multiServerManager).stopServer(roomId)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/stop")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("Server state changed"))
+            }
     }
 
     @Test
