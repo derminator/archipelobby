@@ -10,6 +10,7 @@ import org.springframework.security.config.web.server.invoke
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.csrf.XorServerCsrfTokenRequestAttributeHandler
 import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.anyExchange
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers.pathMatchers
 
@@ -38,6 +39,8 @@ class SecurityConfiguration(
             authorizeExchange {
                 authorize(pathMatchers("/", "/error", "/style.css", "/robots.txt", "/favicon.svg"), permitAll)
                 authorize(pathMatchers(HttpMethod.GET, "/rooms/*"), permitAll)
+                authorize(pathMatchers("/internal/multiserver/**"), permitAll)
+                authorize(pathMatchers("/rooms/*/ws"), permitAll)
                 authorize(anyExchange(), authenticated)
             }
             if (isDiscordEnabled) {
@@ -50,6 +53,16 @@ class SecurityConfiguration(
             csrf {
                 csrfTokenRequestHandler = XorServerCsrfTokenRequestAttributeHandler().apply {
                     setTokenFromMultipartDataEnabled(true)
+                }
+                val safeMethods = setOf(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.TRACE, HttpMethod.OPTIONS)
+                requireCsrfProtectionMatcher = ServerWebExchangeMatcher { exchange ->
+                    when {
+                        exchange.request.method in safeMethods ->
+                            ServerWebExchangeMatcher.MatchResult.notMatch()
+                        exchange.request.path.value().startsWith("/internal/multiserver/") ->
+                            ServerWebExchangeMatcher.MatchResult.notMatch()
+                        else -> ServerWebExchangeMatcher.MatchResult.match()
+                    }
                 }
             }
             headers {

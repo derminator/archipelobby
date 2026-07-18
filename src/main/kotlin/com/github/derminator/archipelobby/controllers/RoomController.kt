@@ -85,6 +85,7 @@ class RoomController(
     fun getRoom(
         @PathVariable roomId: Long,
         principal: Principal?,
+        exchange: ServerWebExchange,
         model: Model
     ): Mono<String> = mono {
         if (principal == null || principal is AnonymousAuthenticationToken) {
@@ -94,7 +95,7 @@ class RoomController(
             return@mono "room-preview"
         }
         val userId = principal.asDiscordPrincipal.userId
-        loadRoomModel(roomId, userId, model)
+        loadRoomModel(roomId, userId, model, exchange)
         "room"
     }
 
@@ -110,6 +111,7 @@ class RoomController(
         @PathVariable roomId: Long,
         principal: Principal,
         @ModelAttribute form: AddEntryForm,
+        exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
@@ -165,7 +167,7 @@ class RoomController(
             "redirect:/rooms/$roomId"
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
-                loadRoomModel(roomId, userId, model)
+                loadRoomModel(roomId, userId, model, exchange)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
                 "room"
             } else throw e
@@ -274,8 +276,8 @@ class RoomController(
         val zipBytes = withContext(Dispatchers.IO) {
             val byteArrayOutputStream = ByteArrayOutputStream()
             ZipOutputStream(byteArrayOutputStream).use { zipOut ->
-                for (entryInfo in entries) {
-                    val entry = roomService.getEntry(entryInfo.id) ?: continue
+                for ((id) in entries) {
+                    val entry = roomService.getEntry(id) ?: continue
                     if (uploadsService.fileExists(entry.yamlFilePath)) {
                         val fileContent = uploadsService.getFile(entry.yamlFilePath)
                         zipOut.putNextEntry(ZipEntry("Players/${entry.name}.yaml"))
@@ -283,8 +285,8 @@ class RoomController(
                         zipOut.closeEntry()
                     }
                 }
-                for (apWorldInfo in apWorlds) {
-                    val apWorld = roomService.getApWorld(apWorldInfo.id) ?: continue
+                for ((id) in apWorlds) {
+                    val apWorld = roomService.getApWorld(id) ?: continue
                     if (uploadsService.fileExists(apWorld.filePath)) {
                         val fileContent = uploadsService.getFile(apWorld.filePath)
                         zipOut.putNextEntry(ZipEntry("custom_worlds/${apWorld.fileName}"))
@@ -318,6 +320,7 @@ class RoomController(
         @PathVariable roomId: Long,
         principal: Principal,
         @ModelAttribute form: UploadGameForm,
+        exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
@@ -338,7 +341,7 @@ class RoomController(
                 || e.statusCode == HttpStatus.CONFLICT
                 || e.statusCode == HttpStatus.UNPROCESSABLE_CONTENT
             ) {
-                loadRoomModel(roomId, userId, model)
+                loadRoomModel(roomId, userId, model, exchange)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
                 "room"
             } else throw e
@@ -351,6 +354,10 @@ class RoomController(
         principal: Principal,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
+        // Stop the server first (outside the delete's transaction) so its up-to-10s
+        // shutdown wait doesn't hold the DB connection, and a late autosave can't
+        // resurrect the save state deleteGeneratedGame is about to clear.
+        roomService.stopServer(roomId, userId)
         roomService.deleteGeneratedGame(roomId, userId)
         "redirect:/rooms/$roomId"
     }
@@ -398,12 +405,60 @@ class RoomController(
             .body(fileContent)
     }
 
+    @PostMapping("/{roomId}/server/start")
+    fun startServer(
+        @PathVariable roomId: Long,
+        principal: Principal,
+        exchange: ServerWebExchange,
+        model: Model,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        handleRoomAction(roomId, userId, exchange, model) {
+            roomService.startServer(roomId, userId)
+        }
+    }
+
+    @PostMapping("/{roomId}/server/stop")
+    fun stopServer(
+        @PathVariable roomId: Long,
+        principal: Principal,
+        exchange: ServerWebExchange,
+        model: Model,
+    ): Mono<String> = mono {
+        val userId = principal.asDiscordPrincipal.userId
+        handleRoomAction(roomId, userId, exchange, model) {
+            roomService.stopServer(roomId, userId)
+        }
+    }
+
+    private suspend fun handleRoomAction(
+        roomId: Long,
+        userId: Long,
+        exchange: ServerWebExchange,
+        model: Model,
+        action: suspend () -> Unit,
+    ): String = try {
+        action()
+        "redirect:/rooms/$roomId"
+    } catch (e: ResponseStatusException) {
+        if (e.statusCode != HttpStatus.BAD_REQUEST && e.statusCode != HttpStatus.CONFLICT) {
+            throw e
+        }
+
+        loadRoomModel(roomId, userId, model, exchange)
+        model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+        "room"
+    }
+
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
         @PathVariable roomId: Long,
         principal: Principal
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
+        // Stop the server first (outside the delete's transaction) so its shutdown
+        // wait doesn't hold the DB connection open.
+        roomService.stopServer(roomId, userId)
         roomService.deleteRoom(roomId, userId)
         "redirect:/"
     }
@@ -414,7 +469,7 @@ class RoomController(
         model.addAttribute("joinableRooms", roomService.getJoinableRooms(userId))
     }
 
-    private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model) {
+    private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model, exchange: ServerWebExchange) {
         val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries.toList())
@@ -423,6 +478,17 @@ class RoomController(
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
+        // Full WebSocket connect address when the server is running, otherwise null.
+        // The UI derives the running/stopped state from whether this is present.
+        val serverAddress = if (roomService.isServerRunning(roomId)) {
+            val uri = exchange.request.uri
+            val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
+            val scheme = if (uri.scheme == "https") "wss" else "ws"
+            "$scheme://$host/rooms/$roomId/ws"
+        } else {
+            null
+        }
+        model.addAttribute("serverAddress", serverAddress)
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {

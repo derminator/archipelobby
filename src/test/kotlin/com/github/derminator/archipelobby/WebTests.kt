@@ -6,6 +6,8 @@ import com.github.derminator.archipelobby.discord.GuildInfo
 import com.github.derminator.archipelobby.discord.UserInfo
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
+import com.github.derminator.archipelobby.multiserver.InternalToken
+import com.github.derminator.archipelobby.multiserver.MultiServerManager
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
@@ -16,6 +18,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
 import org.mockito.Mockito.anyString
+import org.mockito.Mockito.doThrow
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -23,6 +28,7 @@ import org.springframework.boot.r2dbc.autoconfigure.R2dbcAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.ApplicationContext
 import org.springframework.dao.OptimisticLockingFailureException
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -32,6 +38,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.test.web.reactive.server.expectBody
 import org.springframework.web.reactive.function.BodyInserters
+import org.springframework.web.server.ResponseStatusException
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
@@ -62,13 +69,22 @@ class WebTests {
     lateinit var apWorldRepository: ApWorldRepository
 
     @MockitoBean
+    lateinit var apSaveRepository: ApSaveRepository
+
+    @MockitoBean
     lateinit var gameCatalogService: GameCatalogService
 
     @MockitoBean
     lateinit var archipelagoGeneratorService: ArchipelagoGeneratorService
 
+    @MockitoBean
+    lateinit var multiServerManager: MultiServerManager
+
     @Autowired
     lateinit var uploadsService: UploadsService
+
+    @Autowired
+    lateinit var internalToken: InternalToken
 
     @Autowired
     lateinit var context: ApplicationContext
@@ -90,6 +106,7 @@ class WebTests {
         `when`(entryRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
         `when`(entryPatchFileRepository.findByEntryId(anyLong())).thenReturn(Flux.empty())
         `when`(apWorldRepository.findByRoomId(anyLong())).thenReturn(Flux.empty())
+        `when`(apSaveRepository.deleteByRoomId(anyLong())).thenReturn(Mono.empty())
         `when`(gameCatalogService.listCoreGames()).thenReturn(emptyList())
 
         webTestClient = WebTestClient.bindToApplicationContext(context)
@@ -928,6 +945,375 @@ class WebTests {
             )
         )
             .get().uri("/rooms/$roomId/patches/$patchId/download")
+            .exchange()
+            .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `startServer redirects for admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/start")
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+
+        verify(multiServerManager).startServer(roomId)
+    }
+
+    @Test
+    fun `startServer returns forbidden for non-admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/start")
+            .exchange()
+            .expectStatus().isForbidden
+
+        verify(multiServerManager, never()).startServer(anyLong())
+    }
+
+    @Test
+    fun `startServer renders conflict when no game generated`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/start")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("No generated game"))
+            }
+
+        verify(multiServerManager, never()).startServer(anyLong())
+    }
+
+    @Test
+    fun `startServer renders manager conflict`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        doThrow(ResponseStatusException(HttpStatus.CONFLICT, "No available ports")).`when`(multiServerManager).startServer(roomId)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/start")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("No available ports"))
+            }
+    }
+
+    @Test
+    fun `stopServer redirects for admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/stop")
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches("Location", ".*/rooms/$roomId")
+
+        verify(multiServerManager).stopServer(roomId)
+    }
+
+    @Test
+    fun `stopServer renders conflict`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        doThrow(ResponseStatusException(HttpStatus.CONFLICT, "Server state changed")).`when`(multiServerManager).stopServer(roomId)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/stop")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("class=\"error-banner\""))
+                assert(body.contains("Server state changed"))
+            }
+    }
+
+    @Test
+    fun `stopServer returns forbidden for non-admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/server/stop")
+            .exchange()
+            .expectStatus().isForbidden
+
+        verify(multiServerManager, never()).stopServer(anyLong())
+    }
+
+    @Test
+    fun `room page shows server running status with connection info`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Running"))
+                assert(body.contains("/rooms/$roomId/ws"))
+            }
+    }
+
+    @Test
+    fun `room page shows server stopped status`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Stopped"))
+                assert(!body.contains("Connect at"))
+            }
+    }
+
+    @Test
+    fun `room page shows start button for admin when server stopped`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(false)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Start Server"))
+                assert(!body.contains("Stop Server"))
+            }
+    }
+
+    @Test
+    fun `room page shows stop button for admin when server running`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Stop Server"))
+                assert(!body.contains("Start Server"))
+            }
+    }
+
+    @Test
+    fun `room page hides server buttons for non-admin`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Running"))
+                assert(body.contains("/rooms/$roomId/ws"))
+                assert(!body.contains("Start Server"))
+                assert(!body.contains("Stop Server"))
+            }
+    }
+
+    @Test
+    fun `deleteGeneratedGame stops the server`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(roomRepository.save(any(Room::class.java))).thenReturn(
+            Mono.just(room.copy(generatedGameFilePath = null))
+        )
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/generated-game/delete")
+            .exchange()
+            .expectStatus().is3xxRedirection
+
+        verify(multiServerManager).stopServer(roomId)
+    }
+
+    @Test
+    fun `deleteRoom stops the server`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "path/to/game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(roomRepository.deleteById(roomId)).thenReturn(Mono.empty())
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).mutateWith(csrf())
+            .post().uri("/rooms/$roomId/delete")
+            .exchange()
+            .expectStatus().is3xxRedirection
+
+        verify(multiServerManager).stopServer(roomId)
+    }
+
+    @Test
+    fun `internal save endpoint returns data for the correct token`(): Unit = runBlocking {
+        val roomId = 1L
+        val saveBytes = "save-bytes".toByteArray()
+        `when`(apSaveRepository.findDataByRoomId(roomId)).thenReturn(Mono.just(saveBytes))
+
+        webTestClient
+            .get().uri("/internal/multiserver/save/$roomId")
+            .header("Authorization", "Bearer ${internalToken.value}")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<ByteArray>().consumeWith { response ->
+                assert(response.responseBody!!.contentEquals(saveBytes))
+            }
+    }
+
+    @Test
+    fun `internal save endpoint returns 404 for a wrong token`(): Unit = runBlocking {
+        webTestClient
+            .get().uri("/internal/multiserver/save/1")
+            .header("Authorization", "Bearer not-the-real-token")
+            .exchange()
+            .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `internal save endpoint returns 404 when the auth header is missing`(): Unit = runBlocking {
+        webTestClient
+            .get().uri("/internal/multiserver/save/1")
             .exchange()
             .expectStatus().isNotFound
     }

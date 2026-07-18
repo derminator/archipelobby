@@ -73,8 +73,16 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+val pythonTest by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Runs the Python unit tests."
+    inputs.files(fileTree("python") { include("*.py") })
+    commandLine("python3", "-m", "unittest", "discover", "-s", "python", "-p", "test_*.py")
+}
+
 tasks {
     test {
+        dependsOn(pythonTest)
         jvmArgs.add("-javaagent:${mockitoAgent.asPath}")
     }
 }

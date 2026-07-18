@@ -84,7 +84,6 @@ DISCORD_CLIENT_SECRET=your_discord_client_secret
 
 # Discord bot token (for guild membership/admin checks)
 DISCORD_BOT_TOKEN=your_discord_bot_token
-
 # Optional: Data directory for uploads and database
 DATA_DIR=/path/to/data  # Defaults to ./data
 ```
@@ -130,6 +129,11 @@ docker run -p 8080:8080 \
   -v /path/to/data:/data \
   archipelobby
 ```
+
+The application generates its internal MultiServer token on startup. Set
+`ARCHIPELOBBY_MULTISERVER_TOKEN` explicitly only when running multiple
+application replicas or when MultiServer wrapper processes can survive an
+application restart.
 
 The application will be available at `http://localhost:8080`
 

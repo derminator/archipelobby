@@ -8,7 +8,10 @@ import com.github.derminator.archipelobby.matchPatchesToEntries
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.generator.GameInfo
+import com.github.derminator.archipelobby.multiserver.MultiServerManager
+import com.github.derminator.archipelobby.multiserver.SaveDataService
 import com.github.derminator.archipelobby.storage.UploadsService
+import org.slf4j.LoggerFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
@@ -33,7 +36,10 @@ class RoomService(
     private val uploadsService: UploadsService,
     private val archipelagoGeneratorService: ArchipelagoGeneratorService,
     private val gameCatalogService: GameCatalogService,
+    private val multiServerManager: MultiServerManager,
+    private val saveDataService: SaveDataService,
 ) {
+    private val logger = LoggerFactory.getLogger(RoomService::class.java)
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
         return entryRepository.findByUserId(userId)
@@ -192,6 +198,8 @@ class RoomService(
         entryRepository.deleteById(entryId).awaitSingleOrNull()
     }
 
+    // Callers stop the room's server (RoomController) before invoking this, so the
+    // server's up-to-10s shutdown wait stays out of this transaction.
     @Transactional
     suspend fun deleteRoom(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingle()
@@ -367,7 +375,7 @@ class RoomService(
 
         val gameFilePath = uploadsService.saveFile(generatedGame.archipelagoBytes, "${room.name}.archipelago")
         val walkthroughFilePath = uploadsService.saveFile(generatedGame.walkthroughBytes, "${room.name}_Spoiler.txt")
-        try {
+        val savedRoom = try {
             roomRepository.save(
                 lockedRoom.copy(generatedGameFilePath = gameFilePath, walkthroughFilePath = walkthroughFilePath)
             ).awaitSingle()
@@ -385,6 +393,13 @@ class RoomService(
         // mutated (generatedGameFilePath is set), so doing this last keeps the rollback above
         // simple. A failure here propagates rather than silently dropping a patch.
         persistPatchFiles(entries, generatedGame.patchFiles)
+
+        val savedRoomId = savedRoom.id ?: error("Room ID is null after save")
+        try {
+            multiServerManager.startServer(savedRoomId)
+        } catch (e: Exception) {
+            logger.error("Failed to auto-start server for room {} after generation", savedRoomId, e)
+        }
     }
 
     /**
@@ -458,7 +473,7 @@ class RoomService(
         val walkthroughFilePath = walkthroughBytes?.let {
             uploadsService.saveFile(it, "${room.name}_Spoiler.txt")
         }
-        try {
+        val savedRoom = try {
             roomRepository.save(
                 room.copy(generatedGameFilePath = gameFilePath, walkthroughFilePath = walkthroughFilePath)
             ).awaitSingle()
@@ -469,8 +484,18 @@ class RoomService(
         }
 
         persistPatchFiles(entries, patchFiles)
+
+        val savedRoomId = savedRoom.id ?: error("Room ID is null after save")
+        try {
+            multiServerManager.startServer(savedRoomId)
+        } catch (e: Exception) {
+            logger.error("Failed to auto-start server for room {} after upload", savedRoomId, e)
+        }
     }
 
+    // Callers stop the room's server (RoomController) before invoking this, so the
+    // server is confirmed dead before the save state is cleared (a late autosave
+    // can't resurrect it) and the shutdown wait stays out of this transaction.
     @Transactional
     suspend fun deleteGeneratedGame(roomId: Long, userId: Long) {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
@@ -484,6 +509,10 @@ class RoomService(
         val filePath = room.generatedGameFilePath
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "No generated game found for this room")
 
+        roomRepository.save(
+            room.copy(generatedGameFilePath = null, walkthroughFilePath = null)
+        ).awaitSingle()
+        saveDataService.clear(roomId)
         runCatching { uploadsService.deleteFile(filePath) }
         room.walkthroughFilePath?.let { runCatching { uploadsService.deleteFile(it) } }
 
@@ -496,8 +525,12 @@ class RoomService(
                 patch.id?.let { entryPatchFileRepository.deleteById(it).awaitSingleOrNull() }
             }
         }
+    }
 
-        roomRepository.save(room.copy(generatedGameFilePath = null, walkthroughFilePath = null)).awaitSingle()
+    suspend fun getGeneratedGameBytes(roomId: Long): ByteArray? {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull() ?: return null
+        val path = room.generatedGameFilePath?.takeUnless { it == Room.GENERATING_SENTINEL } ?: return null
+        return if (uploadsService.fileExists(path)) uploadsService.getFile(path) else null
     }
 
     suspend fun getGeneratedGameForDownload(roomId: Long, userId: Long): Room {
@@ -526,6 +559,29 @@ class RoomService(
         }
         return room
     }
+
+    suspend fun startServer(roomId: Long, userId: Long) {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        if (!room.isGenerated) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "No generated game to start a server for")
+        }
+        multiServerManager.startServer(roomId)
+    }
+
+    suspend fun stopServer(roomId: Long, userId: Long) {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        multiServerManager.stopServer(roomId)
+    }
+
+    fun isServerRunning(roomId: Long): Boolean = multiServerManager.isRunning(roomId)
 
     suspend fun getRoomForPreview(roomId: Long): RoomPreview {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
