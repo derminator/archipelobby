@@ -2,7 +2,7 @@ package com.github.derminator.archipelobby.multiserver
 
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
-import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.core.io.buffer.DataBufferFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.socket.CloseStatus
 import org.springframework.web.reactive.socket.WebSocketHandler
@@ -50,18 +50,10 @@ class MultiServerProxyHandler(
     private fun proxy(downstream: WebSocketSession, port: Int): Mono<Void> {
         val upstreamUri = URI("ws://${properties.host}:$port")
         return client.execute(upstreamUri) { upstream ->
-            val downToUp = upstream.send(downstream.receive().map { forward(it, upstream) })
-            val upToDown = downstream.send(upstream.receive().map { forward(it, downstream) })
+            val downToUp = upstream.send(downstream.receive().map { copyMessage(it, upstream.bufferFactory()) })
+            val upToDown = downstream.send(upstream.receive().map { copyMessage(it, downstream.bufferFactory()) })
             Mono.firstWithSignal(downToUp, upToDown)
         }.doOnError { e -> logger.warn("WebSocket proxy error", e) }
-    }
-
-    private fun forward(message: WebSocketMessage, target: WebSocketSession): WebSocketMessage {
-        val payload = message.payload
-        val bytes = ByteArray(payload.readableByteCount())
-        payload.read(bytes)
-        DataBufferUtils.release(payload)
-        return WebSocketMessage(message.type, target.bufferFactory().wrap(bytes))
     }
 
     private fun extractRoomId(session: WebSocketSession): Long? {
@@ -72,4 +64,15 @@ class MultiServerProxyHandler(
     companion object {
         private val ROOM_PATH_REGEX = Regex("""/rooms/(\d+)/ws""")
     }
+}
+
+/**
+ * Copy a frame between sessions without transferring ownership of the source
+ * payload. The receiver pipeline remains responsible for releasing that buffer.
+ */
+internal fun copyMessage(message: WebSocketMessage, target: DataBufferFactory): WebSocketMessage {
+    val payload = message.payload
+    val bytes = ByteArray(payload.readableByteCount())
+    payload.read(bytes)
+    return WebSocketMessage(message.type, target.wrap(bytes))
 }
