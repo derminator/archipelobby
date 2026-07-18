@@ -86,10 +86,14 @@ docker run -p 8080:8080 \
   -e DISCORD_CLIENT_ID=your_client_id \
   -e DISCORD_CLIENT_SECRET=your_client_secret \
   -e DISCORD_BOT_TOKEN=your_bot_token \
-  -e ARCHIPELOBBY_MULTISERVER_TOKEN=your_random_secret \
   -v /path/to/data:/data \
   archipelobby
 ```
+
+The application generates its internal MultiServer token on startup. Set
+`ARCHIPELOBBY_MULTISERVER_TOKEN` explicitly only when running multiple
+application replicas or when MultiServer wrapper processes can survive an
+application restart.
 
 The application will be available at `http://localhost:8080`
 
