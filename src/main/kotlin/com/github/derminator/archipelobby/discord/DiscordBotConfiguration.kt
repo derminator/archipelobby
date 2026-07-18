@@ -66,9 +66,9 @@ class DiscordGatewayProvider(
                     logger.warn("Failed to logout disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
                 }
                 .onErrorComplete()
-                .subscribe()
+                .block()
         } catch (ex: Exception) {
-            logger.warn("Failed to start logout for disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
+            logger.warn("Failed to logout disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
         }
     }
 }
