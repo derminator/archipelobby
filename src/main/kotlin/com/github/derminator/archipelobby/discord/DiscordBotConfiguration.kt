@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import java.time.Duration
 
 @Configuration
 @Profile("discord")
@@ -27,6 +28,7 @@ class DiscordBotConfiguration {
 
 class DiscordGatewayProvider(
     private val token: String,
+    private val logoutTimeout: Duration = Duration.ofSeconds(2),
     private val login: (String) -> GatewayDiscordClient = { loginToken ->
         DiscordClientBuilder.create(loginToken)
             .build()
@@ -48,15 +50,25 @@ class DiscordGatewayProvider(
 
         gatewayDiscordClient = null
         if (existing != null) {
-            try {
-                existing.logout().block()
-            } catch (ex: Exception) {
-                logger.warn("Failed to logout disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
-            }
+            cleanupStaleClient(existing)
         }
 
         val connected = login(token)
         gatewayDiscordClient = connected
         return connected
+    }
+
+    private fun cleanupStaleClient(existing: GatewayDiscordClient) {
+        try {
+            existing.logout()
+                .timeout(logoutTimeout)
+                .doOnError { ex ->
+                    logger.warn("Failed to logout disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
+                }
+                .onErrorComplete()
+                .subscribe()
+        } catch (ex: Exception) {
+            logger.warn("Failed to start logout for disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
+        }
     }
 }
