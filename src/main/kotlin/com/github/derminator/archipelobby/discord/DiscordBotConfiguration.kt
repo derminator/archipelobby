@@ -14,7 +14,7 @@ import java.time.Duration
 class DiscordBotConfiguration {
 
     @Bean
-    fun discordGatewayProvider(@Value("\${DISCORD_BOT_TOKEN}") token: String): DiscordGatewayProvider =
+    fun discordGatewayProvider(@Value($$"${DISCORD_BOT_TOKEN}") token: String): DiscordGatewayProvider =
         DiscordGatewayProvider(token)
 
     @Bean
@@ -44,7 +44,7 @@ class DiscordGatewayProvider(
     @Synchronized
     fun getConnectedClient(): GatewayDiscordClient {
         val existing = gatewayDiscordClient
-        if (existing != null && existing.isConnected) {
+        if (existing != null && existing.isGatewayConnected()) {
             return existing
         }
 
@@ -54,7 +54,7 @@ class DiscordGatewayProvider(
         }
 
         val connected = login(token)
-        if (!connected.isConnected) {
+        if (!connected.isGatewayConnected()) {
             cleanupStaleClient(connected)
             throw IllegalStateException("Failed to connect to Discord: gateway client is disconnected")
         }
@@ -76,4 +76,9 @@ class DiscordGatewayProvider(
             logger.warn("Failed to logout disconnected Discord gateway client before reconnecting; continuing reconnect", ex)
         }
     }
+
+    private fun GatewayDiscordClient.isGatewayConnected(): Boolean =
+        getGatewayClient(0)
+            .map { it.isConnected().block() == true }
+            .orElse(false) == true
 }
