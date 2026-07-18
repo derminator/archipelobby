@@ -12,13 +12,35 @@ import org.springframework.context.annotation.Profile
 class DiscordBotConfiguration {
 
     @Bean
-    fun gatewayDiscordClient(@Value("\${DISCORD_BOT_TOKEN}") token: String): GatewayDiscordClient =
-        DiscordClientBuilder.create(token)
+    fun discordGatewayProvider(@Value("\${DISCORD_BOT_TOKEN}") token: String): DiscordGatewayProvider =
+        DiscordGatewayProvider(token)
+
+    @Bean
+    fun gatewayDiscordClient(discordGatewayProvider: DiscordGatewayProvider): GatewayDiscordClient =
+        discordGatewayProvider.getConnectedClient()
+
+    @Bean
+    fun discordService(discordGatewayProvider: DiscordGatewayProvider): DiscordService =
+        RealDiscordService(discordGatewayProvider)
+}
+
+class DiscordGatewayProvider(private val token: String) {
+    @Volatile
+    private var gatewayDiscordClient: GatewayDiscordClient? = null
+
+    @Synchronized
+    fun getConnectedClient(): GatewayDiscordClient {
+        val existing = gatewayDiscordClient
+        if (existing != null && existing.isConnected) {
+            return existing
+        }
+
+        existing?.logout()?.block()
+        val connected = DiscordClientBuilder.create(token)
             .build()
             .login()
             .block() ?: throw IllegalStateException("Failed to connect to Discord")
-
-    @Bean
-    fun discordService(gatewayDiscordClient: GatewayDiscordClient): DiscordService =
-        RealDiscordService(gatewayDiscordClient)
+        gatewayDiscordClient = connected
+        return connected
+    }
 }
