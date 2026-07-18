@@ -3,6 +3,7 @@ package com.github.derminator.archipelobby.discord
 import discord4j.core.GatewayDiscordClient
 import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 import reactor.core.publisher.Mono
@@ -29,9 +30,26 @@ class DiscordGatewayProviderTest {
     }
 
     @Test
-    fun `reconnects when cached client is disconnected even if logout fails`() {
+    fun `does not cache or return disconnected client from login`() {
         val disconnectedClient = mock(GatewayDiscordClient::class.java)
         whenever(disconnectedClient.isConnected).thenReturn(false)
+        whenever(disconnectedClient.logout()).thenReturn(Mono.empty())
+
+        val connectedClient = mock(GatewayDiscordClient::class.java)
+        whenever(connectedClient.isConnected).thenReturn(true)
+
+        val logins = ArrayDeque(listOf(disconnectedClient, connectedClient))
+        val provider = DiscordGatewayProvider("token") { logins.removeFirst() }
+
+        assertThrows<IllegalStateException> { provider.getConnectedClient() }
+        assertSame(connectedClient, provider.getConnectedClient())
+        assertEquals(0, logins.size)
+    }
+
+    @Test
+    fun `reconnects when cached client is disconnected even if logout fails`() {
+        val disconnectedClient = mock(GatewayDiscordClient::class.java)
+        whenever(disconnectedClient.isConnected).thenReturn(true, false)
         whenever(disconnectedClient.logout()).thenReturn(Mono.error(RuntimeException("gateway already broken")))
 
         val reconnectedClient = mock(GatewayDiscordClient::class.java)
@@ -48,7 +66,7 @@ class DiscordGatewayProviderTest {
     @Test
     fun `reconnect waits only until logout timeout for non completing logout`() {
         val disconnectedClient = mock(GatewayDiscordClient::class.java)
-        whenever(disconnectedClient.isConnected).thenReturn(false)
+        whenever(disconnectedClient.isConnected).thenReturn(true, false)
         whenever(disconnectedClient.logout()).thenReturn(Mono.never())
 
         val reconnectedClient = mock(GatewayDiscordClient::class.java)
