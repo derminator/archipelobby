@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.whenever
 import reactor.core.publisher.Mono
+import java.time.Duration
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class DiscordGatewayProviderTest {
 
@@ -40,6 +42,28 @@ class DiscordGatewayProviderTest {
 
         assertSame(disconnectedClient, provider.getConnectedClient())
         assertSame(reconnectedClient, provider.getConnectedClient())
+        assertEquals(0, logins.size)
+    }
+
+    @Test
+    fun `reconnect is not blocked by non completing logout`() {
+        val disconnectedClient = mock(GatewayDiscordClient::class.java)
+        whenever(disconnectedClient.isConnected).thenReturn(false)
+        whenever(disconnectedClient.logout()).thenReturn(Mono.never())
+
+        val reconnectedClient = mock(GatewayDiscordClient::class.java)
+        whenever(reconnectedClient.isConnected).thenReturn(true)
+
+        val logins = ArrayDeque(listOf(disconnectedClient, reconnectedClient))
+        val provider = DiscordGatewayProvider("token", Duration.ofMillis(50)) { logins.removeFirst() }
+
+        assertSame(disconnectedClient, provider.getConnectedClient())
+
+        val startedAt = System.nanoTime()
+        assertSame(reconnectedClient, provider.getConnectedClient())
+        val elapsed = Duration.ofNanos(System.nanoTime() - startedAt)
+
+        assertTrue(elapsed < Duration.ofSeconds(1), "Reconnect should not wait for a non-completing logout")
         assertEquals(0, logins.size)
     }
 }
