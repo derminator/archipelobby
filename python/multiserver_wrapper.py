@@ -121,7 +121,9 @@ def main() -> None:
     import MultiServer
     install_save_hooks(args.spring_url, token, args.room_id, MultiServer)
 
-    sys.argv = [sys.argv[0], "--multidata", data_path] + rest
+    # MultiServer defines the multidata file as its optional positional
+    # argument, not as a --multidata option.
+    sys.argv = [sys.argv[0], data_path] + rest
     asyncio.run(MultiServer.main(MultiServer.parse_args()))
 
 
