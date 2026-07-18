@@ -54,6 +54,11 @@ class DiscordGatewayProvider(
         }
 
         val connected = login(token)
+        if (!connected.isConnected) {
+            cleanupStaleClient(connected)
+            throw IllegalStateException("Failed to connect to Discord: gateway client is disconnected")
+        }
+
         gatewayDiscordClient = connected
         return connected
     }
