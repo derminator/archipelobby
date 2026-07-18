@@ -46,7 +46,7 @@ class DiscordGatewayProviderTest {
     }
 
     @Test
-    fun `reconnect is not blocked by non completing logout`() {
+    fun `reconnect waits only until logout timeout for non completing logout`() {
         val disconnectedClient = mock(GatewayDiscordClient::class.java)
         whenever(disconnectedClient.isConnected).thenReturn(false)
         whenever(disconnectedClient.logout()).thenReturn(Mono.never())
@@ -55,7 +55,8 @@ class DiscordGatewayProviderTest {
         whenever(reconnectedClient.isConnected).thenReturn(true)
 
         val logins = ArrayDeque(listOf(disconnectedClient, reconnectedClient))
-        val provider = DiscordGatewayProvider("token", Duration.ofMillis(50)) { logins.removeFirst() }
+        val logoutTimeout = Duration.ofMillis(50)
+        val provider = DiscordGatewayProvider("token", logoutTimeout) { logins.removeFirst() }
 
         assertSame(disconnectedClient, provider.getConnectedClient())
 
@@ -63,7 +64,8 @@ class DiscordGatewayProviderTest {
         assertSame(reconnectedClient, provider.getConnectedClient())
         val elapsed = Duration.ofNanos(System.nanoTime() - startedAt)
 
-        assertTrue(elapsed < Duration.ofSeconds(1), "Reconnect should not wait for a non-completing logout")
+        assertTrue(elapsed >= logoutTimeout, "Reconnect should give stale logout a bounded chance to complete")
+        assertTrue(elapsed < Duration.ofSeconds(1), "Reconnect should not wait indefinitely for a non-completing logout")
         assertEquals(0, logins.size)
     }
 }
