@@ -276,8 +276,8 @@ class RoomController(
         val zipBytes = withContext(Dispatchers.IO) {
             val byteArrayOutputStream = ByteArrayOutputStream()
             ZipOutputStream(byteArrayOutputStream).use { zipOut ->
-                for (entryInfo in entries) {
-                    val entry = roomService.getEntry(entryInfo.id) ?: continue
+                for ((id) in entries) {
+                    val entry = roomService.getEntry(id) ?: continue
                     if (uploadsService.fileExists(entry.yamlFilePath)) {
                         val fileContent = uploadsService.getFile(entry.yamlFilePath)
                         zipOut.putNextEntry(ZipEntry("Players/${entry.name}.yaml"))
@@ -285,8 +285,8 @@ class RoomController(
                         zipOut.closeEntry()
                     }
                 }
-                for (apWorldInfo in apWorlds) {
-                    val apWorld = roomService.getApWorld(apWorldInfo.id) ?: continue
+                for ((id) in apWorlds) {
+                    val apWorld = roomService.getApWorld(id) ?: continue
                     if (uploadsService.fileExists(apWorld.filePath)) {
                         val fileContent = uploadsService.getFile(apWorld.filePath)
                         zipOut.putNextEntry(ZipEntry("custom_worlds/${apWorld.fileName}"))
@@ -413,15 +413,8 @@ class RoomController(
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        try {
+        handleRoomAction(roomId, userId, exchange, model) {
             roomService.startServer(roomId, userId)
-            "redirect:/rooms/$roomId"
-        } catch (e: ResponseStatusException) {
-            if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
-                loadRoomModel(roomId, userId, model, exchange)
-                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
-                "room"
-            } else throw e
         }
     }
 
@@ -433,16 +426,28 @@ class RoomController(
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        try {
+        handleRoomAction(roomId, userId, exchange, model) {
             roomService.stopServer(roomId, userId)
-            "redirect:/rooms/$roomId"
-        } catch (e: ResponseStatusException) {
-            if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
-                loadRoomModel(roomId, userId, model, exchange)
-                model.addAttribute("errorMessage", e.reason ?: "An error occurred")
-                "room"
-            } else throw e
         }
+    }
+
+    private suspend fun handleRoomAction(
+        roomId: Long,
+        userId: Long,
+        exchange: ServerWebExchange,
+        model: Model,
+        action: suspend () -> Unit,
+    ): String = try {
+        action()
+        "redirect:/rooms/$roomId"
+    } catch (e: ResponseStatusException) {
+        if (e.statusCode != HttpStatus.BAD_REQUEST && e.statusCode != HttpStatus.CONFLICT) {
+            throw e
+        }
+
+        loadRoomModel(roomId, userId, model, exchange)
+        model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+        "room"
     }
 
     @PostMapping("/{roomId}/delete")
