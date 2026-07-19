@@ -137,6 +137,10 @@ application restart.
 
 The application will be available at `http://localhost:8080`
 
+The Docker image installs Archipelago's pinned Python dependencies while it is
+built. Rebuild the image after updating the bundled Archipelago checkout so
+its requirements are refreshed as well.
+
 ## Usage
 
 1. **Login**: Navigate to the application and login with Discord
