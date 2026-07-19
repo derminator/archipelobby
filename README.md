@@ -144,7 +144,7 @@ image. This avoids an interactive dependency prompt when opening a room.
 
 1. **Login**: Navigate to the application and login with Discord
 2. **Create Room**: Select a Discord guild you administer and create a new room
-3. **Upload YAML**: In a room, upload Archipelago YAML files with entry names
+3. **Upload YAML**: In a room, upload Archipelago YAML files with entry names. World-generation warnings emitted while validating a YAML do not prevent its upload.
 4. **Upload APWorlds**: Upload any custom `.apworld` files needed by the room's games
 5. **Manage Entries**: Rename, download, or delete individual entries
 6. **Generate**: Generate a multiworld from the room's YAMLs, producing patch files, a generated game bundle, and a
