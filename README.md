@@ -135,6 +135,11 @@ The application generates its internal MultiServer token on startup. Set
 application replicas or when MultiServer wrapper processes can survive an
 application restart.
 
+On its first start, the container installs the bundled Archipelago Python
+dependencies into its application-owned virtual environment. This requires
+outbound access to the Python package sources; later starts reuse the installed
+dependencies.
+
 The application will be available at `http://localhost:8080`
 
 ## Usage
