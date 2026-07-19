@@ -137,6 +137,10 @@ application restart.
 
 The application will be available at `http://localhost:8080`
 
+The Docker build installs the bundled Archipelago and world dependencies into
+its Python virtual environment. Room pages can therefore list games without an
+interactive dependency-installation prompt or network access at runtime.
+
 ## Usage
 
 1. **Login**: Navigate to the application and login with Discord
