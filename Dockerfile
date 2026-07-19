@@ -17,8 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates python3 python3-venv python3-pip python3-dev git cmake build-essential && \
     rm -rf /var/lib/apt/lists/*
 
-# Pre-create an empty venv so ModuleUpdate.py's pip install lands in a
-# writable, PEP 668-clean location. Archipelago deps install on first run.
+# Pre-create a PEP 668-clean venv, then install the bundled Archipelago's exact
+# dependency set during the image build. This keeps room pages from needing to
+# reconcile dependencies when they first enumerate games.
 RUN python3 -m venv /app/.venv && /app/.venv/bin/pip install --upgrade pip
 
 ENV PIP_NO_CACHE_DIR=1
@@ -27,11 +28,12 @@ COPY --from=build /app/build/libs/*.jar app.jar
 COPY ./Archipelago ./Archipelago
 COPY ./python ./python
 
+RUN /app/.venv/bin/python /app/Archipelago/ModuleUpdate.py --yes
+
 RUN chown -R appuser:appuser /app
 USER appuser
 
-# Point the runner at the pre-created venv's python so ModuleUpdate.py's
-# pip installs land in /app/.venv (writable by appuser, PEP 668 clean).
+# Point the runner at the venv containing Archipelago's pinned dependencies.
 ENV ARCHIPELOBBY_PYTHON_EXECUTABLE=/app/.venv/bin/python
 
 EXPOSE 8080 38281-38380

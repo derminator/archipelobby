@@ -1,12 +1,25 @@
 import sys
 import types
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import list_games
 
 
 class ListGamesTest(unittest.TestCase):
+    def test_docker_image_installs_archipelago_dependencies_during_build(self):
+        dockerfile = (Path(__file__).parent.parent / "Dockerfile").read_text()
+
+        self.assertIn(
+            "RUN /app/.venv/bin/python /app/Archipelago/ModuleUpdate.py --yes",
+            dockerfile,
+        )
+        self.assertLess(
+            dockerfile.index("COPY ./Archipelago ./Archipelago"),
+            dockerfile.index("RUN /app/.venv/bin/python /app/Archipelago/ModuleUpdate.py --yes"),
+        )
+
     def test_core_enumeration_updates_dependencies_non_interactively(self):
         module_update = types.ModuleType("ModuleUpdate")
         update_arguments = None
