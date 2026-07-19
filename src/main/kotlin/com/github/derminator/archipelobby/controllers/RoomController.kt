@@ -6,6 +6,7 @@ import com.github.derminator.archipelobby.data.Puns
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
+import com.github.derminator.archipelobby.tracker.TrackerService
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
@@ -38,6 +39,7 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService,
     private val gameCatalogService: GameCatalogService,
+    private val trackerService: TrackerService,
 ) {
     private val yamlMapper = YAMLMapper.builder()
         .addModule(KotlinModule.Builder().build())
@@ -489,6 +491,7 @@ class RoomController(
             null
         }
         model.addAttribute("serverAddress", serverAddress)
+        model.addAttribute("tracker", trackerService.getTrackerData(roomId))
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
