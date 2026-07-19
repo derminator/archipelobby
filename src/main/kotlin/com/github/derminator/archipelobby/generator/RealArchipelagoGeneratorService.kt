@@ -96,7 +96,7 @@ class RealArchipelagoGeneratorService(
                 val archipelagoDir = File(scriptPath).absoluteFile.parent
                 val args = (listOf(archipelagoDir, yamlFile.absolutePath) + apWorldPaths).toTypedArray()
                 val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
-                output.trim().toIntOrNull()
+                parseLocationCount(output)
                     ?: throw ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "Location count script produced unexpected output: ${output.trim()}",
@@ -106,3 +106,13 @@ class RealArchipelagoGeneratorService(
             }
         }
 }
+
+/**
+ * The Python runner merges stderr into stdout, so world-generation warnings can
+ * precede the count. The location-count script always prints its result last.
+ */
+internal fun parseLocationCount(output: String): Int? =
+    output.lineSequence()
+        .map(String::trim)
+        .lastOrNull { it.isNotEmpty() }
+        ?.toIntOrNull()
