@@ -23,10 +23,10 @@ def _emit(payload):
 
 
 def _list_core_games():
-    if "--yes" not in sys.argv:
-        sys.argv.append("--yes")
     import ModuleUpdate
-    ModuleUpdate.update()
+    # ModuleUpdate only reads command-line flags when run as a script; pass
+    # yes directly because this helper imports it in a non-interactive process.
+    ModuleUpdate.update(yes=True)
 
     import worlds  # noqa: F401 (import side effect: populates AutoWorldRegister)
     from worlds.AutoWorld import AutoWorldRegister

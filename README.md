@@ -137,6 +137,9 @@ application restart.
 
 The application will be available at `http://localhost:8080`
 
+The Docker build installs Archipelago's pinned Python dependencies into the
+image. This avoids an interactive dependency prompt when opening a room.
+
 ## Usage
 
 1. **Login**: Navigate to the application and login with Discord
