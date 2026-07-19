@@ -135,6 +135,10 @@ The application generates its internal MultiServer token on startup. Set
 application replicas or when MultiServer wrapper processes can survive an
 application restart.
 
+The Docker image installs or reconciles Archipelago's pinned Python dependencies
+non-interactively when it first enumerates games, so room pages continue to work
+when the bundled Archipelago requirements change.
+
 The application will be available at `http://localhost:8080`
 
 ## Usage

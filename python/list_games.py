@@ -23,10 +23,10 @@ def _emit(payload):
 
 
 def _list_core_games():
-    if "--yes" not in sys.argv:
-        sys.argv.append("--yes")
     import ModuleUpdate
-    ModuleUpdate.update()
+    # Enumeration runs without an interactive stdin, so allow ModuleUpdate to
+    # install or reconcile pinned dependencies without prompting.
+    ModuleUpdate.update(yes=True)
 
     import worlds  # noqa: F401 (import side effect: populates AutoWorldRegister)
     from worlds.AutoWorld import AutoWorldRegister
