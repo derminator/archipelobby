@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.server.ResponseStatusException
+import java.util.UUID
 
 @Service
 class RoomService(
@@ -40,6 +41,23 @@ class RoomService(
     private val saveDataService: SaveDataService,
 ) {
     private val logger = LoggerFactory.getLogger(RoomService::class.java)
+
+    /** Resolves a public UUID, or a legacy numeric URL for a pre-UUID room. */
+    suspend fun resolveRoomUrlId(urlId: String): Long {
+        val normalizedUuid = runCatching { UUID.fromString(urlId).toString() }
+            .getOrNull()
+            ?.takeIf { it.equals(urlId, ignoreCase = true) }
+
+        val room = if (normalizedUuid != null) {
+            roomRepository.findByPublicId(normalizedUuid).awaitSingleOrNull()
+        } else {
+            val legacyId = urlId.toLongOrNull()
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid room ID")
+            roomRepository.findById(legacyId).awaitSingleOrNull()
+                ?.takeIf { it.publicId == null }
+        }
+        return room?.id ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+    }
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
         return entryRepository.findByUserId(userId)
@@ -79,7 +97,9 @@ class RoomService(
             throw ResponseStatusException(HttpStatus.CONFLICT, "A room with this name already exists in this guild")
         }
 
-        return roomRepository.save(Room(guildId = guildId, name = name)).awaitSingle()
+        return roomRepository.save(
+            Room(guildId = guildId, name = name, publicId = UUID.randomUUID().toString()),
+        ).awaitSingle()
     }
 
     private suspend fun isRoomJoinable(room: Room, userId: Long): Boolean =
@@ -181,9 +201,12 @@ class RoomService(
     }
 
     @Transactional
-    suspend fun deleteEntry(entryId: Long, userId: Long) {
+    suspend fun deleteEntry(entryId: Long, roomId: Long, userId: Long) {
         val entry = entryRepository.findById(entryId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        if (entry.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Entry does not belong to this room")
+        }
         val room = roomRepository.findById(entry.roomId).awaitSingle()
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
 
@@ -332,9 +355,12 @@ class RoomService(
     }
 
     @Transactional
-    suspend fun deleteApWorld(apWorldId: Long, userId: Long) {
+    suspend fun deleteApWorld(apWorldId: Long, roomId: Long, userId: Long) {
         val apWorld = apWorldRepository.findById(apWorldId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "APWorld not found")
+        if (apWorld.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "APWorld does not belong to this room")
+        }
         val room = roomRepository.findById(apWorld.roomId).awaitSingle()
         val isAdmin = discordService.isAdminOfGuild(userId, room.guildId)
 
