@@ -23,7 +23,17 @@ repositories {
     mavenCentral()
 }
 
+// Spring Boot's dependency-management plugin uses this property for its Jackson 2 BOM.
+extra["jackson-2-bom.version"] = "2.21.5"
+
 dependencies {
+    constraints {
+        // commons-io is transitive (via the Discord4J dependency graph).
+        implementation("commons-io:commons-io:2.22.0") {
+            because("Override vulnerable transitive Commons IO versions")
+        }
+    }
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     implementation("org.springframework.boot:spring-boot-starter-r2dbc")
