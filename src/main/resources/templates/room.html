@@ -31,7 +31,7 @@
 
     <div th:if="${room.isGenerated}">
         <h2>Generated Game</h2>
-        <a th:href="@{/rooms/{id}/generated-game/download(id=${room.id})}">
+        <a th:href="@{/rooms/{id}/generated-game/download(id=${room.urlId})}">
             <button type="button">Download Game</button>
         </a>
 
@@ -47,12 +47,12 @@
         <div th:if="${isAdmin}" class="button-row">
             <form th:if="${serverAddress == null}" method="post"
                   class="inline-form"
-                  th:action="@{/rooms/{id}/server/start(id=${room.id})}">
+                  th:action="@{/rooms/{id}/server/start(id=${room.urlId})}">
                 <input type="submit" value="Start Server"/>
             </form>
             <form th:if="${serverAddress != null}" method="post"
                   class="inline-form"
-                  th:action="@{/rooms/{id}/server/stop(id=${room.id})}"
+                  th:action="@{/rooms/{id}/server/stop(id=${room.urlId})}"
                   th:attr="data-confirm='Stop the server? Connected players will be disconnected.'">
                 <input type="submit" value="Stop Server"/>
             </form>
@@ -64,7 +64,7 @@
     </div>
 
     <h2>Entries</h2>
-    <a th:href="@{/rooms/{roomId}/download(roomId=${room.id})}">
+    <a th:href="@{/rooms/{roomId}/download(roomId=${room.urlId})}">
         <button type="button">Download YAMLs + APWorlds</button>
     </a>
     <ul>
@@ -73,16 +73,16 @@
             (<span th:text="${entry.game}">Game</span>,
              <span th:text="${entry.user.username}">Username</span>)
             <span th:text="| - ${entry.locationCount} locations|"></span>
-            <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.id},entryId=${entry.id})}">
+            <a th:href="@{/rooms/{roomId}/entries/{entryId}/download(roomId=${room.urlId},entryId=${entry.id})}">
                 <button type="button">Download YAML</button>
             </a>
             <a th:each="patch : ${entry.patches}"
-               th:href="@{/rooms/{roomId}/patches/{patchId}/download(roomId=${room.id},patchId=${patch.id})}">
+               th:href="@{/rooms/{roomId}/patches/{patchId}/download(roomId=${room.urlId},patchId=${patch.id})}">
                 <button type="button" th:text="|Download ${patch.fileName}|">Download Patch</button>
             </a>
             <form method="post"
                   class="inline-form"
-                  th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.id},entryId=${entry.id})}"
+                  th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.urlId},entryId=${entry.id})}"
                   th:if="${(entry.user.id == userId or isAdmin) and room.generatedGameFilePath == null}"
                   th:attr="data-confirm=|Delete entry '${entry.name}'?|">
                 <input type="submit" value="Delete"/>
@@ -96,12 +96,12 @@
         <li th:each="apWorld : ${apWorlds}">
             <strong th:text="${apWorld.fileName}">Filename</strong>
             (<span th:text="${apWorld.user.username}">Username</span>)
-            <a th:href="@{/rooms/{roomId}/apworlds/{apworldId}/download(roomId=${room.id},apworldId=${apWorld.id})}">
+            <a th:href="@{/rooms/{roomId}/apworlds/{apworldId}/download(roomId=${room.urlId},apworldId=${apWorld.id})}">
                 <button type="button">Download</button>
             </a>
             <form method="post"
                   class="inline-form"
-                  th:action="@{/rooms/{roomId}/apworlds/{apworldId}/delete(roomId=${room.id},apworldId=${apWorld.id})}"
+                  th:action="@{/rooms/{roomId}/apworlds/{apworldId}/delete(roomId=${room.urlId},apworldId=${apWorld.id})}"
                   th:if="${(apWorld.user.id == userId or isAdmin) and room.generatedGameFilePath == null}"
                   th:attr="data-confirm=|Delete APWorld '${apWorld.fileName}'?|">
                 <input type="submit" value="Delete"/>
@@ -111,7 +111,7 @@
 
     <div th:if="${room.generatedGameFilePath == null}">
         <h3>Add Entry</h3>
-        <div th:replace="~{layout :: add-entry-form(${room.id})}"></div>
+        <div th:replace="~{layout :: add-entry-form(${room.urlId})}"></div>
     </div>
     <div th:if="${room.isGenerating}">
         <p>Game generation is in progress — submissions are temporarily closed.</p>
@@ -127,14 +127,14 @@
             <h3>Game Generation</h3>
             <form method="post"
                   th:if="${not #lists.isEmpty(entries)}"
-                  th:action="@{/rooms/{id}/generate(id=${room.id})}"
+                  th:action="@{/rooms/{id}/generate(id=${room.urlId})}"
                   th:attr="data-confirm=|Generate the Archipelago game for '${room.name}'? Submissions will be locked.|">
                 <input type="submit" value="Generate Game"/>
             </form>
             <form method="post"
                   enctype="multipart/form-data"
                   th:if="${not #lists.isEmpty(entries)}"
-                  th:action="@{/rooms/{id}/upload-game(id=${room.id})}">
+                  th:action="@{/rooms/{id}/upload-game(id=${room.urlId})}">
                 <label>
                     Upload game file (.archipelago or .zip):
                     <input type="file" name="gameFile" accept=".archipelago,.zip" required/>
@@ -155,12 +155,12 @@
             <h3>Generated Game</h3>
             <div class="button-row">
                 <a th:if="${room.walkthroughFilePath != null}"
-                   th:href="@{/rooms/{id}/walkthrough/download(id=${room.id})}">
+                   th:href="@{/rooms/{id}/walkthrough/download(id=${room.urlId})}">
                     <button type="button">Download Walkthrough</button>
                 </a>
                 <form method="post"
                       class="inline-form"
-                      th:action="@{/rooms/{id}/generated-game/delete(id=${room.id})}"
+                      th:action="@{/rooms/{id}/generated-game/delete(id=${room.urlId})}"
                       th:attr="data-confirm=|Delete the generated game for '${room.name}'? Submissions will reopen.|">
                     <input type="submit" value="Delete Generated Game"/>
                 </form>
@@ -169,7 +169,7 @@
 
         <h3>Room Management</h3>
         <form method="post"
-              th:action="@{/rooms/{id}/delete(id=${room.id})}"
+              th:action="@{/rooms/{id}/delete(id=${room.urlId})}"
               th:attr="data-confirm=|Delete room '${room.name}'? This cannot be undone.|">
             <input type="submit" value="Delete Room"/>
         </form>

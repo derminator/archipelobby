@@ -1,6 +1,8 @@
 package com.github.derminator.archipelobby.multiserver
 
+import com.github.derminator.archipelobby.data.RoomService
 import jakarta.annotation.PreDestroy
+import kotlinx.coroutines.reactor.mono
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.buffer.DataBufferFactory
 import org.springframework.stereotype.Component
@@ -9,6 +11,7 @@ import org.springframework.web.reactive.socket.WebSocketHandler
 import org.springframework.web.reactive.socket.WebSocketMessage
 import org.springframework.web.reactive.socket.WebSocketSession
 import org.springframework.web.reactive.socket.client.ReactorNettyWebSocketClient
+import org.springframework.web.server.ResponseStatusException
 import reactor.core.publisher.Mono
 import reactor.netty.http.client.HttpClient
 import reactor.netty.resources.ConnectionProvider
@@ -24,6 +27,7 @@ import java.net.URI
 class MultiServerProxyHandler(
     private val multiServerManager: MultiServerManager,
     private val properties: MultiServerProperties,
+    private val roomService: RoomService,
 ) : WebSocketHandler {
 
     private val logger = LoggerFactory.getLogger(MultiServerProxyHandler::class.java)
@@ -36,13 +40,17 @@ class MultiServerProxyHandler(
     }
 
     override fun handle(session: WebSocketSession): Mono<Void> {
-        val roomId = extractRoomId(session) ?: return session.close(CloseStatus.NOT_ACCEPTABLE)
-        // getServerPort returns null once the room's process has exited, so a
-        // missing port means "no live server" — ask the client to reconnect.
-        // Only this branch closes with SERVICE_RESTARTED; a normal proxy()
-        // completion just propagates its Mono<Void>.
-        val port = activePort(roomId) ?: return session.close(CloseStatus.SERVICE_RESTARTED)
-        return proxy(session, port)
+        val roomUrlId = extractRoomUrlId(session) ?: return session.close(CloseStatus.NOT_ACCEPTABLE)
+        return mono { roomService.resolveRoomUrlId(roomUrlId) }
+            .flatMap { roomId ->
+                // getServerPort returns null once the room's process has exited, so a
+                // missing port means "no live server" — ask the client to reconnect.
+                val port = activePort(roomId) ?: return@flatMap session.close(CloseStatus.SERVICE_RESTARTED)
+                proxy(session, port)
+            }
+            .onErrorResume(ResponseStatusException::class.java) {
+                session.close(CloseStatus.NOT_ACCEPTABLE)
+            }
     }
 
     private fun activePort(roomId: Long): Int? = multiServerManager.getServerPort(roomId)
@@ -56,13 +64,13 @@ class MultiServerProxyHandler(
         }.doOnError { e -> logger.warn("WebSocket proxy error", e) }
     }
 
-    private fun extractRoomId(session: WebSocketSession): Long? {
+    private fun extractRoomUrlId(session: WebSocketSession): String? {
         val match = ROOM_PATH_REGEX.matchEntire(session.handshakeInfo.uri.path) ?: return null
-        return match.groupValues[1].toLongOrNull()
+        return match.groupValues[1]
     }
 
     companion object {
-        private val ROOM_PATH_REGEX = Regex("""/rooms/(\d+)/ws""")
+        private val ROOM_PATH_REGEX = Regex("""/rooms/([^/]+)/ws""")
     }
 }
 

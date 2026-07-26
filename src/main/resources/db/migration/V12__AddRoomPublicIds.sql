@@ -1,0 +1,2 @@
+ALTER TABLE ROOMS ADD COLUMN public_id VARCHAR(36);
+ALTER TABLE ROOMS ADD CONSTRAINT uq_rooms_public_id UNIQUE (public_id);
