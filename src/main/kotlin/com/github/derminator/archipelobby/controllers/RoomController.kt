@@ -71,7 +71,7 @@ class RoomController(
                 ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Required form parameter 'name' is not present")
 
             val room = roomService.createRoom(guildId, name, userId)
-            "redirect:/rooms/${room.id}"
+            "redirect:/rooms/${room.urlId}"
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
                 loadRoomsModel(userId, model)
@@ -83,19 +83,20 @@ class RoomController(
 
     @GetMapping("/{roomId}")
     fun getRoom(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal?,
         exchange: ServerWebExchange,
         model: Model
     ): Mono<String> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         if (principal == null || principal is AnonymousAuthenticationToken) {
-            val preview = roomService.getRoomForPreview(roomId)
+            val preview = roomService.getRoomForPreview(internalRoomId)
             model.addAttribute("preview", preview)
-            model.addAttribute("pun", Puns.forRoom(roomId))
+            model.addAttribute("pun", Puns.forRoom(internalRoomId))
             return@mono "room-preview"
         }
         val userId = principal.asDiscordPrincipal.userId
-        loadRoomModel(roomId, userId, model, exchange)
+        loadRoomModel(internalRoomId, userId, model, exchange, roomId)
         "room"
     }
 
@@ -108,13 +109,14 @@ class RoomController(
 
     @PostMapping("/{roomId}/entries")
     fun addEntry(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
         @ModelAttribute form: AddEntryForm,
         exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         try {
             val yamlFile = form.yamlFile
 
@@ -152,7 +154,7 @@ class RoomController(
 
             try {
                 roomService.addEntry(
-                    roomId = roomId,
+                    roomId = internalRoomId,
                     userId = userId,
                     entryName = entryYaml.name,
                     game = entryYaml.game,
@@ -167,7 +169,7 @@ class RoomController(
             "redirect:/rooms/$roomId"
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST || e.statusCode == HttpStatus.CONFLICT) {
-                loadRoomModel(roomId, userId, model, exchange)
+                loadRoomModel(internalRoomId, userId, model, exchange, roomId)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
                 "room"
             } else throw e
@@ -176,23 +178,25 @@ class RoomController(
 
     @PostMapping("/{roomId}/entries/{entryId}/delete")
     fun deleteEntry(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         @PathVariable entryId: Long,
         principal: Principal
     ): Mono<String> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        roomService.deleteEntry(entryId, userId)
+        roomService.deleteEntry(entryId, internalRoomId, userId)
         "redirect:/rooms/$roomId"
     }
 
     @GetMapping("/{roomId}/entries/{entryId}/download")
     fun downloadEntry(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         @PathVariable entryId: Long,
         principal: Principal,
     ): Mono<ResponseEntity<ByteArray>> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        val entry = roomService.getEntryForDownload(entryId, roomId, userId)
+        val entry = roomService.getEntryForDownload(entryId, internalRoomId, userId)
 
         val fileExists = uploadsService.fileExists(entry.yamlFilePath)
         if (!fileExists) {
@@ -210,12 +214,13 @@ class RoomController(
 
     @GetMapping("/{roomId}/patches/{patchId}/download")
     fun downloadPatch(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         @PathVariable patchId: Long,
         principal: Principal,
     ): Mono<ResponseEntity<ByteArray>> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        val patch = roomService.getPatchForDownload(patchId, roomId, userId)
+        val patch = roomService.getPatchForDownload(patchId, internalRoomId, userId)
 
         if (!uploadsService.fileExists(patch.filePath)) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "Patch file not found")
@@ -231,12 +236,13 @@ class RoomController(
 
     @GetMapping("/{roomId}/apworlds/{apworldId}/download")
     fun downloadApWorld(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         @PathVariable apworldId: Long,
         principal: Principal,
     ): Mono<ResponseEntity<ByteArray>> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        val apWorld = roomService.getApWorldForDownload(apworldId, roomId, userId)
+        val apWorld = roomService.getApWorldForDownload(apworldId, internalRoomId, userId)
 
         val fileExists = uploadsService.fileExists(apWorld.filePath)
         if (!fileExists) {
@@ -253,25 +259,27 @@ class RoomController(
 
     @PostMapping("/{roomId}/apworlds/{apworldId}/delete")
     fun deleteApWorld(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         @PathVariable apworldId: Long,
         principal: Principal
     ): Mono<String> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        roomService.deleteApWorld(apworldId, userId)
+        roomService.deleteApWorld(apworldId, internalRoomId, userId)
         "redirect:/rooms/$roomId"
     }
 
     @GetMapping("/{roomId}/download")
     fun downloadAll(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal
     ): Mono<ResponseEntity<ByteArray>> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        val roomWithEntries = roomService.getRoom(roomId, userId)
+        val roomWithEntries = roomService.getRoom(internalRoomId, userId)
 
         val entries = roomWithEntries.entries.toList()
-        val apWorlds = roomService.getApWorldsForRoom(roomId, userId).toList()
+        val apWorlds = roomService.getApWorldsForRoom(internalRoomId, userId).toList()
 
         val zipBytes = withContext(Dispatchers.IO) {
             val byteArrayOutputStream = ByteArrayOutputStream()
@@ -307,17 +315,18 @@ class RoomController(
 
     @PostMapping("/{roomId}/generate")
     fun generateGame(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
     ): Mono<String> = mono {
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
         val userId = principal.asDiscordPrincipal.userId
-        roomService.generateGame(roomId, userId)
+        roomService.generateGame(internalRoomId, userId)
         "redirect:/rooms/$roomId"
     }
 
     @PostMapping("/{roomId}/upload-game")
     fun uploadGame(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
         @ModelAttribute form: UploadGameForm,
         exchange: ServerWebExchange,
@@ -334,14 +343,14 @@ class RoomController(
                 )
             }
             val fileBytes = readFilePart(filePart)
-            roomService.uploadGame(roomId, userId, fileBytes, filename)
+            roomService.uploadGame(roomService.resolveRoomUrlId(roomId), userId, fileBytes, filename)
             "redirect:/rooms/$roomId"
         } catch (e: ResponseStatusException) {
             if (e.statusCode == HttpStatus.BAD_REQUEST
                 || e.statusCode == HttpStatus.CONFLICT
                 || e.statusCode == HttpStatus.UNPROCESSABLE_CONTENT
             ) {
-                loadRoomModel(roomId, userId, model, exchange)
+                loadRoomModel(roomService.resolveRoomUrlId(roomId), userId, model, exchange, roomId)
                 model.addAttribute("errorMessage", e.reason ?: "An error occurred")
                 "room"
             } else throw e
@@ -350,25 +359,26 @@ class RoomController(
 
     @PostMapping("/{roomId}/generated-game/delete")
     fun deleteGeneratedGame(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
         // Stop the server first (outside the delete's transaction) so its up-to-10s
         // shutdown wait doesn't hold the DB connection, and a late autosave can't
         // resurrect the save state deleteGeneratedGame is about to clear.
-        roomService.stopServer(roomId, userId)
-        roomService.deleteGeneratedGame(roomId, userId)
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
+        roomService.stopServer(internalRoomId, userId)
+        roomService.deleteGeneratedGame(internalRoomId, userId)
         "redirect:/rooms/$roomId"
     }
 
     @GetMapping("/{roomId}/generated-game/download")
     fun downloadGeneratedGame(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val room = roomService.getGeneratedGameForDownload(roomId, userId)
+        val room = roomService.getGeneratedGameForDownload(roomService.resolveRoomUrlId(roomId), userId)
         val filePath = room.generatedGameFilePath
 
         if (filePath == null || !uploadsService.fileExists(filePath)) {
@@ -386,11 +396,11 @@ class RoomController(
 
     @GetMapping("/{roomId}/walkthrough/download")
     fun downloadWalkthrough(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
     ): Mono<ResponseEntity<ByteArray>> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        val room = roomService.getWalkthroughForDownload(roomId, userId)
+        val room = roomService.getWalkthroughForDownload(roomService.resolveRoomUrlId(roomId), userId)
         val filePath = room.walkthroughFilePath
 
         if (filePath == null || !uploadsService.fileExists(filePath)) {
@@ -407,59 +417,63 @@ class RoomController(
 
     @PostMapping("/{roomId}/server/start")
     fun startServer(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
         exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        handleRoomAction(roomId, userId, exchange, model) {
-            roomService.startServer(roomId, userId)
+        handleRoomAction(roomId, userId, exchange, model) { internalRoomId ->
+            roomService.startServer(internalRoomId, userId)
         }
     }
 
     @PostMapping("/{roomId}/server/stop")
     fun stopServer(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal,
         exchange: ServerWebExchange,
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        handleRoomAction(roomId, userId, exchange, model) {
-            roomService.stopServer(roomId, userId)
+        handleRoomAction(roomId, userId, exchange, model) { internalRoomId ->
+            roomService.stopServer(internalRoomId, userId)
         }
     }
 
     private suspend fun handleRoomAction(
-        roomId: Long,
+        roomUrlId: String,
         userId: Long,
         exchange: ServerWebExchange,
         model: Model,
-        action: suspend () -> Unit,
-    ): String = try {
-        action()
-        "redirect:/rooms/$roomId"
-    } catch (e: ResponseStatusException) {
-        if (e.statusCode != HttpStatus.BAD_REQUEST && e.statusCode != HttpStatus.CONFLICT) {
-            throw e
-        }
+        action: suspend (Long) -> Unit,
+    ): String {
+        val internalRoomId = roomService.resolveRoomUrlId(roomUrlId)
+        return try {
+            action(internalRoomId)
+            "redirect:/rooms/$roomUrlId"
+        } catch (e: ResponseStatusException) {
+            if (e.statusCode != HttpStatus.BAD_REQUEST && e.statusCode != HttpStatus.CONFLICT) {
+                throw e
+            }
 
-        loadRoomModel(roomId, userId, model, exchange)
-        model.addAttribute("errorMessage", e.reason ?: "An error occurred")
-        "room"
+            loadRoomModel(internalRoomId, userId, model, exchange, roomUrlId)
+            model.addAttribute("errorMessage", e.reason ?: "An error occurred")
+            "room"
+        }
     }
 
     @PostMapping("/{roomId}/delete")
     fun deleteRoom(
-        @PathVariable roomId: Long,
+        @PathVariable roomId: String,
         principal: Principal
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
         // Stop the server first (outside the delete's transaction) so its shutdown
         // wait doesn't hold the DB connection open.
-        roomService.stopServer(roomId, userId)
-        roomService.deleteRoom(roomId, userId)
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
+        roomService.stopServer(internalRoomId, userId)
+        roomService.deleteRoom(internalRoomId, userId)
         "redirect:/"
     }
 
@@ -469,7 +483,13 @@ class RoomController(
         model.addAttribute("joinableRooms", roomService.getJoinableRooms(userId))
     }
 
-    private suspend fun loadRoomModel(roomId: Long, userId: Long, model: Model, exchange: ServerWebExchange) {
+    private suspend fun loadRoomModel(
+        roomId: Long,
+        userId: Long,
+        model: Model,
+        exchange: ServerWebExchange,
+        roomUrlId: String = roomId.toString(),
+    ) {
         val roomWithEntries = roomService.getRoom(roomId, userId)
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries.toList())
@@ -484,7 +504,7 @@ class RoomController(
             val uri = exchange.request.uri
             val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
             val scheme = if (uri.scheme == "https") "wss" else "ws"
-            "$scheme://$host/rooms/$roomId/ws"
+            "$scheme://$host/rooms/$roomUrlId/ws"
         } else {
             null
         }

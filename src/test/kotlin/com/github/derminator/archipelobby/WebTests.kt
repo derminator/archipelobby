@@ -255,6 +255,51 @@ class WebTests {
     }
 
     @Test
+    fun `UUID room URL loads the room preview`(): Unit = runBlocking {
+        val publicId = "550e8400-e29b-41d4-a716-446655440000"
+        val room = Room(id = 42L, guildId = 123L, name = "UUID Room", publicId = publicId)
+        `when`(roomRepository.findByPublicId(publicId)).thenReturn(Mono.just(room))
+        `when`(roomRepository.findById(42L)).thenReturn(Mono.just(room))
+        `when`(entryRepository.findByRoomId(42L)).thenReturn(Flux.empty())
+
+        webTestClient.get().uri("/rooms/$publicId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                assert(response.responseBody!!.contains("UUID Room"))
+            }
+    }
+
+    @Test
+    fun `legacy numeric room URL still loads a room without a public ID`(): Unit = runBlocking {
+        val room = Room(id = 42L, guildId = 123L, name = "Legacy Room")
+        `when`(roomRepository.findById(42L)).thenReturn(Mono.just(room))
+        `when`(entryRepository.findByRoomId(42L)).thenReturn(Flux.empty())
+
+        webTestClient.get().uri("/rooms/42")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                assert(response.responseBody!!.contains("Legacy Room"))
+            }
+    }
+
+    @Test
+    fun `numeric database ID does not expose a UUID room`(): Unit = runBlocking {
+        val room = Room(
+            id = 42L,
+            guildId = 123L,
+            name = "UUID Room",
+            publicId = "550e8400-e29b-41d4-a716-446655440000",
+        )
+        `when`(roomRepository.findById(42L)).thenReturn(Mono.just(room))
+
+        webTestClient.get().uri("/rooms/42")
+            .exchange()
+            .expectStatus().isNotFound
+    }
+
+    @Test
     fun `adding entry with duplicate name returns error banner in room page`(): Unit = runBlocking {
         val roomId = 1L
         `when`(entryRepository.existsByRoomIdAndName(anyLong(), anyString())).thenReturn(Mono.just(true))
@@ -325,6 +370,130 @@ class WebTests {
                 assert(body != null)
                 assert(body!!.contains("class=\"error-banner\""))
                 assert(body.contains("Unknown Game") && body.contains("not supported"))
+            }
+    }
+
+    @Test
+    fun `entry cannot be deleted through a different room URL`(): Unit = runBlocking {
+        val publicId = "550e8400-e29b-41d4-a716-446655440000"
+        val routeRoom = Room(id = 42L, guildId = 123L, name = "Route Room", publicId = publicId)
+        val owningRoom = Room(id = 99L, guildId = 123L, name = "Owning Room")
+        val entry = Entry(id = 7L, roomId = 99L, userId = testPrincipal.userId, name = "Player", game = "Game", yamlFilePath = "player.yaml")
+        `when`(roomRepository.findByPublicId(publicId)).thenReturn(Mono.just(routeRoom))
+        `when`(roomRepository.findById(99L)).thenReturn(Mono.just(owningRoom))
+        `when`(entryRepository.findById(7L)).thenReturn(Mono.just(entry))
+        `when`(entryRepository.deleteById(7L)).thenReturn(Mono.empty())
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER")),
+                ),
+            ),
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$publicId/entries/7/delete")
+            .exchange()
+            .expectStatus().isForbidden
+
+        verify(entryRepository, never()).deleteById(7L)
+    }
+
+    @Test
+    fun `APWorld cannot be deleted through a different room URL`(): Unit = runBlocking {
+        val publicId = "550e8400-e29b-41d4-a716-446655440000"
+        val routeRoom = Room(id = 42L, guildId = 123L, name = "Route Room", publicId = publicId)
+        val owningRoom = Room(id = 99L, guildId = 123L, name = "Owning Room")
+        val apWorld = ApWorld(
+            id = 7L,
+            roomId = 99L,
+            userId = testPrincipal.userId,
+            fileName = "game.apworld",
+            filePath = "game.apworld",
+            gameName = "Game",
+        )
+        `when`(roomRepository.findByPublicId(publicId)).thenReturn(Mono.just(routeRoom))
+        `when`(roomRepository.findById(99L)).thenReturn(Mono.just(owningRoom))
+        `when`(apWorldRepository.findById(7L)).thenReturn(Mono.just(apWorld))
+        `when`(apWorldRepository.deleteById(7L)).thenReturn(Mono.empty())
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER")),
+                ),
+            ),
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms/$publicId/apworlds/7/delete")
+            .exchange()
+            .expectStatus().isForbidden
+
+        verify(apWorldRepository, never()).deleteById(7L)
+    }
+
+    @Test
+    fun `creating a room redirects to a UUID URL`(): Unit = runBlocking {
+        `when`(discordService.isAdminOfGuild(testPrincipal.userId, 123L)).thenReturn(true)
+        `when`(roomRepository.existsByGuildIdAndName(123L, "Test Room")).thenReturn(Mono.just(false))
+        `when`(roomRepository.save(any(Room::class.java))).thenAnswer { invocation ->
+            Mono.just(invocation.getArgument<Room>(0).copy(id = 1L))
+        }
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER"))
+                )
+            )
+        )
+            .mutateWith(csrf())
+            .post().uri("/rooms")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("guildId", "123").with("name", "Test Room"))
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueMatches(
+                "Location",
+                "/rooms/[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}",
+            )
+    }
+
+    @Test
+    fun `rooms page links UUID rooms by public ID and legacy rooms by numeric ID`(): Unit = runBlocking {
+        val publicId = "550e8400-e29b-41d4-a716-446655440000"
+        `when`(discordService.getGuildsForUser(testPrincipal.userId)).thenReturn(flowOf(GuildInfo(123L, "Guild")))
+        `when`(roomRepository.findByGuildId(123L)).thenReturn(
+            Flux.just(
+                Room(id = 42L, guildId = 123L, name = "Legacy Room"),
+                Room(id = 43L, guildId = 123L, name = "UUID Room", publicId = publicId),
+            ),
+        )
+        `when`(entryRepository.countByRoomIdAndUserId(anyLong(), anyLong())).thenReturn(Mono.just(0L))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(
+                    testPrincipal,
+                    null,
+                    listOf(SimpleGrantedAuthority("ROLE_USER")),
+                ),
+            ),
+        )
+            .get().uri("/rooms")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("href=\"/rooms/42\""))
+                assert(body.contains("href=\"/rooms/$publicId\""))
+                assert(!body.contains("href=\"/rooms/43\""))
             }
     }
 

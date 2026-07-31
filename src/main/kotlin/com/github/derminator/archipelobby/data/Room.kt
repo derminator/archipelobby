@@ -15,12 +15,14 @@ data class Room(
     val generatedGameFilePath: String? = null,
     val walkthroughFilePath: String? = null,
     @Version val version: Long? = null,
+    val publicId: String? = null,
 ) {
     companion object {
         const val GENERATING_SENTINEL = "__generating__"
     }
     val isGenerating: Boolean get() = generatedGameFilePath == GENERATING_SENTINEL
     val isGenerated: Boolean get() = generatedGameFilePath != null && !isGenerating
+    val urlId: String get() = publicId ?: id?.toString() ?: error("Room has no ID")
 }
 
 @Table("ENTRIES")
@@ -36,6 +38,7 @@ data class Entry(
 
 interface RoomRepository : ReactiveCrudRepository<Room, Long> {
     fun findByGuildId(guildId: Long): Flux<Room>
+    fun findByPublicId(publicId: String): Mono<Room>
     fun existsByGuildIdAndName(guildId: Long, name: String): Mono<Boolean>
     fun findByGeneratedGameFilePathIsNotNull(): Flux<Room>
 }
