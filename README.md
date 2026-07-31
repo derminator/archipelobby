@@ -100,7 +100,8 @@ DATA_DIR=/path/to/data  # Defaults to ./data
 6. Copy the Bot Token
 7. Enable necessary bot permissions and invite the bot to your Discord server
 8. Set `ARCHIPELOBBY_BASE_URL` to the public origin of this application. The bot automatically registers a global
-   `/login` command; Discord may take up to one hour to make a new global command visible.
+   `/login` command; Discord may take up to one hour to make a new global command visible. Users can also DM `/login`
+   to the bot without waiting for the command to appear.
 
 ## Running the Application
 
@@ -148,8 +149,8 @@ image. This avoids an interactive dependency prompt when opening a room.
 
 ## Usage
 
-1. **Login**: Navigate to the application and login with Discord OAuth, or run `/login` in a server shared with the bot
-   and open its private, one-time link within five minutes
+1. **Login**: Navigate to the application and login with Discord OAuth, or request a private login link by running
+   `/login` in a server shared with the bot or by DMing `/login` to the bot. Open the one-time link within five minutes
 2. **Create Room**: Select a Discord guild you administer and create a new room
 3. **Upload YAML**: In a room, upload Archipelago YAML files with entry names. World-generation warnings emitted while validating a YAML do not prevent its upload.
 4. **Upload APWorlds**: Upload any custom `.apworld` files needed by the room's games
