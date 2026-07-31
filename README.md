@@ -37,11 +37,11 @@ uploaded YAMLs, and easily download individual or bundled entries.
 Most external dependencies (Discord, file storage, Archipelago generation) are hidden behind an interface with two
 implementations, selected by Spring profile:
 
-| Interface                    | Production impl                | Dev/test impl                          |
-|-------------------------------|---------------------------------|------------------------------------------|
-| `DiscordService`               | `RealDiscordService` (`discord` profile) | `DevDiscordService` (`!discord` profile, configured via `archipelobby.discord.dev.*` properties) |
-| `UploadsService`                | `FileSystemUploadsService`     | `InMemoryUploadsService`                  |
-| `ArchipelagoGeneratorService`   | `RealArchipelagoGeneratorService` (shells out to the `Archipelago` submodule via Python) | test doubles in `src/test` |
+| Interface                     | Production impl                                                                          | Dev/test impl                                                                                    |
+|-------------------------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `DiscordService`              | `RealDiscordService` (`discord` profile)                                                 | `DevDiscordService` (`!discord` profile, configured via `archipelobby.discord.dev.*` properties) |
+| `UploadsService`              | `FileSystemUploadsService`                                                               | `InMemoryUploadsService`                                                                         |
+| `ArchipelagoGeneratorService` | `RealArchipelagoGeneratorService` (shells out to the `Archipelago` submodule via Python) | test doubles in `src/test`                                                                       |
 
 The `prod` profile activates the `discord` profile group (see `application.properties`), which wires up the real
 Discord OAuth2/bot integration; the default `dev` profile uses the in-memory/simulated implementations so the app
@@ -65,7 +65,7 @@ to generate multiworlds. Clone with submodules included:
 git clone --recurse-submodules <repo-url>
 ```
 
-If you already cloned without `--recurse-submodules`, fetch it afterwards:
+If you already cloned without `--recurse-submodules`, fetch it afterward:
 
 ```bash
 git submodule update --init --recursive
@@ -118,7 +118,7 @@ export ARCHIPELOBBY_BASE_URL=http://localhost:8080
 ./gradlew bootRun
 ```
 
-By default the app runs with the `dev` profile active, which uses an in-memory H2 database and a simulated Discord
+By default, the app runs with the `dev` profile active, which uses an in-memory H2 database and a simulated Discord
 service (see `application-dev.properties`) so it can be run locally without real Discord credentials.
 
 ### Using Docker
