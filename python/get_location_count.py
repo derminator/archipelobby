@@ -49,14 +49,7 @@ def main():
     multiworld.game = {1: game_name}
     multiworld.player_name = {1: player_data.get("name", "Player")}
     multiworld.plando_options = PlandoOptions.none
-    multiworld.plando_items = [[]]
-    multiworld.plando_connections = [[]]
-    multiworld.re_gen_passthrough = {}
     multiworld.random = rand_module.Random()
-
-    # plando_texts was added in a later Archipelago version; set it if present.
-    if hasattr(multiworld, "plando_texts"):
-        multiworld.plando_texts = [[]]
 
     world = world_class(multiworld, 1)
     multiworld.worlds = {1: world}
