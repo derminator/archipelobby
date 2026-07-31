@@ -2,13 +2,13 @@
 """
 Get the location count for an Archipelago player YAML.
 
-Usage: get_location_count.py <archipelago_dir> <yaml_path> [<apworld_path>...]
+Usage: get_location_count.py <archipelago_dir> <yaml_path>
 
 Prints the integer location count on stdout.
 Exits non-zero if the game is unknown or initialization fails.
-APWorld paths are loaded before built-in worlds, so custom games are registered.
+Custom APWorlds must already be staged in <archipelago_dir>/custom_worlds,
+where Archipelago's native loader imports them under the worlds.* namespace.
 """
-import importlib
 import os
 import random as rand_module
 import sys
@@ -16,31 +16,17 @@ import typing
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: get_location_count.py <archipelago_dir> <yaml_path> [<apworld_path>...]",
-              file=sys.stderr)
+    if len(sys.argv) != 3:
+        print("Usage: get_location_count.py <archipelago_dir> <yaml_path>", file=sys.stderr)
         sys.exit(1)
 
     archipelago_dir = os.path.abspath(sys.argv[1])
     yaml_path = os.path.abspath(sys.argv[2])
-    apworld_paths = [os.path.abspath(p) for p in sys.argv[3:]]
 
     sys.path.insert(0, archipelago_dir)
 
-    # Load APWorlds before built-in worlds so custom game classes are registered.
-    # .apworld files are ZIP packages; adding them to sys.path lets Python import
-    # them directly. Importing triggers the AutoWorld metaclass registration.
-    for apworld_path in apworld_paths:
-        if not os.path.isfile(apworld_path):
-            continue
-        sys.path.insert(0, apworld_path)
-        package_name = os.path.basename(apworld_path).removesuffix(".apworld")
-        try:
-            importlib.import_module(package_name)
-        except Exception as e:
-            print(f"Warning: could not load APWorld {apworld_path!r}: {e}", file=sys.stderr)
-
-    # Importing worlds registers all built-in game world classes.
+    # Archipelago discovers APWorlds from archipelago_dir/custom_worlds and
+    # imports them as worlds.<package>, preserving package resource access.
     import worlds  # noqa: E402, F401
     from worlds.AutoWorld import AutoWorldRegister
 
