@@ -37,11 +37,11 @@ uploaded YAMLs, and easily download individual or bundled entries.
 Most external dependencies (Discord, file storage, Archipelago generation) are hidden behind an interface with two
 implementations, selected by Spring profile:
 
-| Interface                    | Production impl                | Dev/test impl                          |
-|-------------------------------|---------------------------------|------------------------------------------|
-| `DiscordService`               | `RealDiscordService` (`discord` profile) | `DevDiscordService` (`!discord` profile, configured via `archipelobby.discord.dev.*` properties) |
-| `UploadsService`                | `FileSystemUploadsService`     | `InMemoryUploadsService`                  |
-| `ArchipelagoGeneratorService`   | `RealArchipelagoGeneratorService` (shells out to the `Archipelago` submodule via Python) | test doubles in `src/test` |
+| Interface                     | Production impl                                                                          | Dev/test impl                                                                                    |
+|-------------------------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
+| `DiscordService`              | `RealDiscordService` (`discord` profile)                                                 | `DevDiscordService` (`!discord` profile, configured via `archipelobby.discord.dev.*` properties) |
+| `UploadsService`              | `FileSystemUploadsService`                                                               | `InMemoryUploadsService`                                                                         |
+| `ArchipelagoGeneratorService` | `RealArchipelagoGeneratorService` (shells out to the `Archipelago` submodule via Python) | test doubles in `src/test`                                                                       |
 
 The `prod` profile activates the `discord` profile group (see `application.properties`), which wires up the real
 Discord OAuth2/bot integration; the default `dev` profile uses the in-memory/simulated implementations so the app
@@ -65,7 +65,7 @@ to generate multiworlds. Clone with submodules included:
 git clone --recurse-submodules <repo-url>
 ```
 
-If you already cloned without `--recurse-submodules`, fetch it afterwards:
+If you already cloned without `--recurse-submodules`, fetch it afterward:
 
 ```bash
 git submodule update --init --recursive
@@ -84,6 +84,8 @@ DISCORD_CLIENT_SECRET=your_discord_client_secret
 
 # Discord bot token (for guild membership/admin checks)
 DISCORD_BOT_TOKEN=your_discord_bot_token
+# Public application origin used in bot-generated login links
+ARCHIPELOBBY_BASE_URL=https://lobby.example.com
 # Optional: Data directory for uploads and database
 DATA_DIR=/path/to/data  # Defaults to ./data
 ```
@@ -97,6 +99,9 @@ DATA_DIR=/path/to/data  # Defaults to ./data
 5. Navigate to Bot settings and create a bot
 6. Copy the Bot Token
 7. Enable necessary bot permissions and invite the bot to your Discord server
+8. Set `ARCHIPELOBBY_BASE_URL` to the public origin of this application. The bot automatically registers a global
+   `/login` command; Discord may take up to one hour to make a new global command visible. Users can also DM `/login`
+   to the bot without waiting for the command to appear.
 
 ## Running the Application
 
@@ -107,12 +112,13 @@ DATA_DIR=/path/to/data  # Defaults to ./data
 export DISCORD_CLIENT_ID=your_client_id
 export DISCORD_CLIENT_SECRET=your_client_secret
 export DISCORD_BOT_TOKEN=your_bot_token
+export ARCHIPELOBBY_BASE_URL=http://localhost:8080
 
 # Run the application
 ./gradlew bootRun
 ```
 
-By default the app runs with the `dev` profile active, which uses an in-memory H2 database and a simulated Discord
+By default, the app runs with the `dev` profile active, which uses an in-memory H2 database and a simulated Discord
 service (see `application-dev.properties`) so it can be run locally without real Discord credentials.
 
 ### Using Docker
@@ -126,6 +132,7 @@ docker run -p 8080:8080 \
   -e DISCORD_CLIENT_ID=your_client_id \
   -e DISCORD_CLIENT_SECRET=your_client_secret \
   -e DISCORD_BOT_TOKEN=your_bot_token \
+  -e ARCHIPELOBBY_BASE_URL=https://lobby.example.com \
   -v /path/to/data:/data \
   archipelobby
 ```
@@ -142,7 +149,8 @@ image. This avoids an interactive dependency prompt when opening a room.
 
 ## Usage
 
-1. **Login**: Navigate to the application and login with Discord
+1. **Login**: Navigate to the application and login with Discord OAuth, or request a private login link by running
+   `/login` in a server shared with the bot or by DMing `/login` to the bot. Open the one-time link within five minutes
 2. **Create Room**: Select a Discord guild you administer and create a new room
 3. **Upload YAML**: In a room, upload Archipelago YAML files with entry names. World-generation warnings emitted while validating a YAML do not prevent its upload.
 4. **Upload APWorlds**: Upload any custom `.apworld` files needed by the room's games

@@ -9,6 +9,7 @@ import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.multiserver.InternalToken
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
 import com.github.derminator.archipelobby.security.DiscordPrincipal
+import com.github.derminator.archipelobby.security.BotLoginService
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
@@ -88,6 +89,9 @@ class WebTests {
 
     @Autowired
     lateinit var context: ApplicationContext
+
+    @Autowired
+    lateinit var botLoginService: BotLoginService
 
     lateinit var webTestClient: WebTestClient
 
@@ -413,6 +417,40 @@ class WebTests {
             .cookie(sessionCookie.name, sessionCookie.value)
             .exchange()
             .expectStatus().isOk
+    }
+
+    @Test
+    fun `bot login link establishes an authenticated session`() = runBlocking {
+        `when`(discordService.getUserInfo(0L)).thenReturn(UserInfo(0L, "bot-user"))
+        val link = requireNotNull(botLoginService.createLoginLink(0L))
+        val token = link.substringAfter("token=")
+
+        val loginResult = webTestClient.get().uri { builder ->
+            builder.path("/login/bot").queryParam("token", token).build()
+        }
+            .exchange()
+            .expectStatus().is3xxRedirection
+            .expectHeader().valueEquals("Location", "/rooms")
+            .expectBody<String>().returnResult()
+        val sessionCookie = loginResult.responseCookies.values.flatten().single()
+
+        webTestClient.get().uri("/rooms")
+            .cookie(sessionCookie.name, sessionCookie.value)
+            .exchange()
+            .expectStatus().isOk
+
+        webTestClient.get().uri { builder ->
+            builder.path("/login/bot").queryParam("token", token).build()
+        }
+            .exchange()
+            .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `invalid bot login link is rejected without authentication`() {
+        webTestClient.get().uri("/login/bot?token=invalid")
+            .exchange()
+            .expectStatus().isUnauthorized
     }
 
     @Test
