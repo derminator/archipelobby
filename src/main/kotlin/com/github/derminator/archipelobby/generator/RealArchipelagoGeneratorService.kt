@@ -4,12 +4,14 @@ import com.github.derminator.archipelobby.extractFilesFromZip
 import jakarta.annotation.PostConstruct
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import java.io.File
 import java.nio.file.Files
+import java.util.Locale
 
 @Service
 class RealArchipelagoGeneratorService(
@@ -18,6 +20,8 @@ class RealArchipelagoGeneratorService(
     @Value($$"${archipelobby.archipelago.location-count-script-path:python/get_location_count.py}") private val locationCountScriptPath: String,
     private val pythonScriptRunner: PythonScriptRunner,
 ) : ArchipelagoGeneratorService {
+
+    private val logger = LoggerFactory.getLogger(RealArchipelagoGeneratorService::class.java)
 
     @PostConstruct
     fun installDependencies() {
@@ -40,11 +44,8 @@ class RealArchipelagoGeneratorService(
             for ((name, bytes) in yamlFiles) {
                 playersDir.resolve(name).writeBytes(bytes)
             }
-            for ((name, bytes) in apWorldFiles) {
-                customWorldsDir.resolve(name).writeBytes(bytes)
-            }
+            writeApWorlds(customWorldsDir, apWorldFiles)
 
-            // Install any dependencies introduced by the current set of APWorlds.
             val moduleUpdateFile = File(moduleUpdateScriptPath).absoluteFile
             pythonScriptRunner.run(
                 workDir.resolve(moduleUpdateFile.name).path,
@@ -65,8 +66,6 @@ class RealArchipelagoGeneratorService(
                 "Archipelago generation produced no game zip",
             )
 
-            // The .archipelago multidata, the spoiler log, and the per-slot patch files all
-            // live inside the zip.
             val (archipelagoBytes, walkthroughBytes, patchFiles) = extractFilesFromZip(Files.readAllBytes(gameZip))
             val archipelago = archipelagoBytes
                 ?: throw ResponseStatusException(
@@ -81,30 +80,78 @@ class RealArchipelagoGeneratorService(
 
             GeneratedGame(archipelago, walkthrough, patchFiles)
         } finally {
-            workDir.deleteRecursively()
+            cleanupWorkDir(workDir)
         }
     }
 
     override suspend fun getLocationCount(yamlContent: ByteArray, apWorldContents: Map<String, ByteArray>): Int =
         withContext(Dispatchers.IO) {
-            val tempDir = Files.createTempDirectory("archipelago-loc-count-").toFile()
+            val workDir = Files.createTempDirectory("archipelago-loc-count-").toFile()
             try {
-                val yamlFile = tempDir.resolve("player.yaml").also { it.writeBytes(yamlContent) }
-                val apWorldPaths = apWorldContents.map { (name, bytes) ->
-                    tempDir.resolve(name).also { it.writeBytes(bytes) }.absolutePath
-                }
-                val archipelagoDir = File(scriptPath).absoluteFile.parent
-                val args = (listOf(archipelagoDir, yamlFile.absolutePath) + apWorldPaths).toTypedArray()
-                val output = pythonScriptRunner.run(File(locationCountScriptPath).absoluteFile.path, *args)
+                val archipelagoDir = File(scriptPath).absoluteFile.parentFile
+                archipelagoDir.copyRecursively(workDir, overwrite = true)
+
+                val yamlFile = workDir.resolve("player.yaml").also { it.writeBytes(yamlContent) }
+                val customWorldsDir = workDir.resolve("custom_worlds").also { it.mkdirs() }
+                writeApWorlds(customWorldsDir, apWorldContents)
+
+                val locationCountScript = File(locationCountScriptPath).absoluteFile
+                val scriptInWorkDir = workDir.resolve(locationCountScript.name)
+                locationCountScript.copyTo(scriptInWorkDir, overwrite = true)
+                val output = pythonScriptRunner.run(
+                    scriptInWorkDir.absolutePath,
+                    workDir.absolutePath,
+                    yamlFile.absolutePath,
+                )
                 parseLocationCount(output)
                     ?: throw ResponseStatusException(
                         HttpStatus.INTERNAL_SERVER_ERROR,
                         "Location count script produced unexpected output: ${output.trim()}",
                     )
             } finally {
-                tempDir.deleteRecursively()
+                cleanupWorkDir(workDir)
             }
         }
+
+    private fun writeApWorlds(customWorldsDir: File, apWorldContents: Map<String, ByteArray>) {
+        val customWorldsPath = customWorldsDir.toPath()
+        val seenNames = mutableSetOf<String>()
+        for ((name, bytes) in apWorldContents) {
+            if (!isSafeApWorldFilename(name) || !seenNames.add(name.lowercase(Locale.ROOT))) {
+                throw ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "APWorld filename must be a unique direct .apworld child of custom_worlds",
+                )
+            }
+            val target = customWorldsPath.resolve(name).normalize()
+            if (target.parent != customWorldsPath) {
+                throw ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "APWorld filename must be a unique direct .apworld child of custom_worlds",
+                )
+            }
+            Files.write(target, bytes)
+        }
+    }
+
+    private fun isSafeApWorldFilename(name: String): Boolean {
+        if (name.isBlank() || !name.endsWith(".apworld")) return false
+        if (name.any { it in "<>:\"/\\|?*" || it.isISOControl() }) return false
+
+        val baseName = name.substringBeforeLast('.').uppercase(Locale.ROOT)
+        return baseName !in WINDOWS_RESERVED_FILENAMES
+    }
+
+    private fun cleanupWorkDir(workDir: File) {
+        if (!workDir.deleteRecursively()) {
+            logger.warn("Failed to delete Archipelago temporary work directory: {}", workDir)
+        }
+    }
+
+    private companion object {
+        val WINDOWS_RESERVED_FILENAMES = setOf("CON", "PRN", "AUX", "NUL") +
+            (1..9).flatMap { listOf("COM$it", "LPT$it") }
+    }
 }
 
 /**
