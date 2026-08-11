@@ -6,10 +6,9 @@ interface MultiServerManager {
     fun isRunning(roomId: Long): Boolean
 
     /**
-     * The port the room's MultiServer is listening on, or null when no server is
-     * running for the room. Only returns a port while the backing process is
-     * alive, so callers get an atomic check and don't need a separate
-     * [isRunning] call.
+     * The port the room's MultiServer is listening on, or null until its listener
+     * is ready or after the process exits. Callers can use [isRunning] separately
+     * when they need to distinguish a starting process from a stopped one.
      */
     fun getServerPort(roomId: Long): Int?
 }
