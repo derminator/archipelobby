@@ -123,9 +123,11 @@ docker build -t archipelobby .
 
 # Run the container
 docker run -p 8080:8080 \
+  -p 38281-38380:38281-38380 \
   -e DISCORD_CLIENT_ID=your_client_id \
   -e DISCORD_CLIENT_SECRET=your_client_secret \
   -e DISCORD_BOT_TOKEN=your_bot_token \
+  -e ARCHIPELOBBY_MULTISERVER_PUBLIC_HOST=games.example.com \
   -v /path/to/data:/data \
   archipelobby
 ```
@@ -137,8 +139,45 @@ application restart.
 
 The application will be available at `http://localhost:8080`
 
+Each running room also receives a port in the configured `38281-38380` range.
+The room page shows both `ws://games.example.com:<port>` for clients that only
+support the WebSocket root path and the existing `/rooms/<id>/ws` proxy URL.
+Publish the whole range and allow it through the host firewall to support direct
+connections. Set `ARCHIPELOBBY_MULTISERVER_PUBLIC_HOST` to the externally
+resolvable hostname; when it is unset, the application uses the room page's
+request hostname.
+
 The Docker build installs Archipelago's pinned Python dependencies into the
 image. This avoids an interactive dependency prompt when opening a room.
+
+### k3s and Cloudflare hostname-routing plan
+
+Cloudflare's normal proxied DNS does not forward arbitrary ports such as
+`38281-38380`, so direct port addresses must initially use a DNS-only record (or
+Cloudflare Spectrum) and a k3s `LoadBalancer`/`NodePort` service that publishes
+the configured range. Keep a single application replica while MultiServers are
+child processes local to the application pod.
+
+The preferred Cloudflare-compatible follow-up is hostname matching over port
+443, which preserves a root WebSocket path for limited clients:
+
+1. Add a root-path WebSocket handler that accepts only a configured wildcard
+   suffix, for example `room-123.ap.example.com`, extracts room `123` from the
+   normalized `Host`, and proxies to that room's live allocated port. Reject
+   unknown hosts and do not use an untrusted host as an upstream address.
+2. Point `*.ap.example.com` through a Cloudflare Tunnel to one k3s service on
+   the application's port `8080`. The service does not need to expose every
+   MultiServer port because Spring and its child processes share the pod
+   network namespace.
+3. Configure the application to trust forwarded headers only from the local
+   ingress or `cloudflared`, and advertise `wss://room-<id>.ap.example.com` on
+   room pages. Retain the direct-port and `/rooms/<id>/ws` addresses during the
+   rollout.
+4. Run an end-to-end check on a k3s test cluster: start two rooms, verify their
+   hostnames reach different saves through `/`, reconnect each client, stop one
+   room and confirm only its hostname closes, and verify an invalid hostname is
+   rejected. Repeat through the Cloudflare edge to confirm wildcard TLS,
+   WebSocket upgrades, forwarded hosts, and idle reconnect behavior.
 
 ## Usage
 
