@@ -85,7 +85,7 @@ class ProcessMultiServerManager(
                     "--room-id", roomId.toString(),
                     "--archipelago-dir", archipelagoDir(),
                     "--port", port.toString(),
-                    "--host", properties.host,
+                    "--host", properties.bindHost,
                 )
 
                 lateinit var managed: ManagedServer

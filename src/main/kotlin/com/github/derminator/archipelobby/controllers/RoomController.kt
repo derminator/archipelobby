@@ -5,6 +5,7 @@ import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.Puns
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.generator.GameCatalogService
+import com.github.derminator.archipelobby.multiserver.MultiServerProperties
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.Dispatchers
@@ -38,6 +39,7 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService,
     private val gameCatalogService: GameCatalogService,
+    private val multiServerProperties: MultiServerProperties,
 ) {
     private val yamlMapper = YAMLMapper.builder()
         .addModule(KotlinModule.Builder().build())
@@ -478,9 +480,10 @@ class RoomController(
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
-        // Full WebSocket connect address when the server is running, otherwise null.
-        // The UI derives the running/stopped state from whether this is present.
-        val serverAddress = if (roomService.isServerRunning(roomId)) {
+        // Fetching the port also checks that the process is still alive, avoiding
+        // a running-state/port lookup race while rendering connection details.
+        val serverPort = roomService.getServerPort(roomId)
+        val proxyServerAddress = if (serverPort != null) {
             val uri = exchange.request.uri
             val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
             val scheme = if (uri.scheme == "https") "wss" else "ws"
@@ -488,7 +491,12 @@ class RoomController(
         } else {
             null
         }
-        model.addAttribute("serverAddress", serverAddress)
+        val directServerAddress = serverPort?.let {
+            val publicHost = multiServerProperties.publicHost.ifBlank { exchange.request.uri.host }
+            "ws://${hostForUrl(publicHost)}:$it"
+        }
+        model.addAttribute("proxyServerAddress", proxyServerAddress)
+        model.addAttribute("directServerAddress", directServerAddress)
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
@@ -501,4 +509,7 @@ class RoomController(
         }
         return outputStream.toByteArray()
     }
+
+    private fun hostForUrl(host: String): String =
+        if (':' in host && !host.startsWith('[')) "[$host]" else host
 }
