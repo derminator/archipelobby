@@ -1155,6 +1155,38 @@ class WebTests {
     }
 
     @Test
+    fun `room page shows starting status without advertising an unready port`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(null)
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Starting"))
+                assert(!body.contains("Connect directly"))
+                assert(!body.contains("/rooms/$roomId/ws"))
+                assert(body.contains("Stop Server"))
+                assert(!body.contains("Start Server"))
+            }
+    }
+
+    @Test
     fun `room page shows start button for admin when server stopped`(): Unit = runBlocking {
         val roomId = 1L
         val room = Room(

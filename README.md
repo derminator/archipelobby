@@ -145,7 +145,8 @@ support the WebSocket root path and the existing `/rooms/<id>/ws` proxy URL.
 Publish the whole range and allow it through the host firewall to support direct
 connections. Set `ARCHIPELOBBY_MULTISERVER_PUBLIC_HOST` to the externally
 resolvable hostname; when it is unset, the application uses the room page's
-request hostname.
+request hostname. A newly launched room is shown as `Starting`, and neither
+address is advertised until its MultiServer listener accepts TCP connections.
 
 The Docker build installs Archipelago's pinned Python dependencies into the
 image. This avoids an interactive dependency prompt when opening a room.
@@ -154,9 +155,40 @@ image. This avoids an interactive dependency prompt when opening a room.
 
 Cloudflare's normal proxied DNS does not forward arbitrary ports such as
 `38281-38380`, so direct port addresses must initially use a DNS-only record (or
-Cloudflare Spectrum) and a k3s `LoadBalancer`/`NodePort` service that publishes
-the configured range. Keep a single application replica while MultiServers are
-child processes local to the application pod.
+Cloudflare Spectrum). In k3s, prefer a TCP-capable `LoadBalancer` implementation
+such as MetalLB that can publish these ports. Kubernetes does not support a port
+range in a Service: declare all 100 entries, each with the same `port` and
+`targetPort`, and select the single Archipelobby pod. For example, the list must
+start and end like this (generate the intervening entries in deployment
+configuration):
+
+```yaml
+spec:
+  type: LoadBalancer
+  ports:
+    - name: multiserver-38281
+      protocol: TCP
+      port: 38281
+      targetPort: 38281
+    - name: multiserver-38282
+      protocol: TCP
+      port: 38282
+      targetPort: 38282
+    # One entry for every port through 38379.
+    - name: multiserver-38380
+      protocol: TCP
+      port: 38380
+      targetPort: 38380
+```
+
+If NodePort is required instead, the default Kubernetes range
+`30000-32767` cannot allocate `38281-38380`. Configure every k3s server with
+`service-node-port-range: "30000-38380"` in
+`/etc/rancher/k3s/config.yaml`, restart k3s, and declare every Service entry
+shown above with `nodePort` equal to its room port. Ensure the node firewall and
+upstream router expose that range. Do not deploy this Service on an unmodified
+k3s cluster. Keep a single application replica while MultiServers are child
+processes local to the application pod.
 
 The preferred Cloudflare-compatible follow-up is hostname matching over port
 443, which preserves a root WebSocket path for limited clients:

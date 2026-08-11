@@ -583,6 +583,8 @@ class RoomService(
 
     fun getServerPort(roomId: Long): Int? = multiServerManager.getServerPort(roomId)
 
+    fun isServerRunning(roomId: Long): Boolean = multiServerManager.isRunning(roomId)
+
     suspend fun getRoomForPreview(roomId: Long): RoomPreview {
         val room = roomRepository.findById(roomId).awaitSingleOrNull()
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)

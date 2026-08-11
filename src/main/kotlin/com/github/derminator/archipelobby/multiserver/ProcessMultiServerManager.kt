@@ -6,6 +6,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingleOrNull
@@ -22,6 +23,8 @@ import org.springframework.web.server.ResponseStatusException
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
@@ -42,7 +45,12 @@ class ProcessMultiServerManager(
     private val lifecycleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var running = false
 
-    private data class ManagedServer(val process: Process, val port: Int, val logThread: Thread)
+    private data class ManagedServer(
+        val process: Process,
+        val port: Int,
+        val logThread: Thread,
+        @Volatile var ready: Boolean = false,
+    )
 
     private fun lockFor(roomId: Long): Mutex = roomLocks.computeIfAbsent(roomId) { Mutex() }
 
@@ -110,6 +118,7 @@ class ProcessMultiServerManager(
                 managed = ManagedServer(process, port, logThread)
                 processes[roomId] = managed
                 logThread.start()
+                lifecycleScope.launch { awaitListener(roomId, managed) }
 
                 if (!process.isAlive) {
                     processes.remove(roomId, managed)
@@ -142,7 +151,23 @@ class ProcessMultiServerManager(
 
     override fun isRunning(roomId: Long): Boolean = aliveServer(roomId) != null
 
-    override fun getServerPort(roomId: Long): Int? = aliveServer(roomId)?.port
+    override fun getServerPort(roomId: Long): Int? = aliveServer(roomId)?.takeIf { it.ready }?.port
+
+    private suspend fun awaitListener(roomId: Long, managed: ManagedServer) {
+        while (managed.process.isAlive && processes[roomId] === managed) {
+            val listening = runCatching {
+                Socket().use { socket ->
+                    socket.connect(InetSocketAddress(properties.host, managed.port), READINESS_TIMEOUT_MILLIS)
+                }
+            }.isSuccess
+            if (listening) {
+                managed.ready = true
+                logger.info("MultiServer for room {} is accepting connections on port {}", roomId, managed.port)
+                return
+            }
+            delay(READINESS_POLL_MILLIS)
+        }
+    }
 
     /**
      * The room's managed server, but only while its process is alive. If the
@@ -216,4 +241,9 @@ class ProcessMultiServerManager(
     override fun isRunning(): Boolean = running
 
     override fun getPhase(): Int = Int.MAX_VALUE - 1
+
+    companion object {
+        private const val READINESS_POLL_MILLIS = 100L
+        private const val READINESS_TIMEOUT_MILLIS = 100
+    }
 }

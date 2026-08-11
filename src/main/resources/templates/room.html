@@ -43,16 +43,19 @@
             <br/>Proxy address:
             <code th:text="${proxyServerAddress}">ws://localhost/rooms/1/ws</code>
         </p>
-        <p th:if="${directServerAddress == null}">
+        <p th:if="${directServerAddress == null and serverRunning}">
+            Status: <strong>Starting</strong>
+        </p>
+        <p th:if="${not serverRunning}">
             Status: <strong>Stopped</strong>
         </p>
         <div th:if="${isAdmin}" class="button-row">
-            <form th:if="${directServerAddress == null}" method="post"
+            <form th:if="${not serverRunning}" method="post"
                   class="inline-form"
                   th:action="@{/rooms/{id}/server/start(id=${room.id})}">
                 <input type="submit" value="Start Server"/>
             </form>
-            <form th:if="${directServerAddress != null}" method="post"
+            <form th:if="${serverRunning}" method="post"
                   class="inline-form"
                   th:action="@{/rooms/{id}/server/stop(id=${room.id})}"
                   th:attr="data-confirm='Stop the server? Connected players will be disconnected.'">

@@ -480,9 +480,8 @@ class RoomController(
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)
         model.addAttribute("pun", Puns.forRoom(roomId))
-        // Fetching the port also checks that the process is still alive, avoiding
-        // a running-state/port lookup race while rendering connection details.
         val serverPort = roomService.getServerPort(roomId)
+        val serverRunning = serverPort != null || roomService.isServerRunning(roomId)
         val proxyServerAddress = if (serverPort != null) {
             val uri = exchange.request.uri
             val host = uri.host + if (uri.port > 0) ":${uri.port}" else ""
@@ -497,6 +496,7 @@ class RoomController(
         }
         model.addAttribute("proxyServerAddress", proxyServerAddress)
         model.addAttribute("directServerAddress", directServerAddress)
+        model.addAttribute("serverRunning", serverRunning)
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
