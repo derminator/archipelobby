@@ -12,9 +12,9 @@ data class MultiServerProperties(
     val portRangeEnd: Int = 38380,
     // Address used by Spring when proxying to a MultiServer process.
     val host: String = "127.0.0.1",
-    // Address passed to MultiServer's --host option. Production binds all
-    // interfaces so the allocated ports can be published directly.
-    val bindHost: String = "127.0.0.1",
+    // Address passed to MultiServer's --host option. Inherit host to preserve
+    // the binding behavior of installations configured before this was split.
+    val bindHost: String = host,
     // Hostname shown to players for direct port connections. Blank derives it
     // from the room page request.
     val publicHost: String = "",

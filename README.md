@@ -146,7 +146,8 @@ Publish the whole range and allow it through the host firewall to support direct
 connections. Set `ARCHIPELOBBY_MULTISERVER_PUBLIC_HOST` to the externally
 resolvable hostname; when it is unset, the application uses the room page's
 request hostname. A newly launched room is shown as `Starting`, and neither
-address is advertised until its MultiServer listener accepts TCP connections.
+address is advertised until that room's MultiServer confirms that it bound its
+listener. Ports already occupied by another process are skipped.
 
 The Docker build installs Archipelago's pinned Python dependencies into the
 image. This avoids an interactive dependency prompt when opening a room.
