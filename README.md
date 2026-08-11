@@ -123,9 +123,11 @@ docker build -t archipelobby .
 
 # Run the container
 docker run -p 8080:8080 \
+  -p 38281-38380:38281-38380 \
   -e DISCORD_CLIENT_ID=your_client_id \
   -e DISCORD_CLIENT_SECRET=your_client_secret \
   -e DISCORD_BOT_TOKEN=your_bot_token \
+  -e ARCHIPELOBBY_MULTISERVER_PUBLIC_HOST=games.example.com \
   -v /path/to/data:/data \
   archipelobby
 ```
@@ -137,8 +139,78 @@ application restart.
 
 The application will be available at `http://localhost:8080`
 
+Each running room also receives a port in the configured `38281-38380` range.
+The room page shows both `ws://games.example.com:<port>` for clients that only
+support the WebSocket root path and the existing `/rooms/<id>/ws` proxy URL.
+Publish the whole range and allow it through the host firewall to support direct
+connections. Set `ARCHIPELOBBY_MULTISERVER_PUBLIC_HOST` to the externally
+resolvable hostname; when it is unset, the application uses the room page's
+request hostname. A newly launched room is shown as `Starting`, and neither
+address is advertised until that room's MultiServer confirms that it bound its
+listener. Ports already occupied by another process are skipped.
+
 The Docker build installs Archipelago's pinned Python dependencies into the
 image. This avoids an interactive dependency prompt when opening a room.
+
+### k3s and Cloudflare hostname-routing plan
+
+Cloudflare's normal proxied DNS does not forward arbitrary ports such as
+`38281-38380`, so direct port addresses must initially use a DNS-only record (or
+Cloudflare Spectrum). In k3s, prefer a TCP-capable `LoadBalancer` implementation
+such as MetalLB that can publish these ports. Kubernetes does not support a port
+range in a Service: declare all 100 entries, each with the same `port` and
+`targetPort`, and select the single Archipelobby pod. For example, the list must
+start and end like this (generate the intervening entries in deployment
+configuration):
+
+```yaml
+spec:
+  type: LoadBalancer
+  ports:
+    - name: multiserver-38281
+      protocol: TCP
+      port: 38281
+      targetPort: 38281
+    - name: multiserver-38282
+      protocol: TCP
+      port: 38282
+      targetPort: 38282
+    # One entry for every port through 38379.
+    - name: multiserver-38380
+      protocol: TCP
+      port: 38380
+      targetPort: 38380
+```
+
+If NodePort is required instead, the default Kubernetes range
+`30000-32767` cannot allocate `38281-38380`. Configure every k3s server with
+`service-node-port-range: "30000-38380"` in
+`/etc/rancher/k3s/config.yaml`, restart k3s, and declare every Service entry
+shown above with `nodePort` equal to its room port. Ensure the node firewall and
+upstream router expose that range. Do not deploy this Service on an unmodified
+k3s cluster. Keep a single application replica while MultiServers are child
+processes local to the application pod.
+
+The preferred Cloudflare-compatible follow-up is hostname matching over port
+443, which preserves a root WebSocket path for limited clients:
+
+1. Add a root-path WebSocket handler that accepts only a configured wildcard
+   suffix, for example `room-123.ap.example.com`, extracts room `123` from the
+   normalized `Host`, and proxies to that room's live allocated port. Reject
+   unknown hosts and do not use an untrusted host as an upstream address.
+2. Point `*.ap.example.com` through a Cloudflare Tunnel to one k3s service on
+   the application's port `8080`. The service does not need to expose every
+   MultiServer port because Spring and its child processes share the pod
+   network namespace.
+3. Configure the application to trust forwarded headers only from the local
+   ingress or `cloudflared`, and advertise `wss://room-<id>.ap.example.com` on
+   room pages. Retain the direct-port and `/rooms/<id>/ws` addresses during the
+   rollout.
+4. Run an end-to-end check on a k3s test cluster: start two rooms, verify their
+   hostnames reach different saves through `/`, reconnect each client, stop one
+   room and confirm only its hostname closes, and verify an invalid hostname is
+   rejected. Repeat through the Cloudflare edge to confirm wildcard TLS,
+   WebSocket upgrades, forwarded hosts, and idle reconnect behavior.
 
 ## Usage
 

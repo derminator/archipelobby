@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import types
@@ -39,12 +40,16 @@ class MultiServerWrapperTest(unittest.TestCase):
         with (
             patch.object(sys, "argv", wrapper_argv),
             patch.object(sys, "path", sys.path.copy()),
-            patch.dict(os.environ, {"ARCHIPELOBBY_SPRING_TOKEN": "test-token"}),
+            patch.dict(os.environ, {
+                "ARCHIPELOBBY_SPRING_TOKEN": "test-token",
+                "ARCHIPELOBBY_READY_TOKEN": "ready-token",
+            }),
             patch.dict(sys.modules, {"MultiServer": multi_server}),
             patch.object(multiserver_wrapper.tempfile, "mkdtemp", return_value="/tmp/archipelobby-test"),
             patch.object(multiserver_wrapper.atexit, "register"),
             patch.object(multiserver_wrapper, "fetch_game_data"),
             patch.object(multiserver_wrapper, "install_save_hooks"),
+            patch.object(multiserver_wrapper, "install_ready_hook") as install_ready_hook,
         ):
             multiserver_wrapper.main()
 
@@ -58,6 +63,26 @@ class MultiServerWrapperTest(unittest.TestCase):
             ],
         )
         self.assertIs(main_args, parsed_args)
+        install_ready_hook.assert_called_once_with("ready-token", multi_server)
+
+    def test_reports_ready_only_after_server_bind_completes(self):
+        events = []
+
+        async def serve(*_, **__):
+            events.append("bound")
+            return "server"
+
+        multi_server = types.SimpleNamespace(
+            websockets=types.SimpleNamespace(serve=serve),
+        )
+        multiserver_wrapper.install_ready_hook("unique-token", multi_server)
+
+        with patch("builtins.print") as output:
+            server = asyncio.run(multi_server.websockets.serve())
+
+        self.assertEqual(server, "server")
+        self.assertEqual(events, ["bound"])
+        output.assert_called_once_with("ARCHIPELOBBY_READY=unique-token", flush=True)
 
 
 if __name__ == "__main__":
