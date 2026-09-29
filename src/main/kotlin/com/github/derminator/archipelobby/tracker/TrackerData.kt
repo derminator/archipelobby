@@ -2,6 +2,7 @@ package com.github.derminator.archipelobby.tracker
 
 data class TrackerData(
     val players: List<PlayerProgress>,
+    val error: String? = null,
 )
 
 data class PlayerProgress(

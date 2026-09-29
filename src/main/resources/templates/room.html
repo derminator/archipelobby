@@ -60,7 +60,8 @@
 
         <div th:if="${tracker != null}">
             <h3>Tracker</h3>
-            <table class="tracker-table">
+            <p th:if="${tracker.error != null}" th:text="${tracker.error}">Tracker unavailable</p>
+            <table th:if="${tracker.error == null}" class="tracker-table">
                 <thead>
                     <tr>
                         <th>Player</th>

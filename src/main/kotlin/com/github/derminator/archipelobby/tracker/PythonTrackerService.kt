@@ -1,8 +1,8 @@
 package com.github.derminator.archipelobby.tracker
 
-import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.generator.PythonScriptRunner
-import com.github.derminator.archipelobby.multiserver.SaveDataService
+import com.github.derminator.archipelobby.multiserver.InternalToken
+import com.github.derminator.archipelobby.multiserver.MultiServerProperties
 import jakarta.annotation.PostConstruct
 import jakarta.annotation.PreDestroy
 import kotlinx.coroutines.Dispatchers
@@ -22,21 +22,26 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 import java.time.Instant
-import java.util.concurrent.ConcurrentHashMap
+import java.util.Collections
+import java.util.LinkedHashMap
 
 @Service
 @ConditionalOnProperty("archipelobby.multiserver.enabled", havingValue = "true")
 class PythonTrackerService(
     private val pythonScriptRunner: PythonScriptRunner,
-    private val roomService: RoomService,
-    private val saveDataService: SaveDataService,
     private val resourceLoader: ResourceLoader,
+    private val multiServerProperties: MultiServerProperties,
+    private val internalToken: InternalToken,
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}") private val generatorScriptPath: String,
 ) : TrackerService {
 
     private val logger = LoggerFactory.getLogger(PythonTrackerService::class.java)
-    private val cache = ConcurrentHashMap<Long, CachedData>()
-    private val fetchLocks = ConcurrentHashMap<Long, Mutex>()
+    private val cache = Collections.synchronizedMap(object : LinkedHashMap<Long, CachedData>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Long, CachedData>): Boolean =
+            size > MAX_CACHED_ROOMS
+    })
+    // Fixed stripes bound lock memory without removing a mutex while callers are waiting on it.
+    private val fetchLocks = Array(64) { Mutex() }
     private lateinit var trackerScriptPath: Path
 
     private data class CachedData(val data: TrackerData, val timestamp: Instant)
@@ -71,49 +76,36 @@ class PythonTrackerService(
             return cached.data
         }
 
-        return fetchLocks.computeIfAbsent(roomId) { Mutex() }.withLock {
+        return fetchLocks[(roomId.hashCode() and Int.MAX_VALUE) % fetchLocks.size].withLock {
             val rechecked = cache[roomId]
             if (rechecked != null && rechecked.timestamp.plusSeconds(CACHE_TTL_SECONDS).isAfter(Instant.now())) {
                 return@withLock rechecked.data
             }
 
-            val multidataBytes = roomService.getGeneratedGameBytes(roomId) ?: return@withLock null
-            val saveBytes = saveDataService.get(roomId) ?: return@withLock null
-
-            val workDir = withContext(Dispatchers.IO) { Files.createTempDirectory("archipelobby-tracker-") }
             try {
-                val multidataFile = workDir.resolve("game.archipelago")
-                val saveFile = workDir.resolve("game.apsave")
-                withContext(Dispatchers.IO) {
-                    Files.write(multidataFile, multidataBytes)
-                    Files.write(saveFile, saveBytes)
-                }
                 val output = withContext(Dispatchers.IO) {
-                    pythonScriptRunner.run(
+                    pythonScriptRunner.runWithEnvironment(
                         trackerScriptPath.toAbsolutePath().toString(),
+                        mapOf("ARCHIPELOBBY_SPRING_TOKEN" to internalToken.value),
                         archipelagoDir,
-                        multidataFile.toAbsolutePath().toString(),
-                        saveFile.toAbsolutePath().toString(),
+                        multiServerProperties.internalBaseUrl,
+                        roomId.toString(),
                     )
                 }
-                val jsonLine = output.lines().lastOrNull { it.trimStart().startsWith("{") } ?: return@withLock null
+                val jsonLine = output.lines().lastOrNull { it.trimStart().startsWith("{") }
+                    ?: error("Tracker script returned no JSON")
                 val data = jsonMapper.readValue(jsonLine, TrackerData::class.java)
-                cache[roomId] = CachedData(data, Instant.now())
+                if (data.error == null) cache[roomId] = CachedData(data, Instant.now())
                 data
             } catch (e: Exception) {
                 logger.warn("Failed to read tracker data for room {}", roomId, e)
-                null
-            } finally {
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        Files.walk(workDir).sorted(Comparator.reverseOrder()).forEach { runCatching { Files.delete(it) } }
-                    }
-                }
+                TrackerData(emptyList(), "Tracker unavailable. Please try again.")
             }
         }
     }
 
     companion object {
         private const val CACHE_TTL_SECONDS = 30L
+        private const val MAX_CACHED_ROOMS = 256
     }
 }

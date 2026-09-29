@@ -1563,4 +1563,28 @@ class WebTests {
                 assert(!body.contains("tracker-table"))
             }
     }
+
+    @Test
+    fun `room page shows tracker failures rather than an empty table`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(TrackerData(emptyList(), "Failed to read save"))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).get().uri("/rooms/$roomId").exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Failed to read save"))
+                assert(!body.contains("tracker-table"))
+            }
+    }
 }
