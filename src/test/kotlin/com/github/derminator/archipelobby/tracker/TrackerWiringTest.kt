@@ -1,8 +1,7 @@
 package com.github.derminator.archipelobby.tracker
 
-import com.github.derminator.archipelobby.generator.PythonScriptRunner
-import com.github.derminator.archipelobby.multiserver.InternalToken
-import com.github.derminator.archipelobby.multiserver.MultiServerProperties
+import com.github.derminator.archipelobby.multiserver.MultiServerManager
+import com.github.derminator.archipelobby.multiserver.SaveDataService
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -12,16 +11,15 @@ import kotlin.test.assertIs
 class TrackerWiringTest {
     private val contextRunner = ApplicationContextRunner()
         // Register NoOp first to make the conditional ordering regression observable.
-        .withUserConfiguration(NoOpTrackerService::class.java, PythonTrackerService::class.java)
-        .withBean(PythonScriptRunner::class.java, { mock(PythonScriptRunner::class.java) })
-        .withBean(MultiServerProperties::class.java, { MultiServerProperties(internalToken = "test-token") })
-        .withBean(InternalToken::class.java, { InternalToken(MultiServerProperties(internalToken = "test-token")) })
+        .withUserConfiguration(NoOpTrackerService::class.java, SavedTrackerService::class.java)
+        .withBean(SaveDataService::class.java, { mock(SaveDataService::class.java) })
+        .withBean(MultiServerManager::class.java, { mock(MultiServerManager::class.java) })
 
     @Test
-    fun `enabled multiserver registers only the Python tracker`() {
+    fun `enabled multiserver registers only the saved tracker`() {
         contextRunner.withPropertyValues("archipelobby.multiserver.enabled=true").run { context ->
             assertEquals(1, context.getBeansOfType(TrackerService::class.java).size)
-            assertIs<PythonTrackerService>(context.getBean(TrackerService::class.java))
+            assertIs<SavedTrackerService>(context.getBean(TrackerService::class.java))
         }
     }
 

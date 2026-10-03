@@ -60,11 +60,11 @@ class MultiServerInternalController(
         val bytes = saveDataService.get(roomId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND)
         ResponseEntity.ok()
-            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .contentType(MediaType.APPLICATION_JSON)
             .body(bytes)
     }
 
-    @PutMapping("/save/{roomId}")
+    @PutMapping("/save/{roomId}", consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun putSaveData(
         @RequestHeader(HttpHeaders.AUTHORIZATION, required = false) auth: String?,
         @PathVariable roomId: Long,

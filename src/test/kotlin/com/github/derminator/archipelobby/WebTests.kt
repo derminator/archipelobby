@@ -20,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.never
@@ -47,6 +48,7 @@ import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.test.assertContentEquals
 
 @SpringBootTest
 @EnableAutoConfiguration(
@@ -1463,7 +1465,7 @@ class WebTests {
     @Test
     fun `internal save endpoint returns data for the correct token`(): Unit = runBlocking {
         val roomId = 1L
-        val saveBytes = "save-bytes".toByteArray()
+        val saveBytes = """{"formatVersion":1,"state":{},"tracker":{"players":[]}}""".toByteArray()
         `when`(apSaveRepository.findDataByRoomId(roomId)).thenReturn(Mono.just(saveBytes))
 
         webTestClient
@@ -1471,9 +1473,39 @@ class WebTests {
             .header("Authorization", "Bearer ${internalToken.value}")
             .exchange()
             .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<ByteArray>().consumeWith { response ->
                 assert(response.responseBody!!.contentEquals(saveBytes))
             }
+    }
+
+    @Test
+    fun `internal save endpoint stores JSON bytes unchanged`(): Unit = runBlocking {
+        val saveBytes = """{"formatVersion":1,"state":{},"tracker":{"players":[]}}""".toByteArray()
+        `when`(apSaveRepository.upsert(anyLong(), any(ByteArray::class.java) ?: byteArrayOf()))
+            .thenReturn(Mono.just(1))
+
+        webTestClient.put().uri("/internal/multiserver/save/42")
+            .header("Authorization", "Bearer ${internalToken.value}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(saveBytes)
+            .exchange()
+            .expectStatus().isNoContent
+
+        val captured = ArgumentCaptor.forClass(ByteArray::class.java)
+        verify(apSaveRepository).upsert(org.mockito.ArgumentMatchers.eq(42L), captured.capture() ?: byteArrayOf())
+        assertContentEquals(saveBytes, captured.value)
+    }
+
+    @Test
+    fun `internal save writes reject unauthorized requests`(): Unit = runBlocking {
+        webTestClient.put().uri("/internal/multiserver/save/42")
+            .header("Authorization", "Bearer wrong-token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{}".toByteArray())
+            .exchange()
+            .expectStatus().isNotFound
+        verify(apSaveRepository, never()).upsert(anyLong(), any(ByteArray::class.java) ?: byteArrayOf())
     }
 
     @Test

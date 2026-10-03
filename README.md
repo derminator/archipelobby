@@ -152,6 +152,20 @@ image. This avoids an interactive dependency prompt when opening a room.
 7. **Download All**: Download all YAML files in a room as a ZIP archive
 8. **Room Administration**: Guild admins can delete rooms and manage all entries and APWorlds
 
+The room tracker reads player progress from the latest successful save while the
+MultiServer is running. Autosave runs every 60 seconds, so displayed progress may
+lag gameplay by about a minute. Stopped rooms show a tracker-unavailable message.
+
+MultiServer saves are uncompressed UTF-8 JSON stored in `APSAVES`, with a versioned
+envelope containing the complete resumable Python state and a tracker projection.
+The Kotlin tracker reads that projection directly from the database. Initial
+startup persists a zero-progress save; autosave and shutdown update it. Generated
+`.archipelago` multidata keeps Archipelago's native format.
+
+JSON saves replace the pre-release pickle format without migration or fallback.
+Discard existing development saves before switching formats, and restart running
+MultiServers when deploying the wrapper and Kotlin changes together.
+
 ## Development
 
 ### Building the Project
@@ -161,6 +175,7 @@ image. This avoids an interactive dependency prompt when opening a room.
 ./gradlew bootJar
 
 # Run all tests
+python3 -m pip install -r python/test-requirements.txt
 ./gradlew test
 
 # Run a single test class
@@ -235,6 +250,7 @@ The application uses an embedded H2 database with R2DBC. The schema is versioned
 - `ENTRIES`: Stores YAML file entries (room ID, user ID, name, game, file path, location count)
 - `ENTRY_PATCH_FILES`: Stores generated patch files associated with an entry
 - `APWORLDS`: Stores uploaded `.apworld` files (room ID, user ID, file name/path, game name)
+- `APSAVES`: Stores each room's versioned JSON save and tracker projection as UTF-8 bytes
 
 In production mode, the database is persisted to the configured data directory.
 

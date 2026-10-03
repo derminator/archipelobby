@@ -6,8 +6,8 @@ writing files on disk.
 The wrapper:
   - Downloads the .archipelago multidata for a room from Spring at startup,
     writes it to a temp file (MultiServer.load() expects a file path),
-  - Monkey-patches MultiServer.Context._save to PUT the pickled+zlib save
-    blob to Spring instead of writing it to a .apsave file,
+  - Monkey-patches MultiServer.Context._save to PUT a versioned JSON save
+    with tracker metadata to Spring instead of writing a .apsave file,
   - Monkey-patches MultiServer.Context.init_save to GET that blob from
     Spring instead of reading it from disk.
 
@@ -18,13 +18,13 @@ import argparse
 import asyncio
 import atexit
 import os
-import pickle
 import shutil
 import sys
 import tempfile
 import urllib.error
 import urllib.request
-import zlib
+
+from save_codec import SaveCodec
 
 HTTP_TIMEOUT = 30  # seconds
 
@@ -45,13 +45,13 @@ def fetch_game_data(base_url: str, token: str, room_id: int, target_path: str) -
 
 
 def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) -> None:
-    from Utils import restricted_loads
+    codec = SaveCodec()
 
     save_url = f"{base_url}/internal/multiserver/save/{room_id}"
 
     def _save(self, *_) -> bool:
         try:
-            payload = zlib.compress(pickle.dumps(self.get_save()))
+            payload = codec.dumps(self)
         except Exception as e:
             self.logger.exception(e)
             return False
@@ -59,12 +59,14 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
             req = _authed_request(
                 save_url, token,
                 data=payload, method="PUT",
-                content_type="application/octet-stream",
+                content_type="application/json",
             )
             with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT):
                 pass
             return True
         except Exception as e:
+            if isinstance(e, urllib.error.HTTPError):
+                e.close()
             self.logger.exception(e)
             return False
 
@@ -76,15 +78,18 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
             req = _authed_request(save_url, token)
             with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
                 save_bytes = resp.read()
-            save_data = restricted_loads(zlib.decompress(save_bytes))
+            save_data = codec.loads(save_bytes)
             self.set_save(save_data)
         except urllib.error.HTTPError as e:
+            e.close()
             if e.code != 404:
                 # Anything other than "no save yet" (404) is a real failure. Fail
                 # loudly instead of silently starting with an empty save and
                 # overwriting the player's progress on the next autosave.
                 raise
             self.logger.error("No save data found, starting a new game")
+            if not self._save():
+                raise RuntimeError("Failed to persist initial JSON save")
         self._start_async_saving()
 
     multi_server.Context._save = _save
