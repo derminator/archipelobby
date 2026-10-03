@@ -6,8 +6,8 @@ writing files on disk.
 The wrapper:
   - Downloads the .archipelago multidata for a room from Spring at startup,
     writes it to a temp file (MultiServer.load() expects a file path),
-  - Monkey-patches MultiServer.Context._save to PUT the pickled+zlib save
-    blob to Spring instead of writing it to a .apsave file,
+  - Monkey-patches MultiServer.Context._save to PUT a versioned JSON save
+    with tracker metadata to Spring instead of writing a .apsave file,
   - Monkey-patches MultiServer.Context.init_save to GET that blob from
     Spring instead of reading it from disk.
 
@@ -17,14 +17,17 @@ MultiServer.parse_args() unchanged.
 import argparse
 import asyncio
 import atexit
+import datetime
 import os
-import pickle
 import shutil
 import sys
 import tempfile
+import threading
+import time
 import urllib.error
 import urllib.request
-import zlib
+
+from save_codec import SaveCodec
 
 HTTP_TIMEOUT = 30  # seconds
 
@@ -45,28 +48,60 @@ def fetch_game_data(base_url: str, token: str, room_id: int, target_path: str) -
 
 
 def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) -> None:
-    from Utils import restricted_loads
+    codec = SaveCodec()
 
     save_url = f"{base_url}/internal/multiserver/save/{room_id}"
 
     def _save(self, *_) -> bool:
         try:
-            payload = zlib.compress(pickle.dumps(self.get_save()))
+            payload = codec.dumps(self)
         except Exception as e:
+            self.save_dirty = True
             self.logger.exception(e)
             return False
         try:
             req = _authed_request(
                 save_url, token,
                 data=payload, method="PUT",
-                content_type="application/octet-stream",
+                content_type="application/json",
             )
             with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT):
                 pass
             return True
         except Exception as e:
+            self.save_dirty = True
+            if isinstance(e, urllib.error.HTTPError):
+                e.close()
             self.logger.exception(e)
             return False
+
+    def _start_async_saving(self, atexit_save: bool = True) -> None:
+        if self.auto_saver_thread:
+            return
+
+        def save_regularly():
+            second = multi_server.get_saving_second(self.seed_name, self.auto_save_interval)
+            while not self.exit_event.is_set():
+                now = datetime.datetime.now()
+                next_wakeup = (second - now.second - now.microsecond * 0.000001) % self.auto_save_interval
+                time.sleep(max(1.0, next_wakeup))
+                if self.exit_event.is_set():
+                    break
+                if self.save_dirty:
+                    # Clear before capturing the save, so gameplay updates during
+                    # encoding or the HTTP write stay pending for the next tick.
+                    self.save_dirty = False
+                    self.logger.debug("Saving via thread.")
+                    if not self._save():
+                        self.save_dirty = True
+                        self.logger.info("Saving failed. Retry in %s seconds.", self.auto_save_interval)
+            if not atexit_save:
+                multi_server.queue_gc()
+
+        self.auto_saver_thread = threading.Thread(target=save_regularly, daemon=True)
+        self.auto_saver_thread.start()
+        if atexit_save:
+            atexit.register(self._save, True)
 
     def init_save(self, enabled: bool = True) -> None:
         self.saving = enabled
@@ -76,18 +111,22 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
             req = _authed_request(save_url, token)
             with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
                 save_bytes = resp.read()
-            save_data = restricted_loads(zlib.decompress(save_bytes))
+            save_data = codec.loads(save_bytes)
             self.set_save(save_data)
         except urllib.error.HTTPError as e:
+            e.close()
             if e.code != 404:
                 # Anything other than "no save yet" (404) is a real failure. Fail
                 # loudly instead of silently starting with an empty save and
                 # overwriting the player's progress on the next autosave.
                 raise
             self.logger.error("No save data found, starting a new game")
+            if not self._save():
+                raise RuntimeError("Failed to persist initial JSON save")
         self._start_async_saving()
 
     multi_server.Context._save = _save
+    multi_server.Context._start_async_saving = _start_async_saving
     multi_server.Context.init_save = init_save
 
 

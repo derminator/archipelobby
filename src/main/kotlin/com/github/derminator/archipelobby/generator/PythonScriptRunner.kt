@@ -45,8 +45,15 @@ class PythonScriptRunner(
      */
     @Blocking
     fun run(scriptPath: String, vararg args: String): String {
-        val process = spawn(scriptPath, args)
+        return runProcess(spawn(scriptPath, args))
+    }
 
+    /** Pass credentials through the environment, never the process arguments. */
+    @Blocking
+    fun runWithEnvironment(scriptPath: String, extraEnv: Map<String, String>, vararg args: String): String =
+        runProcess(spawn(scriptPath, args, extraEnv))
+
+    private fun runProcess(process: Process): String {
         val output = StringBuilder()
         BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
             while (true) {

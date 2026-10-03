@@ -8,6 +8,9 @@ import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.multiserver.InternalToken
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
+import com.github.derminator.archipelobby.tracker.PlayerProgress
+import com.github.derminator.archipelobby.tracker.TrackerData
+import com.github.derminator.archipelobby.tracker.TrackerService
 import com.github.derminator.archipelobby.security.DiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.flow.emptyFlow
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyLong
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.anyString
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.never
@@ -44,6 +48,7 @@ import reactor.core.publisher.Mono
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.test.assertContentEquals
 
 @SpringBootTest
 @EnableAutoConfiguration(
@@ -79,6 +84,9 @@ class WebTests {
 
     @MockitoBean
     lateinit var multiServerManager: MultiServerManager
+
+    @MockitoBean
+    lateinit var trackerService: TrackerService
 
     @Autowired
     lateinit var uploadsService: UploadsService
@@ -1457,7 +1465,7 @@ class WebTests {
     @Test
     fun `internal save endpoint returns data for the correct token`(): Unit = runBlocking {
         val roomId = 1L
-        val saveBytes = "save-bytes".toByteArray()
+        val saveBytes = """{"formatVersion":1,"state":{},"tracker":{"players":[]}}""".toByteArray()
         `when`(apSaveRepository.findDataByRoomId(roomId)).thenReturn(Mono.just(saveBytes))
 
         webTestClient
@@ -1465,9 +1473,39 @@ class WebTests {
             .header("Authorization", "Bearer ${internalToken.value}")
             .exchange()
             .expectStatus().isOk
+            .expectHeader().contentType(MediaType.APPLICATION_JSON)
             .expectBody<ByteArray>().consumeWith { response ->
                 assert(response.responseBody!!.contentEquals(saveBytes))
             }
+    }
+
+    @Test
+    fun `internal save endpoint stores JSON bytes unchanged`(): Unit = runBlocking {
+        val saveBytes = """{"formatVersion":1,"state":{},"tracker":{"players":[]}}""".toByteArray()
+        `when`(apSaveRepository.upsert(anyLong(), any(ByteArray::class.java) ?: byteArrayOf()))
+            .thenReturn(Mono.just(1))
+
+        webTestClient.put().uri("/internal/multiserver/save/42")
+            .header("Authorization", "Bearer ${internalToken.value}")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(saveBytes)
+            .exchange()
+            .expectStatus().isNoContent
+
+        val captured = ArgumentCaptor.forClass(ByteArray::class.java)
+        verify(apSaveRepository).upsert(org.mockito.ArgumentMatchers.eq(42L), captured.capture() ?: byteArrayOf())
+        assertContentEquals(saveBytes, captured.value)
+    }
+
+    @Test
+    fun `internal save writes reject unauthorized requests`(): Unit = runBlocking {
+        webTestClient.put().uri("/internal/multiserver/save/42")
+            .header("Authorization", "Bearer wrong-token")
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue("{}".toByteArray())
+            .exchange()
+            .expectStatus().isNotFound
+        verify(apSaveRepository, never()).upsert(anyLong(), any(ByteArray::class.java) ?: byteArrayOf())
     }
 
     @Test
@@ -1485,5 +1523,100 @@ class WebTests {
             .get().uri("/internal/multiserver/save/1")
             .exchange()
             .expectStatus().isNotFound
+    }
+
+    @Test
+    fun `room page shows tracker table when tracker data is available`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(
+            TrackerData(
+                listOf(
+                    PlayerProgress(1, "Alice", "A Link to the Past", 42, 216, "Playing"),
+                    PlayerProgress(2, "Bob", "Factorio", 10, 50, "Connected"),
+                )
+            )
+        )
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Tracker"))
+                assert(body.contains("Alice"))
+                assert(body.contains("A Link to the Past"))
+                assert(body.contains("42 / 216"))
+                assert(body.contains("Playing"))
+                assert(body.contains("Bob"))
+                assert(body.contains("Factorio"))
+                assert(body.contains("10 / 50"))
+            }
+    }
+
+    @Test
+    fun `room page hides tracker when no tracker data`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(false)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(null)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(!body.contains("Tracker"))
+                assert(!body.contains("tracker-table"))
+            }
+    }
+
+    @Test
+    fun `room page shows tracker failures rather than an empty table`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(roomId, 123, "Test Room", generatedGameFilePath = "game.archipelago")
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(trackerService.getTrackerData(roomId)).thenReturn(TrackerData(emptyList(), "Failed to read save"))
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        ).get().uri("/rooms/$roomId").exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Failed to read save"))
+                assert(!body.contains("tracker-table"))
+            }
     }
 }

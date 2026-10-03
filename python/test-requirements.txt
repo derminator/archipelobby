@@ -1,0 +1,8 @@
+# Minimal dependencies for tests using the bundled MultiServer and its types.
+# Versions match Archipelago/requirements.txt; game/world dependencies are not needed.
+colorama==0.4.6
+websockets==13.1
+PyYAML==6.0.3
+schema==0.7.8
+typing_extensions==4.15.0
+pathspec==1.0.4
