@@ -41,13 +41,15 @@ class SaveCodec:
                 "items": [self.encode(item) for item in value],
             }
         if isinstance(value, dict):
+            # get_save() retains live containers. Capture their entries before
+            # recursive Python calls let the gameplay thread mutate them.
             return {"type": "dict", "items": [
-                [self.encode(key), self.encode(item)] for key, item in value.items()
+                [self.encode(key), self.encode(item)] for key, item in tuple(value.items())
             ]}
         if type(value) is list:
-            return [self.encode(item) for item in value]
+            return [self.encode(item) for item in tuple(value)]
         if type(value) in (tuple, set, frozenset):
-            return {"type": type(value).__name__, "items": [self.encode(item) for item in value]}
+            return {"type": type(value).__name__, "items": [self.encode(item) for item in tuple(value)]}
         raise ValueError(f"Unsupported save value: {type(value).__name__}")
 
     def decode(self, value):

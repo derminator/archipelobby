@@ -1,9 +1,10 @@
 import http.server
 import json
+import queue
 import threading
 import types
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import multiserver_wrapper
 from test_save_codec import MultiServer, make_context
@@ -50,7 +51,11 @@ class JsonSaveHooksTest(unittest.TestCase):
         self.context_class = type("WrappedContext", (MultiServer.Context,), {})
         multiserver_wrapper.install_save_hooks(
             f"http://127.0.0.1:{server.server_port}", "test-token", 42,
-            types.SimpleNamespace(Context=self.context_class),
+            types.SimpleNamespace(
+                Context=self.context_class,
+                get_saving_second=MultiServer.get_saving_second,
+                queue_gc=MultiServer.queue_gc,
+            ),
         )
 
     def new_context(self, populated=False):
@@ -140,6 +145,82 @@ class JsonSaveHooksTest(unittest.TestCase):
         context._start_async_saving.assert_not_called()
         self.assertEqual(self.puts, [])
         self.assertIsNone(self.saved)
+
+    def start_autosaver(self, context):
+        # Exercise the actual background loop, including its dirty-state handling.
+        del context._start_async_saving
+        context.auto_save_interval = 1
+        context.saving = True
+        context._start_async_saving(atexit_save=False)
+
+    def stop_autosaver(self, context):
+        context.exit_event.set()
+        context.auto_saver_thread.join(5)
+        self.assertFalse(context.auto_saver_thread.is_alive())
+
+    def assert_autosave_retries(self, failure):
+        context = self.new_context(populated=True)
+        self.assertTrue(context._save())
+        previous = self.saved
+        context.location_checks[0, 1].add(102)
+        context.save_dirty = True
+        if failure == "encoding":
+            context.stored_data["unsupported"] = object()
+        else:
+            self.fail_put = True
+        attempts = queue.Queue()
+        save = context._save
+
+        def record_save():
+            result = save()
+            attempts.put(result)
+            return result
+
+        with patch.object(context, "_save", side_effect=record_save):
+            self.start_autosaver(context)
+            try:
+                self.assertFalse(attempts.get(timeout=5))
+                self.assertEqual(self.saved, previous)
+                context.stored_data.pop("unsupported", None)
+                self.fail_put = False
+                # No call to save(): the failed attempt must stay pending.
+                self.assertTrue(attempts.get(timeout=5))
+                self.assertEqual(json.loads(self.saved)["tracker"]["players"][0]["checksDone"], 2)
+                self.assertFalse(context.save_dirty)
+            finally:
+                self.stop_autosaver(context)
+
+    def test_autosave_retries_failed_encoding_without_new_game_events(self):
+        self.assert_autosave_retries("encoding")
+
+    def test_autosave_retries_failed_http_writes_without_new_game_events(self):
+        self.assert_autosave_retries("http")
+
+    def test_autosave_keeps_changes_made_during_a_successful_write_pending(self):
+        context = self.new_context(populated=True)
+        context.save_dirty = True
+        attempts = queue.Queue()
+        save = context._save
+        first_write = True
+
+        def save_then_update():
+            nonlocal first_write
+            result = save()
+            if first_write:
+                first_write = False
+                context.location_checks[0, 1].add(102)
+                context.save()
+            attempts.put((result, json.loads(self.saved)["tracker"]["players"][0]["checksDone"]))
+            return result
+
+        with patch.object(context, "_save", side_effect=save_then_update):
+            self.start_autosaver(context)
+            try:
+                self.assertEqual(attempts.get(timeout=5), (True, 1))
+                self.assertEqual(attempts.get(timeout=5), (True, 2))
+                self.assertFalse(context.save_dirty)
+            finally:
+                self.stop_autosaver(context)
 
 
 if __name__ == "__main__":

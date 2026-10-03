@@ -4,6 +4,7 @@ import com.github.derminator.archipelobby.multiserver.MultiServerManager
 import com.github.derminator.archipelobby.multiserver.SaveDataService
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.mock
+import org.springframework.beans.factory.getBean
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -19,7 +20,7 @@ class TrackerWiringTest {
     fun `enabled multiserver registers only the saved tracker`() {
         contextRunner.withPropertyValues("archipelobby.multiserver.enabled=true").run { context ->
             assertEquals(1, context.getBeansOfType(TrackerService::class.java).size)
-            assertIs<SavedTrackerService>(context.getBean(TrackerService::class.java))
+            assertIs<SavedTrackerService>(context.getBean<TrackerService>())
         }
     }
 
@@ -27,7 +28,7 @@ class TrackerWiringTest {
     fun `disabled multiserver registers only the no-op tracker`() {
         contextRunner.withPropertyValues("archipelobby.multiserver.enabled=false").run { context ->
             assertEquals(1, context.getBeansOfType(TrackerService::class.java).size)
-            assertIs<NoOpTrackerService>(context.getBean(TrackerService::class.java))
+            assertIs<NoOpTrackerService>(context.getBean<TrackerService>())
         }
     }
 
@@ -35,7 +36,7 @@ class TrackerWiringTest {
     fun `missing multiserver property defaults to the no-op tracker`() {
         contextRunner.run { context ->
             assertEquals(1, context.getBeansOfType(TrackerService::class.java).size)
-            assertIs<NoOpTrackerService>(context.getBean(TrackerService::class.java))
+            assertIs<NoOpTrackerService>(context.getBean<TrackerService>())
         }
     }
 }

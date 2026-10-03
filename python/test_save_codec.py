@@ -2,6 +2,7 @@ import datetime
 import enum
 import json
 import sys
+import threading
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -117,6 +118,63 @@ class SaveCodecTest(unittest.TestCase):
             envelope = json.loads(self.codec.dumps(context))
         self.assertEqual(envelope["tracker"]["players"][0]["checksDone"], 1)
         self.assertEqual(self.codec.decode(envelope["state"])["location_checks"][0, 1], {101})
+
+    def encode_while_mutating(self, context, marker, mutate):
+        encoding = threading.Event()
+        changed = threading.Event()
+
+        def change_live_state():
+            if encoding.wait(5):
+                mutate()
+                changed.set()
+
+        encode = self.codec.encode
+
+        def encode_with_concurrent_change(value):
+            if type(value) is type(marker) and value == marker and not encoding.is_set():
+                encoding.set()
+                self.assertTrue(changed.wait(5), "Live-state mutation did not complete")
+            return encode(value)
+
+        worker = threading.Thread(target=change_live_state, daemon=True)
+        worker.start()
+        try:
+            with patch.object(self.codec, "encode", side_effect=encode_with_concurrent_change):
+                envelope = json.loads(self.codec.dumps(context))
+        finally:
+            encoding.set()
+            worker.join(5)
+        self.assertFalse(worker.is_alive())
+        self.assertTrue(changed.is_set())
+        return envelope
+
+    def test_live_checks_can_change_while_a_save_is_encoded(self):
+        context = make_context(populated=False)
+        checks = {101}
+        context.location_checks[0, 1] = checks
+        envelope = self.encode_while_mutating(context, 101, lambda: checks.add(102))
+        state = self.codec.decode(envelope["state"])
+        self.assertEqual(state["location_checks"][0, 1], {101})
+        self.assertEqual(envelope["tracker"]["players"][0]["checksDone"], 1)
+        self.assertEqual(checks, {101, 102})
+
+    def test_live_dictionary_can_change_while_a_save_is_encoded(self):
+        context = make_context(populated=False)
+        stored_data = {"first": "capture-me"}
+        context.stored_data = stored_data
+        envelope = self.encode_while_mutating(context, "capture-me", lambda: stored_data.update(second="later"))
+        state = self.codec.decode(envelope["state"])
+        self.assertEqual(state["stored_data"], {"first": "capture-me"})
+        self.assertEqual(stored_data, {"first": "capture-me", "second": "later"})
+
+    def test_live_list_can_change_while_a_save_is_encoded(self):
+        context = make_context(populated=False)
+        values = ["capture-me"]
+        context.stored_data["list"] = values
+        envelope = self.encode_while_mutating(context, "capture-me", lambda: values.append("later"))
+        state = self.codec.decode(envelope["state"])
+        self.assertEqual(state["stored_data"]["list"], ["capture-me"])
+        self.assertEqual(values, ["capture-me", "later"])
 
     def test_corrupt_unknown_and_unsupported_formats_are_rejected(self):
         envelope = json.loads(self.codec.dumps(make_context()))

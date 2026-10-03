@@ -17,10 +17,13 @@ MultiServer.parse_args() unchanged.
 import argparse
 import asyncio
 import atexit
+import datetime
 import os
 import shutil
 import sys
 import tempfile
+import threading
+import time
 import urllib.error
 import urllib.request
 
@@ -53,6 +56,7 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
         try:
             payload = codec.dumps(self)
         except Exception as e:
+            self.save_dirty = True
             self.logger.exception(e)
             return False
         try:
@@ -65,10 +69,39 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
                 pass
             return True
         except Exception as e:
+            self.save_dirty = True
             if isinstance(e, urllib.error.HTTPError):
                 e.close()
             self.logger.exception(e)
             return False
+
+    def _start_async_saving(self, atexit_save: bool = True) -> None:
+        if self.auto_saver_thread:
+            return
+
+        def save_regularly():
+            second = multi_server.get_saving_second(self.seed_name, self.auto_save_interval)
+            while not self.exit_event.is_set():
+                now = datetime.datetime.now()
+                next_wakeup = (second - now.second - now.microsecond * 0.000001) % self.auto_save_interval
+                time.sleep(max(1.0, next_wakeup))
+                if self.exit_event.is_set():
+                    break
+                if self.save_dirty:
+                    # Clear before capturing the save, so gameplay updates during
+                    # encoding or the HTTP write stay pending for the next tick.
+                    self.save_dirty = False
+                    self.logger.debug("Saving via thread.")
+                    if not self._save():
+                        self.save_dirty = True
+                        self.logger.info("Saving failed. Retry in %s seconds.", self.auto_save_interval)
+            if not atexit_save:
+                multi_server.queue_gc()
+
+        self.auto_saver_thread = threading.Thread(target=save_regularly, daemon=True)
+        self.auto_saver_thread.start()
+        if atexit_save:
+            atexit.register(self._save, True)
 
     def init_save(self, enabled: bool = True) -> None:
         self.saving = enabled
@@ -93,6 +126,7 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
         self._start_async_saving()
 
     multi_server.Context._save = _save
+    multi_server.Context._start_async_saving = _start_async_saving
     multi_server.Context.init_save = init_save
 
 
