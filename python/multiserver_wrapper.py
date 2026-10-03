@@ -91,6 +91,23 @@ def install_save_hooks(base_url: str, token: str, room_id: int, multi_server) ->
     multi_server.Context.init_save = init_save
 
 
+def install_ready_hook(ready_token: str, multi_server) -> None:
+    """Report readiness only after this process successfully owns its port."""
+    original_serve = multi_server.websockets.serve
+
+    def serve(*args, **kwargs):
+        server_awaitable = original_serve(*args, **kwargs)
+
+        async def start_server():
+            server = await server_awaitable
+            print(f"ARCHIPELOBBY_READY={ready_token}", flush=True)
+            return server
+
+        return start_server()
+
+    multi_server.websockets.serve = serve
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(allow_abbrev=False)
     parser.add_argument("--spring-url", required=True)
@@ -102,6 +119,10 @@ def main() -> None:
     token = os.environ.get("ARCHIPELOBBY_SPRING_TOKEN")
     if not token:
         print("ARCHIPELOBBY_SPRING_TOKEN env var is required", file=sys.stderr)
+        sys.exit(1)
+    ready_token = os.environ.get("ARCHIPELOBBY_READY_TOKEN")
+    if not ready_token:
+        print("ARCHIPELOBBY_READY_TOKEN env var is required", file=sys.stderr)
         sys.exit(1)
 
     sys.path.insert(0, os.path.abspath(args.archipelago_dir))
@@ -120,6 +141,7 @@ def main() -> None:
 
     import MultiServer
     install_save_hooks(args.spring_url, token, args.room_id, MultiServer)
+    install_ready_hook(ready_token, MultiServer)
 
     # MultiServer defines the multidata file as its optional positional
     # argument, not as a --multidata option.
