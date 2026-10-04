@@ -97,6 +97,7 @@ class ProcessMultiServerManager(
                         }
                     }
                     val exitCode = process.waitFor()
+                    (process as? AutoCloseable)?.close()
                     // CAS remove so a racing startServer that already put a fresh
                     // ManagedServer for this room isn't clobbered.
                     processes.remove(roomId, managed)

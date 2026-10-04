@@ -1,18 +1,27 @@
 package com.github.derminator.archipelobby.controllers
 
+import com.github.derminator.archipelobby.DownloadZipWriter
 import com.github.derminator.archipelobby.data.ApWorldFile
+import com.github.derminator.archipelobby.safeDownloadFileName
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.Puns
 import com.github.derminator.archipelobby.data.RoomService
 import com.github.derminator.archipelobby.generator.GameCatalogService
+import com.github.derminator.archipelobby.generator.GenerationJobLimiter
 import com.github.derminator.archipelobby.security.asDiscordPrincipal
 import com.github.derminator.archipelobby.storage.UploadsService
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.mono
 import kotlinx.coroutines.withContext
+import org.springframework.beans.factory.annotation.Value
+import org.slf4j.LoggerFactory
+import org.springframework.core.io.buffer.DataBufferLimitException
 import org.springframework.core.io.buffer.DataBufferUtils
+import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -25,12 +34,18 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.server.ServerWebExchange
 import reactor.core.publisher.Mono
+import reactor.core.publisher.Flux
+import reactor.core.scheduler.Schedulers
 import tools.jackson.dataformat.yaml.YAMLMapper
 import tools.jackson.module.kotlin.KotlinModule
-import java.io.ByteArrayOutputStream
 import java.security.Principal
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.LinkOption
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.Semaphore
 
 @Controller
 @RequestMapping("/rooms")
@@ -38,10 +53,31 @@ class RoomController(
     private val roomService: RoomService,
     private val uploadsService: UploadsService,
     private val gameCatalogService: GameCatalogService,
+    private val generationJobLimiter: GenerationJobLimiter,
+    @Value($$"${archipelobby.resources.max-upload-bytes:67108864}")
+    private val maxUploadBytes: Int = 64 * 1024 * 1024,
+    @Value($$"${archipelobby.resources.max-download-uncompressed-bytes:134217728}")
+    private val maxDownloadUncompressedBytes: Long = 128L * 1024 * 1024,
+    @Value($$"${archipelobby.resources.max-download-archive-bytes:67108864}")
+    private val maxDownloadArchiveBytes: Long = 64L * 1024 * 1024,
+    @Value($$"${archipelobby.resources.max-download-entries:256}")
+    private val maxDownloadEntries: Int = 256,
+    @Value($$"${archipelobby.resources.max-concurrent-downloads:2}")
+    maxConcurrentDownloads: Int = 2,
 ) {
+    private val logger = LoggerFactory.getLogger(RoomController::class.java)
+    private val downloadPermits = Semaphore(maxConcurrentDownloads.also { require(it > 0) })
     private val yamlMapper = YAMLMapper.builder()
         .addModule(KotlinModule.Builder().build())
         .build()
+
+    init {
+        require(maxUploadBytes > 0)
+        require(maxDownloadUncompressedBytes > 0)
+        require(maxDownloadArchiveBytes > 0)
+        require(maxDownloadEntries > 0)
+        require(maxDownloadEntries < Int.MAX_VALUE)
+    }
 
     @GetMapping
     fun getRooms(
@@ -115,8 +151,9 @@ class RoomController(
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        try {
-            val yamlFile = form.yamlFile
+        generationJobLimiter.run {
+            try {
+                val yamlFile = form.yamlFile
 
             if (!yamlFile.filename().endsWith(".yaml") && !yamlFile.filename().endsWith(".yml")) {
                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "File must be a YAML file")
@@ -139,18 +176,17 @@ class RoomController(
                     Triple(apworldFilePart.filename(), apworldBytes, gameName)
                 } else null
 
-            val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
-            val apWorldFile: ApWorldFile? = pendingApWorld?.let { (name, bytes, gameName) ->
-                ApWorldFile(
-                    fileName = name,
-                    filePath = uploadsService.saveFile(bytes, name),
-                    gameName = gameName,
-                )
-            }
-
-            val savedPaths = listOfNotNull(filePath, apWorldFile?.filePath)
-
+            val savedPaths = mutableListOf<String>()
             try {
+                val filePath = uploadsService.saveFile(fileBytes, yamlFile.filename())
+                    .also(savedPaths::add)
+                val apWorldFile: ApWorldFile? = pendingApWorld?.let { (name, bytes, gameName) ->
+                    ApWorldFile(
+                        fileName = name,
+                        filePath = uploadsService.saveFile(bytes, name).also(savedPaths::add),
+                        gameName = gameName,
+                    )
+                }
                 roomService.addEntry(
                     roomId = roomId,
                     userId = userId,
@@ -159,8 +195,10 @@ class RoomController(
                     yamlFilePath = filePath,
                     apWorldFile = apWorldFile,
                 )
-            } catch (e: Exception) {
-                savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
+            } catch (e: Throwable) {
+                withContext(NonCancellable) {
+                    savedPaths.forEach { runCatching { uploadsService.deleteFile(it) } }
+                }
                 throw e
             }
 
@@ -172,6 +210,7 @@ class RoomController(
                 "room"
             } else throw e
         }
+    }
     }
 
     @PostMapping("/{roomId}/entries/{entryId}/delete")
@@ -200,7 +239,7 @@ class RoomController(
         }
 
         val fileContent = uploadsService.getFile(entry.yamlFilePath)
-        val filename = "${entry.name}.yaml"
+        val filename = safeDownloadFileName(entry.name, ".yaml")
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
@@ -224,7 +263,10 @@ class RoomController(
         val fileContent = uploadsService.getFile(patch.filePath)
 
         ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${patch.fileName}\"")
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"${safeDownloadFileName(patch.fileName)}\"",
+            )
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(fileContent)
     }
@@ -246,7 +288,10 @@ class RoomController(
         val fileContent = uploadsService.getFile(apWorld.filePath)
 
         ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${apWorld.fileName}\"")
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"${safeDownloadFileName(apWorld.fileName, ".apworld")}\"",
+            )
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
             .body(fileContent)
     }
@@ -265,44 +310,104 @@ class RoomController(
     @GetMapping("/{roomId}/download")
     fun downloadAll(
         @PathVariable roomId: Long,
-        principal: Principal
-    ): Mono<ResponseEntity<ByteArray>> = mono {
+        principal: Principal,
+        exchange: ServerWebExchange,
+    ): Mono<ResponseEntity<Flux<DataBuffer>>> = mono {
         val userId = principal.asDiscordPrincipal.userId
         val roomWithEntries = roomService.getRoom(roomId, userId)
-
-        val entries = roomWithEntries.entries.toList()
-        val apWorlds = roomService.getApWorldsForRoom(roomId, userId).toList()
-
-        val zipBytes = withContext(Dispatchers.IO) {
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            ZipOutputStream(byteArrayOutputStream).use { zipOut ->
-                for ((id) in entries) {
-                    val entry = roomService.getEntry(id) ?: continue
-                    if (uploadsService.fileExists(entry.yamlFilePath)) {
-                        val fileContent = uploadsService.getFile(entry.yamlFilePath)
-                        zipOut.putNextEntry(ZipEntry("Players/${entry.name}.yaml"))
-                        zipOut.write(fileContent)
-                        zipOut.closeEntry()
-                    }
-                }
-                for ((id) in apWorlds) {
-                    val apWorld = roomService.getApWorld(id) ?: continue
-                    if (uploadsService.fileExists(apWorld.filePath)) {
-                        val fileContent = uploadsService.getFile(apWorld.filePath)
-                        zipOut.putNextEntry(ZipEntry("custom_worlds/${apWorld.fileName}"))
-                        zipOut.write(fileContent)
-                        zipOut.closeEntry()
-                    }
-                }
-            }
-            byteArrayOutputStream.toByteArray()
-        }
-        val filename = "${roomWithEntries.room.name}.zip"
-
+        val body = Flux.usingWhen(
+            mono { createDownloadArchive(roomId, userId, roomWithEntries) },
+            { archive ->
+                DataBufferUtils.readByteChannel(
+                    { archive.channel },
+                    exchange.response.bufferFactory(),
+                    64 * 1024,
+                )
+            },
+            DownloadArchiveResource::cleanup,
+            { archive, _ -> archive.cleanup() },
+            DownloadArchiveResource::cleanup,
+        )
+        val filename = safeDownloadFileName(roomWithEntries.room.name, ".zip")
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             .contentType(MediaType.APPLICATION_OCTET_STREAM)
-            .body(zipBytes)
+            .body(body)
+    }
+
+    private suspend fun createDownloadArchive(
+        roomId: Long,
+        userId: Long,
+        roomWithEntries: com.github.derminator.archipelobby.data.RoomWithEntries,
+    ): DownloadArchiveResource {
+        if (!downloadPermits.tryAcquire()) {
+            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many downloads are already running")
+        }
+        var zipPath: java.nio.file.Path? = null
+        var readChannel: FileChannel? = null
+        var archiveReturned = false
+        try {
+            val entries = roomWithEntries.entries.take(maxDownloadEntries + 1).toList()
+            if (entries.size > maxDownloadEntries) {
+                throw ResponseStatusException(
+                    HttpStatus.CONTENT_TOO_LARGE,
+                    "Download ZIP entry count exceeds $maxDownloadEntries",
+                )
+            }
+            val remainingEntries = maxDownloadEntries - entries.size
+            val apWorlds = roomService.getApWorldsForRoom(roomId, userId).take(remainingEntries + 1).toList()
+            if (apWorlds.size > remainingEntries) {
+                throw ResponseStatusException(
+                    HttpStatus.CONTENT_TOO_LARGE,
+                    "Download ZIP entry count exceeds $maxDownloadEntries",
+                )
+            }
+
+            zipPath = Files.createTempFile("archipelobby-download-", ".zip")
+            withContext(Dispatchers.IO) {
+                Files.newOutputStream(
+                    zipPath,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING,
+                    LinkOption.NOFOLLOW_LINKS,
+                ).use { output ->
+                    DownloadZipWriter(
+                        output,
+                        maxUncompressedBytes = maxDownloadUncompressedBytes,
+                        maxArchiveBytes = maxDownloadArchiveBytes,
+                        maxEntries = maxDownloadEntries,
+                    ).use { writer ->
+                        for ((id) in entries) {
+                            val entry = roomService.getEntry(id) ?: continue
+                            if (uploadsService.fileExists(entry.yamlFilePath)) {
+                                val safeName = safeDownloadFileName(entry.name, ".yaml")
+                                writer.add("Players/${id}_$safeName", uploadsService.getFile(entry.yamlFilePath))
+                            }
+                        }
+                        for ((id) in apWorlds) {
+                            val apWorld = roomService.getApWorld(id) ?: continue
+                            if (uploadsService.fileExists(apWorld.filePath)) {
+                                val safeName = safeDownloadFileName(apWorld.fileName, ".apworld")
+                                writer.add("custom_worlds/${id}_$safeName", uploadsService.getFile(apWorld.filePath))
+                            }
+                        }
+                    }
+                }
+            }
+            val openedChannel = FileChannel.open(zipPath, StandardOpenOption.READ, LinkOption.NOFOLLOW_LINKS)
+            readChannel = openedChannel
+            return DownloadArchiveResource(zipPath, openedChannel, downloadPermits).also { archiveReturned = true }
+        } finally {
+            if (!archiveReturned) {
+                runCatching { readChannel?.close() }
+                val deleted = zipPath?.let(::deleteTemporaryArchiveWithRetries) ?: true
+                if (deleted) {
+                    downloadPermits.release()
+                } else {
+                    logger.error("Unable to delete failed download archive {}; retaining its permit", zipPath)
+                }
+            }
+        }
     }
 
     @PostMapping("/{roomId}/generate")
@@ -324,8 +429,9 @@ class RoomController(
         model: Model,
     ): Mono<String> = mono {
         val userId = principal.asDiscordPrincipal.userId
-        try {
-            val filePart = form.gameFile
+        generationJobLimiter.run {
+            try {
+                val filePart = form.gameFile
             val filename = filePart.filename()
             if (!filename.endsWith(".archipelago") && !filename.endsWith(".zip")) {
                 throw ResponseStatusException(
@@ -346,6 +452,7 @@ class RoomController(
                 "room"
             } else throw e
         }
+    }
     }
 
     @PostMapping("/{roomId}/generated-game/delete")
@@ -376,7 +483,7 @@ class RoomController(
         }
 
         val fileContent = uploadsService.getFile(filePath)
-        val filename = "${room.name}.archipelago"
+        val filename = safeDownloadFileName(room.name, ".archipelago")
 
         ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
@@ -400,7 +507,10 @@ class RoomController(
         val fileContent = uploadsService.getFile(filePath)
 
         ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${room.name}_Spoiler.txt\"")
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"${safeDownloadFileName("${room.name}_Spoiler", ".txt")}\"",
+            )
             .contentType(MediaType.TEXT_PLAIN)
             .body(fileContent)
     }
@@ -492,13 +602,54 @@ class RoomController(
     }
 
     private suspend fun readFilePart(filePart: FilePart): ByteArray {
-        val outputStream = ByteArrayOutputStream()
-        filePart.content().collectList().awaitSingle().forEach { dataBuffer ->
-            val bytes = ByteArray(dataBuffer.readableByteCount())
-            dataBuffer.read(bytes)
-            DataBufferUtils.release(dataBuffer)
-            outputStream.write(bytes)
+        val dataBuffer = try {
+            DataBufferUtils.join(filePart.content(), maxUploadBytes).awaitSingle()
+        } catch (error: DataBufferLimitException) {
+            throw ResponseStatusException(
+                HttpStatus.CONTENT_TOO_LARGE,
+                "Upload exceeds the $maxUploadBytes byte limit",
+                error,
+            )
         }
-        return outputStream.toByteArray()
+        return try {
+            ByteArray(dataBuffer.readableByteCount()).also(dataBuffer::read)
+        } finally {
+            DataBufferUtils.release(dataBuffer)
+        }
     }
+}
+
+internal class DownloadArchiveResource(
+    val path: Path,
+    val channel: FileChannel,
+    private val permits: Semaphore,
+) {
+    private val cleaned = AtomicBoolean()
+    private val cleanupLock = Any()
+
+    fun cleanup(): Mono<Void> = Mono.fromRunnable<Void> {
+        synchronized<Unit>(cleanupLock) {
+            if (!cleaned.get()) {
+                runCatching { channel.close() }
+                val deleted = deleteTemporaryArchiveWithRetries(path)
+                if (!deleted) {
+                    throw IllegalStateException("Unable to delete temporary download archive $path")
+                }
+                cleaned.set(true)
+                permits.release()
+            }
+        }
+    }.subscribeOn(Schedulers.boundedElastic()).then()
+}
+
+private fun deleteTemporaryArchiveWithRetries(path: Path): Boolean {
+    repeat(3) { attempt ->
+        try {
+            Files.deleteIfExists(path)
+            return true
+        } catch (_: Exception) {
+            if (attempt < 2) Thread.sleep(25L * (attempt + 1))
+        }
+    }
+    return false
 }

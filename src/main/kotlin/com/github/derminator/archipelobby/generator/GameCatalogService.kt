@@ -1,5 +1,7 @@
 package com.github.derminator.archipelobby.generator
 
+import com.github.derminator.archipelobby.ZipResourceLimits
+import com.github.derminator.archipelobby.findZipEntryBytes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.springframework.beans.factory.annotation.Value
@@ -9,11 +11,9 @@ import org.springframework.web.server.ResponseStatusException
 import tools.jackson.databind.DeserializationFeature
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.KotlinModule
-import java.io.ByteArrayInputStream
 import java.io.File
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicReference
-import java.util.zip.ZipInputStream
 
 /**
  * Lists the games an Archipelago installation can generate for.
@@ -32,6 +32,9 @@ class GameCatalogService(
     @Value($$"${archipelobby.archipelago.script-path:Archipelago/Generate.py}")
     private val archipelagoScriptPath: String,
     private val pythonScriptRunner: PythonScriptRunner,
+    @Value($$"${archipelobby.resources.max-manifest-bytes:1048576}")
+    private val maxManifestBytes: Long = 1024 * 1024,
+    private val jobLimiter: GenerationJobLimiter = GenerationJobLimiter(),
 ) {
 
     private val jsonMapper: JsonMapper = JsonMapper.builder()
@@ -39,9 +42,15 @@ class GameCatalogService(
         .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
         .build()
 
-    private val coreGamesCache = AtomicReference<List<GameInfo>>()
+    private val coreGamesCache = AtomicReference<List<GameInfo>?>(null)
 
-    suspend fun listCoreGames(): List<GameInfo> {
+    init {
+        require(maxManifestBytes > 0)
+    }
+
+    suspend fun listCoreGames(): List<GameInfo> = jobLimiter.run { listCoreGamesWithinPermit() }
+
+    private suspend fun listCoreGamesWithinPermit(): List<GameInfo> {
         coreGamesCache.get()?.let { return it }
         val fresh = withContext(Dispatchers.IO) { runCoreHelper() }
         coreGamesCache.compareAndSet(null, fresh)
@@ -56,33 +65,27 @@ class GameCatalogService(
      * the same Python helper used for core games with the apworld placed in
      * custom_worlds/, then diffs the result against the core game list.
      */
-    suspend fun extractApWorldGame(apworldBytes: ByteArray, fileName: String): String {
+    suspend fun extractApWorldGame(apworldBytes: ByteArray, fileName: String): String = jobLimiter.run {
         val manifestGame = readManifestGame(apworldBytes)
-        if (manifestGame != null) return manifestGame
+        if (manifestGame != null) return@run manifestGame
 
-        val coreGames = listCoreGames().map { it.name }.toSet()
-        return withContext(Dispatchers.IO) { runApWorldHelper(apworldBytes, fileName, coreGames) }
+        val coreGames = listCoreGamesWithinPermit().map { it.name }.toSet()
+        withContext(Dispatchers.IO) { runApWorldHelper(apworldBytes, fileName, coreGames) }
     }
 
     private fun readManifestGame(apworldBytes: ByteArray): String? {
-        ByteArrayInputStream(apworldBytes).use { bis ->
-            ZipInputStream(bis).use { zis ->
-                var entry = zis.nextEntry
-                while (entry != null) {
-                    if (!entry.isDirectory && entry.name.endsWith("archipelago.json")) {
-                        return runCatching {
-                            val manifest = jsonMapper.readValue(
-                                zis.readAllBytes(),
-                                ApWorldManifest::class.java,
-                            )
-                            manifest.game?.takeIf { it.isNotBlank() }
-                        }.getOrNull()
-                    }
-                    entry = zis.nextEntry
-                }
-            }
-        }
-        return null
+        val manifestBytes = findZipEntryBytes(
+            apworldBytes,
+            ZipResourceLimits(maxCompressionRatio = 100),
+            maxMatchingEntryBytes = maxManifestBytes,
+        ) { entry ->
+            !entry.isDirectory && entry.name.replace('\\', '/').substringAfterLast('/') == "archipelago.json"
+        } ?: return null
+
+        return runCatching {
+            jsonMapper.readValue(manifestBytes, ApWorldManifest::class.java)
+                .game?.takeIf { it.isNotBlank() }
+        }.getOrNull()
     }
 
     private fun runApWorldHelper(apworldBytes: ByteArray, fileName: String, coreGames: Set<String>): String {
@@ -103,7 +106,11 @@ class GameCatalogService(
         try {
             archipelagoRoot.copyRecursively(workDir, overwrite = true)
             val customWorldsDir = workDir.resolve("custom_worlds").also { it.mkdirs() }
-            customWorldsDir.resolve(fileName).writeBytes(apworldBytes)
+            writeGeneratedJobFiles(
+                customWorldsDir.toPath(),
+                mapOf(fileName to apworldBytes),
+                ".apworld",
+            )
             val scriptInWorkDir = workDir.resolve(scriptSrc.name)
             scriptSrc.copyTo(scriptInWorkDir, overwrite = true)
 

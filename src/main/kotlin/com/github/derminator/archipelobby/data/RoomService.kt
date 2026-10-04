@@ -8,6 +8,7 @@ import com.github.derminator.archipelobby.matchPatchesToEntries
 import com.github.derminator.archipelobby.generator.ArchipelagoGeneratorService
 import com.github.derminator.archipelobby.generator.GameCatalogService
 import com.github.derminator.archipelobby.generator.GameInfo
+import com.github.derminator.archipelobby.generator.GenerationJobLimiter
 import com.github.derminator.archipelobby.multiserver.MultiServerManager
 import com.github.derminator.archipelobby.multiserver.SaveDataService
 import com.github.derminator.archipelobby.storage.UploadsService
@@ -15,10 +16,13 @@ import org.slf4j.LoggerFactory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpStatus
@@ -38,8 +42,15 @@ class RoomService(
     private val gameCatalogService: GameCatalogService,
     private val multiServerManager: MultiServerManager,
     private val saveDataService: SaveDataService,
+    private val generationJobLimiter: GenerationJobLimiter = GenerationJobLimiter(),
+    @Value($$"${archipelobby.resources.max-generation-input-bytes:268435456}")
+    private val maxGenerationInputBytes: Long = 256L * 1024 * 1024,
 ) {
     private val logger = LoggerFactory.getLogger(RoomService::class.java)
+
+    init {
+        require(maxGenerationInputBytes > 0)
+    }
 
     suspend fun getRoomsForUser(userId: Long): List<Room> {
         return entryRepository.findByUserId(userId)
@@ -122,13 +133,16 @@ class RoomService(
             )
         }
 
-        val existingApWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
-        val apWorldContents = buildMap {
-            for (aw in existingApWorlds) put(aw.fileName, uploadsService.getFile(aw.filePath))
-            if (apWorldFile != null) put(apWorldFile.fileName, uploadsService.getFile(apWorldFile.filePath))
+        val locationCount = generationJobLimiter.run {
+            val existingApWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
+            val inputPaths = buildList {
+                add(GenerationInputPath("yaml", yamlFilePath, isYaml = true))
+                existingApWorlds.forEach { add(GenerationInputPath(it.fileName, it.filePath, isYaml = false)) }
+                apWorldFile?.let { add(GenerationInputPath(it.fileName, it.filePath, isYaml = false)) }
+            }
+            val (yamlFiles, apWorldContents) = loadGenerationInputs(inputPaths)
+            archipelagoGeneratorService.getLocationCount(yamlFiles.getValue("yaml"), apWorldContents)
         }
-        val yamlContent = uploadsService.getFile(yamlFilePath)
-        val locationCount = archipelagoGeneratorService.getLocationCount(yamlContent, apWorldContents)
 
         val entry = entryRepository.save(
             Entry(
@@ -349,50 +363,64 @@ class RoomService(
         apWorldRepository.deleteById(apWorldId).awaitSingleOrNull()
     }
 
-    suspend fun generateGame(roomId: Long, userId: Long) {
+    suspend fun generateGame(roomId: Long, userId: Long) = generationJobLimiter.run {
         val (room, entries) = validateAndFetchRoomDetailsForGeneration(roomId, userId)
-        val yamlFiles = entries.associate { it.name to uploadsService.getFile(it.yamlFilePath) }
 
-        val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
-        val apWorldFiles = apWorlds.associate { it.fileName to uploadsService.getFile(it.filePath) }
-
-        // Lock the room immediately so entry/APWorld changes are blocked during generation.
+        // Lock before loading inputs so duplicate requests cannot preload the same
+        // room and all memory-heavy work remains inside the global job permit.
         val lockedRoom = try {
             roomRepository.save(room.copy(generatedGameFilePath = Room.GENERATING_SENTINEL)).awaitSingle()
-        } catch (_: OptimisticLockingFailureException) {
-            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+        } catch (error: Throwable) {
+            resetGenerationSentinel(roomId)
+            if (error is OptimisticLockingFailureException) {
+                throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+            }
+            throw error
         }
 
         val generatedGame = try {
-            archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
-        } catch (e: Exception) {
-            runCatching {
-                roomRepository.save(lockedRoom.copy(generatedGameFilePath = null, walkthroughFilePath = null))
-                    .awaitSingle()
+            val apWorlds = apWorldRepository.findByRoomId(roomId).asFlow().toList()
+            val inputPaths = buildList {
+                entries.forEach { add(GenerationInputPath(it.name, it.yamlFilePath, isYaml = true)) }
+                apWorlds.forEach { add(GenerationInputPath(it.fileName, it.filePath, isYaml = false)) }
             }
+            val (yamlFiles, apWorldFiles) = loadGenerationInputs(inputPaths)
+            archipelagoGeneratorService.generate(yamlFiles, apWorldFiles)
+        } catch (e: Throwable) {
+            resetGenerationSentinel(roomId)
             throw e
         }
 
-        val gameFilePath = uploadsService.saveFile(generatedGame.archipelagoBytes, "${room.name}.archipelago")
-        val walkthroughFilePath = uploadsService.saveFile(generatedGame.walkthroughBytes, "${room.name}_Spoiler.txt")
+        val createdPaths = mutableListOf<String>()
+        val createdPatchPaths = mutableListOf<String>()
         val savedRoom = try {
-            roomRepository.save(
+            val gameFilePath = uploadsService.saveFile(
+                generatedGame.archipelagoBytes,
+                "${room.name}.archipelago",
+            ).also(createdPaths::add)
+            val walkthroughFilePath = uploadsService.saveFile(
+                generatedGame.walkthroughBytes,
+                "${room.name}_Spoiler.txt",
+            ).also(createdPaths::add)
+            val persistedRoom = roomRepository.save(
                 lockedRoom.copy(generatedGameFilePath = gameFilePath, walkthroughFilePath = walkthroughFilePath)
             ).awaitSingle()
-        } catch (_: OptimisticLockingFailureException) {
-            uploadsService.deleteFile(gameFilePath)
-            uploadsService.deleteFile(walkthroughFilePath)
-            runCatching {
-                roomRepository.save(lockedRoom.copy(generatedGameFilePath = null, walkthroughFilePath = null))
-                    .awaitSingle()
+            persistPatchFiles(entries, generatedGame.patchFiles, createdPaths, createdPatchPaths)
+            persistedRoom
+        } catch (error: Throwable) {
+            val roomRepaired = resetGenerationSentinel(roomId, *createdPaths.toTypedArray())
+            if (roomRepaired) {
+                val deletedPatchPaths = deletePatchRecordsBestEffort(*createdPatchPaths.toTypedArray())
+                val retainedPatchPaths = createdPatchPaths.toSet() - deletedPatchPaths
+                deleteFilesBestEffort(*createdPaths.filterNot(retainedPatchPaths::contains).toTypedArray())
+            } else {
+                logger.error("Retaining generated artifacts because room {} could not be repaired", roomId)
             }
-            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+            if (error is OptimisticLockingFailureException) {
+                throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+            }
+            throw error
         }
-
-        // Persist per-slot patch files once the game is committed. Entries can no longer be
-        // mutated (generatedGameFilePath is set), so doing this last keeps the rollback above
-        // simple. A failure here propagates rather than silently dropping a patch.
-        persistPatchFiles(entries, generatedGame.patchFiles)
 
         val savedRoomId = savedRoom.id ?: error("Room ID is null after save")
         try {
@@ -402,17 +430,87 @@ class RoomService(
         }
     }
 
+    private suspend fun resetGenerationSentinel(roomId: Long, vararg generatedPaths: String): Boolean =
+        withContext(NonCancellable) {
+            try {
+                val current = roomRepository.findById(roomId).awaitSingleOrNull()
+                if (current != null && (
+                        current.generatedGameFilePath == Room.GENERATING_SENTINEL ||
+                            current.generatedGameFilePath in generatedPaths ||
+                            current.walkthroughFilePath in generatedPaths
+                        )
+                ) {
+                    roomRepository.save(
+                        current.copy(generatedGameFilePath = null, walkthroughFilePath = null),
+                    ).awaitSingle()
+                }
+                true
+            } catch (error: Throwable) {
+                logger.error("Failed to clear generation state for room {}", roomId, error)
+                false
+            }
+        }
+
+    private suspend fun deleteFilesBestEffort(vararg paths: String) {
+        withContext(NonCancellable) {
+            paths.forEach { path ->
+                runCatching { uploadsService.deleteFile(path) }
+                    .onFailure { error -> logger.error("Failed to delete generated file {}", path, error) }
+            }
+        }
+    }
+
+    private suspend fun deletePatchRecordsBestEffort(vararg paths: String): Set<String> =
+        withContext(NonCancellable) {
+            val deleted = mutableSetOf<String>()
+            paths.forEach { path ->
+                runCatching { entryPatchFileRepository.deleteByFilePath(path).awaitSingleOrNull() }
+                    .onSuccess { deleted += path }
+                    .onFailure { error -> logger.error("Failed to delete patch metadata for {}", path, error) }
+            }
+            deleted
+        }
+
+    private suspend fun loadGenerationInputs(
+        inputs: List<GenerationInputPath>,
+    ): Pair<Map<String, ByteArray>, Map<String, ByteArray>> {
+        val yamlFiles = LinkedHashMap<String, ByteArray>()
+        val apWorldFiles = LinkedHashMap<String, ByteArray>()
+        var total = 0L
+        for (input in inputs) {
+            val remaining = maxGenerationInputBytes - total
+            if (remaining <= 0) {
+                throw ResponseStatusException(
+                    HttpStatus.CONTENT_TOO_LARGE,
+                    "Generation input exceeds $maxGenerationInputBytes bytes",
+                )
+            }
+            val bytes = uploadsService.getFile(input.path, remaining)
+            total += bytes.size
+            if (input.isYaml) yamlFiles[input.name] = bytes else apWorldFiles[input.name] = bytes
+        }
+        return yamlFiles to apWorldFiles
+    }
+
+    private data class GenerationInputPath(val name: String, val path: String, val isYaml: Boolean)
+
     /**
      * Saves each patch file extracted from a generated/uploaded game and records it against the
      * owning slot. Failures propagate: it is better to surface an error than to silently lose a
      * patch file.
      */
-    private suspend fun persistPatchFiles(entries: List<Entry>, patchFiles: Map<String, ByteArray>) {
+    private suspend fun persistPatchFiles(
+        entries: List<Entry>,
+        patchFiles: Map<String, ByteArray>,
+        createdPaths: MutableList<String>,
+        createdPatchPaths: MutableList<String>,
+    ) {
         if (patchFiles.isEmpty()) return
         val byEntryId = matchPatchesToEntries(entries, patchFiles)
         for ((entryId, patches) in byEntryId) {
             for (patch in patches) {
-                val path = uploadsService.saveFile(patch.bytes, patch.fileName)
+                val path = uploadsService.saveFile(patch.bytes, patch.fileName).also(createdPaths::add)
+                createdPatchPaths += path
                 entryPatchFileRepository.save(
                     EntryPatchFile(entryId = entryId, fileName = patch.fileName, filePath = path),
                 ).awaitSingle()
@@ -469,21 +567,35 @@ class RoomService(
             )
         }
 
-        val gameFilePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
-        val walkthroughFilePath = walkthroughBytes?.let {
-            uploadsService.saveFile(it, "${room.name}_Spoiler.txt")
-        }
+        val createdPaths = mutableListOf<String>()
+        val createdPatchPaths = mutableListOf<String>()
+        val gameFilePath: String
+        val walkthroughFilePath: String?
         val savedRoom = try {
-            roomRepository.save(
+            gameFilePath = uploadsService.saveFile(archipelagoBytes, "${room.name}.archipelago")
+                .also(createdPaths::add)
+            walkthroughFilePath = walkthroughBytes?.let {
+                uploadsService.saveFile(it, "${room.name}_Spoiler.txt").also(createdPaths::add)
+            }
+            val persistedRoom = roomRepository.save(
                 room.copy(generatedGameFilePath = gameFilePath, walkthroughFilePath = walkthroughFilePath)
             ).awaitSingle()
-        } catch (_: OptimisticLockingFailureException) {
-            uploadsService.deleteFile(gameFilePath)
-            walkthroughFilePath?.let { uploadsService.deleteFile(it) }
-            throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+            persistPatchFiles(entries, patchFiles, createdPaths, createdPatchPaths)
+            persistedRoom
+        } catch (error: Throwable) {
+            val roomRepaired = resetGenerationSentinel(roomId, *createdPaths.toTypedArray())
+            if (roomRepaired) {
+                val deletedPatchPaths = deletePatchRecordsBestEffort(*createdPatchPaths.toTypedArray())
+                val retainedPatchPaths = createdPatchPaths.toSet() - deletedPatchPaths
+                deleteFilesBestEffort(*createdPaths.filterNot(retainedPatchPaths::contains).toTypedArray())
+            } else {
+                logger.error("Retaining uploaded artifacts because room {} could not be repaired", roomId)
+            }
+            if (error is OptimisticLockingFailureException) {
+                throw ResponseStatusException(HttpStatus.CONFLICT, "Room was modified concurrently, please try again")
+            }
+            throw error
         }
-
-        persistPatchFiles(entries, patchFiles)
 
         val savedRoomId = savedRoom.id ?: error("Room ID is null after save")
         try {

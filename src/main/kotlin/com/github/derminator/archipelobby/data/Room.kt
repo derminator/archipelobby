@@ -57,6 +57,7 @@ data class EntryPatchFile(
 
 interface EntryPatchFileRepository : ReactiveCrudRepository<EntryPatchFile, Long> {
     fun findByEntryId(entryId: Long): Flux<EntryPatchFile>
+    fun deleteByFilePath(filePath: String): Mono<Void>
 }
 
 @Table("APWORLDS")

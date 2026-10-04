@@ -39,6 +39,8 @@ dependencies {
     implementation("com.discord4j:discord4j-core:3.3.2")
     implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
     implementation("org.thymeleaf.extras:thymeleaf-extras-springsecurity6")
+    implementation("org.apache.commons:commons-compress:1.28.0")
+    implementation("net.java.dev.jna:jna-platform:5.17.0")
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.springframework:spring-jdbc")
     runtimeOnly("com.h2database:h2")

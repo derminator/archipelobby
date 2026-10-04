@@ -91,6 +91,20 @@ class GameCatalogServiceTest {
     }
 
     @Test
+    fun `extractApWorldGame rejects oversized manifests without invoking Python`(@TempDir tempDir: Path) {
+        val runner = FakePythonScriptRunner("unused")
+        val service = buildService(tempDir, runner, maxManifestBytes = 32)
+        val zipBytes = buildZip(
+            mapOf("archipelago.json" to """{"game":"${"A".repeat(100)}"}"""),
+        )
+
+        assertThrows<ResponseStatusException> {
+            runBlocking { service.extractApWorldGame(zipBytes, "oversized.apworld") }
+        }
+        assertEquals(0, runner.invocationCount)
+    }
+
+    @Test
     fun `extractApWorldGame falls back to Python when manifest is missing`(@TempDir tempDir: Path) = runBlocking {
         val runner = SequentialFakePythonScriptRunner(
             """
@@ -163,6 +177,7 @@ class GameCatalogServiceTest {
     private fun buildService(
         tempDir: Path,
         runner: PythonScriptRunner,
+        maxManifestBytes: Long = 1024 * 1024,
     ): GameCatalogService {
         val archipelagoRoot = tempDir.resolve("Archipelago").also { it.createDirectories() }
         archipelagoRoot.resolve("ModuleUpdate.py").writeText("def update(): pass")
@@ -175,6 +190,7 @@ class GameCatalogServiceTest {
             listGamesScriptPath = listGamesScript.toString(),
             archipelagoScriptPath = generateScript.toString(),
             pythonScriptRunner = runner,
+            maxManifestBytes = maxManifestBytes,
         )
     }
 
