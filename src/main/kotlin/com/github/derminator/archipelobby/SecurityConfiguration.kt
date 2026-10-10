@@ -8,6 +8,8 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.config.web.server.invoke
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.context.ServerSecurityContextRepository
+import org.springframework.security.web.server.context.WebSessionServerSecurityContextRepository
 import org.springframework.security.web.server.csrf.XorServerCsrfTokenRequestAttributeHandler
 import org.springframework.security.web.server.header.ReferrerPolicyServerHttpHeadersWriter
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
@@ -32,12 +34,19 @@ class SecurityConfiguration(
     }
 
     @Bean
-    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+    fun securityContextRepository(): ServerSecurityContextRepository = WebSessionServerSecurityContextRepository()
+
+    @Bean
+    fun springSecurityFilterChain(
+        http: ServerHttpSecurity,
+        securityContextRepository: ServerSecurityContextRepository
+    ): SecurityWebFilterChain {
         val isDiscordEnabled = environment.activeProfiles.contains("discord")
+        http.securityContextRepository(securityContextRepository)
 
         return http {
             authorizeExchange {
-                authorize(pathMatchers("/", "/error", "/style.css", "/robots.txt", "/favicon.svg"), permitAll)
+                authorize(pathMatchers("/", "/error", "/style.css", "/robots.txt", "/favicon.svg", "/login/bot"), permitAll)
                 authorize(pathMatchers(HttpMethod.GET, "/rooms/*"), permitAll)
                 authorize(pathMatchers("/internal/multiserver/**"), permitAll)
                 authorize(pathMatchers("/rooms/*/ws"), permitAll)
