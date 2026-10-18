@@ -10,7 +10,14 @@ data class MultiServerProperties(
     val enabled: Boolean = false,
     val portRangeStart: Int = 38281,
     val portRangeEnd: Int = 38380,
+    // Address used by Spring when proxying to a MultiServer process.
     val host: String = "127.0.0.1",
+    // Address passed to MultiServer's --host option. Inherit host to preserve
+    // the binding behavior of installations configured before this was split.
+    val bindHost: String = host,
+    // Hostname shown to players for direct port connections. Blank derives it
+    // from the room page request.
+    val publicHost: String = "",
     val scriptPath: String = "Archipelago/MultiServer.py",
     val wrapperScriptPath: String = "python/multiserver_wrapper.py",
     val internalBaseUrl: String = "http://localhost:8080",

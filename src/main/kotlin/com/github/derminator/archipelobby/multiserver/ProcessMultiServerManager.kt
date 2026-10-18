@@ -22,8 +22,11 @@ import org.springframework.web.server.ResponseStatusException
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
+import java.net.InetSocketAddress
+import java.net.ServerSocket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 
 @Service
 @ConditionalOnProperty("archipelobby.multiserver.enabled", havingValue = "true")
@@ -42,7 +45,13 @@ class ProcessMultiServerManager(
     private val lifecycleScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     @Volatile private var running = false
 
-    private data class ManagedServer(val process: Process, val port: Int, val logThread: Thread)
+    private data class ManagedServer(
+        val process: Process,
+        val port: Int,
+        val logThread: Thread,
+        val readyToken: String,
+        @Volatile var ready: Boolean = false,
+    )
 
     private fun lockFor(roomId: Long): Mutex = roomLocks.computeIfAbsent(roomId) { Mutex() }
 
@@ -66,6 +75,9 @@ class ProcessMultiServerManager(
                 logger.info("Server for room {} is already running on port {}", roomId, existing.port)
                 return
             }
+            if (existing != null) {
+                processes.remove(roomId, existing)
+            }
 
             val room = roomRepository.findById(roomId).awaitSingleOrNull()
                 ?: throw IllegalArgumentException("Room $roomId not found")
@@ -77,15 +89,19 @@ class ProcessMultiServerManager(
             val port = allocatePort()
             try {
                 logger.info("Starting MultiServer for room {} on port {}", roomId, port)
+                val readyToken = UUID.randomUUID().toString()
 
                 val process = pythonScriptRunner.runInBackground(
                     scriptPath = properties.wrapperScriptPath,
-                    extraEnv = mapOf("ARCHIPELOBBY_SPRING_TOKEN" to internalToken.value),
+                    extraEnv = mapOf(
+                        "ARCHIPELOBBY_SPRING_TOKEN" to internalToken.value,
+                        "ARCHIPELOBBY_READY_TOKEN" to readyToken,
+                    ),
                     "--spring-url", properties.internalBaseUrl,
                     "--room-id", roomId.toString(),
                     "--archipelago-dir", archipelagoDir(),
                     "--port", port.toString(),
-                    "--host", properties.host,
+                    "--host", properties.bindHost,
                 )
 
                 lateinit var managed: ManagedServer
@@ -93,7 +109,18 @@ class ProcessMultiServerManager(
                     BufferedReader(InputStreamReader(process.inputStream, Charsets.UTF_8)).use { reader ->
                         while (true) {
                             val line = reader.readLine() ?: break
-                            logger.info("[multiserver:{}] {}", roomId, line)
+                            if (line == "$READY_PREFIX$readyToken" &&
+                                process.isAlive && processes[roomId] === managed
+                            ) {
+                                managed.ready = true
+                                logger.info(
+                                    "MultiServer for room {} is accepting connections on port {}",
+                                    roomId,
+                                    port,
+                                )
+                            } else {
+                                logger.info("[multiserver:{}] {}", roomId, line)
+                            }
                         }
                     }
                     val exitCode = process.waitFor()
@@ -107,7 +134,7 @@ class ProcessMultiServerManager(
                     }
                 }, "multiserver-log-$roomId").apply { isDaemon = true }
 
-                managed = ManagedServer(process, port, logThread)
+                managed = ManagedServer(process, port, logThread, readyToken)
                 processes[roomId] = managed
                 logThread.start()
 
@@ -125,8 +152,11 @@ class ProcessMultiServerManager(
 
     override suspend fun stopServer(roomId: Long) {
         lockFor(roomId).withLock {
-            val managed = processes.remove(roomId) ?: return
-            if (!managed.process.isAlive) return
+            val managed = processes[roomId] ?: return
+            if (!managed.process.isAlive) {
+                processes.remove(roomId, managed)
+                return
+            }
 
             logger.info("Stopping MultiServer for room {} (port {})", roomId, managed.port)
             managed.process.destroy()
@@ -136,13 +166,19 @@ class ProcessMultiServerManager(
             if (!stopped) {
                 logger.warn("MultiServer for room {} did not stop gracefully, forcing", roomId)
                 managed.process.destroyForcibly()
+                val forced = withContext(Dispatchers.IO) {
+                    managed.process.waitFor(10, TimeUnit.SECONDS)
+                }
+                if (!forced) {
+                    logger.error("MultiServer for room {} did not exit after being forced", roomId)
+                }
             }
         }
     }
 
     override fun isRunning(roomId: Long): Boolean = aliveServer(roomId) != null
 
-    override fun getServerPort(roomId: Long): Int? = aliveServer(roomId)?.port
+    override fun getServerPort(roomId: Long): Int? = aliveServer(roomId)?.takeIf { it.ready }?.port
 
     /**
      * The room's managed server, but only while its process is alive. If the
@@ -162,13 +198,22 @@ class ProcessMultiServerManager(
     private suspend fun allocatePort(): Int = allocationMutex.withLock {
         val usedPorts = processes.values.mapTo(mutableSetOf()) { it.port }
         usedPorts.addAll(pendingPorts)
-        val port = (properties.portRangeStart..properties.portRangeEnd).firstOrNull { it !in usedPorts }
+        val port = (properties.portRangeStart..properties.portRangeEnd).firstOrNull {
+            it !in usedPorts && canBind(it)
+        }
             ?: error("No available ports in range ${properties.portRangeStart}-${properties.portRangeEnd}")
         // Reserve the port so a concurrent allocation for a different room doesn't
         // pick it before this caller can put a ManagedServer in `processes`.
         pendingPorts.add(port)
         port
     }
+
+    private fun canBind(port: Int): Boolean = runCatching {
+        ServerSocket().use { socket ->
+            socket.reuseAddress = false
+            socket.bind(InetSocketAddress(properties.bindHost, port))
+        }
+    }.isSuccess
 
     // SmartLifecycle
 
@@ -216,4 +261,8 @@ class ProcessMultiServerManager(
     override fun isRunning(): Boolean = running
 
     override fun getPhase(): Int = Int.MAX_VALUE - 1
+
+    companion object {
+        private const val READY_PREFIX = "ARCHIPELOBBY_READY="
+    }
 }

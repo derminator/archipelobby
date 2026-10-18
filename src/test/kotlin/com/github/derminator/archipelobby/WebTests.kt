@@ -50,7 +50,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.test.assertContentEquals
 
-@SpringBootTest
+@SpringBootTest(properties = ["archipelobby.multiserver.public-host=play.example.test"])
 @EnableAutoConfiguration(
     exclude = [
         R2dbcAutoConfiguration::class,
@@ -1285,7 +1285,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
         `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
-        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(38281)
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -1298,6 +1298,7 @@ class WebTests {
             .expectBody<String>().consumeWith { response ->
                 val body = response.responseBody!!
                 assert(body.contains("Running"))
+                assert(body.contains("ws://play.example.test:38281"))
                 assert(body.contains("/rooms/$roomId/ws"))
             }
     }
@@ -1313,7 +1314,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
         `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
-        `when`(multiServerManager.isRunning(roomId)).thenReturn(false)
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(null)
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -1326,7 +1327,39 @@ class WebTests {
             .expectBody<String>().consumeWith { response ->
                 val body = response.responseBody!!
                 assert(body.contains("Stopped"))
-                assert(!body.contains("Connect at"))
+                assert(!body.contains("Connect directly"))
+            }
+    }
+
+    @Test
+    fun `room page shows starting status without advertising an unready port`(): Unit = runBlocking {
+        val roomId = 1L
+        val room = Room(
+            roomId, 123, "Test Room",
+            generatedGameFilePath = "path/to/game.archipelago",
+        )
+        `when`(roomRepository.findById(roomId)).thenReturn(Mono.just(room))
+        `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
+        `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
+        `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(null)
+        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+
+        webTestClient.mutateWith(
+            mockAuthentication(
+                UsernamePasswordAuthenticationToken(testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER")))
+            )
+        )
+            .get().uri("/rooms/$roomId")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody<String>().consumeWith { response ->
+                val body = response.responseBody!!
+                assert(body.contains("Starting"))
+                assert(!body.contains("Connect directly"))
+                assert(!body.contains("/rooms/$roomId/ws"))
+                assert(body.contains("Stop Server"))
+                assert(!body.contains("Start Server"))
             }
     }
 
@@ -1341,7 +1374,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
         `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
-        `when`(multiServerManager.isRunning(roomId)).thenReturn(false)
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(null)
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -1369,7 +1402,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
         `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(true)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
-        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(38282)
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -1397,7 +1430,7 @@ class WebTests {
         `when`(discordService.isMemberOfGuild(0L, 123)).thenReturn(true)
         `when`(discordService.isAdminOfGuild(0L, 123)).thenReturn(false)
         `when`(entryRepository.findByRoomId(roomId)).thenReturn(Flux.empty())
-        `when`(multiServerManager.isRunning(roomId)).thenReturn(true)
+        `when`(multiServerManager.getServerPort(roomId)).thenReturn(38283)
 
         webTestClient.mutateWith(
             mockAuthentication(
@@ -1410,6 +1443,7 @@ class WebTests {
             .expectBody<String>().consumeWith { response ->
                 val body = response.responseBody!!
                 assert(body.contains("Running"))
+                assert(body.contains("ws://play.example.test:38283"))
                 assert(body.contains("/rooms/$roomId/ws"))
                 assert(!body.contains("Start Server"))
                 assert(!body.contains("Stop Server"))
