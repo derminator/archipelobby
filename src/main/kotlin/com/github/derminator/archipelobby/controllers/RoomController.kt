@@ -1,5 +1,6 @@
 package com.github.derminator.archipelobby.controllers
 
+import com.github.derminator.archipelobby.SecurityConfiguration
 import com.github.derminator.archipelobby.data.ApWorldFile
 import com.github.derminator.archipelobby.data.EntryYaml
 import com.github.derminator.archipelobby.data.Puns
@@ -45,8 +46,30 @@ class RoomController(
         .addModule(KotlinModule.Builder().build())
         .build()
 
+    @GetMapping("/login/discord")
+    fun beginDiscordLogin(
+        @RequestParam(required = false, name = "redirect_to") redirectTo: String?,
+        exchange: ServerWebExchange,
+    ): Mono<Void> = exchange.session.flatMap { session ->
+        val safeDestination = redirectTo?.takeIf {
+            it.startsWith("/rooms/") && !it.startsWith("//") && !it.contains('\\') &&
+                runCatching { java.net.URI(it).let { uri -> !uri.isAbsolute && uri.host == null } }.getOrDefault(false)
+        }
+        if (safeDestination != null) {
+            session.attributes[SecurityConfiguration.LOGIN_REDIRECT_SESSION_KEY] = safeDestination
+        } else {
+            session.attributes.remove(SecurityConfiguration.LOGIN_REDIRECT_SESSION_KEY)
+        }
+        session.save().then(Mono.defer {
+            exchange.response.statusCode = HttpStatus.FOUND
+            exchange.response.headers.location = java.net.URI.create("/oauth2/authorization/discord")
+            exchange.response.setComplete()
+        })
+    }
+
     @GetMapping
     fun getRooms(
+
         principal: Principal,
         model: Model
     ): Mono<String> = mono {
@@ -94,6 +117,7 @@ class RoomController(
         if (principal == null || principal is AnonymousAuthenticationToken) {
             val preview = roomService.getRoomForPreview(internalRoomId)
             model.addAttribute("preview", preview)
+            model.addAttribute("loginRedirectUri", exchange.request.path.value())
             model.addAttribute("pun", Puns.forRoom(internalRoomId))
             return@mono "room-preview"
         }
