@@ -71,6 +71,38 @@ class RoomService(
     suspend fun getAdminGuilds(userId: Long): Flow<GuildInfo> =
         discordService.getAdminGuildsForUser(userId)
 
+    suspend fun getGuildMembersForRoom(roomId: Long, userId: Long): List<UserInfo> {
+        val room = roomRepository.findById(roomId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found")
+        if (!discordService.isMemberOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to room")
+        }
+        if (!discordService.isAdminOfGuild(userId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        return discordService.getGuildMembers(room.guildId).toList().sortedBy { it.username.lowercase() }
+    }
+
+    @Transactional
+    suspend fun changeEntryUser(entryId: Long, roomId: Long, adminUserId: Long, newUserId: Long) {
+        val entry = entryRepository.findById(entryId).awaitSingleOrNull()
+            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Entry not found")
+        if (entry.roomId != roomId) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Entry does not belong to this room")
+        }
+        val room = roomRepository.findById(roomId).awaitSingle()
+        if (!discordService.isAdminOfGuild(adminUserId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.FORBIDDEN, "Not an admin of this guild")
+        }
+        if (room.generatedGameFilePath != null) {
+            throw ResponseStatusException(HttpStatus.CONFLICT, "Cannot change entry owners after the game has been generated")
+        }
+        if (!discordService.isMemberOfGuild(newUserId, room.guildId)) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Selected user is not a member of this guild")
+        }
+        entryRepository.save(entry.copy(userId = newUserId)).awaitSingle()
+    }
+
     suspend fun getJoinableRooms(userId: Long): List<Room> {
         val result = mutableListOf<Room>()
         discordService.getGuildsForUser(userId).collect { guild ->

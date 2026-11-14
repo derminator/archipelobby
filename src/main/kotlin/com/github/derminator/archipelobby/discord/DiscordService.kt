@@ -9,6 +9,7 @@ interface DiscordService {
     suspend fun isMemberOfGuild(userId: Long, guildId: Long): Boolean
     suspend fun isAdminOfGuild(userId: Long, guildId: Long): Boolean
     suspend fun getUserInfo(userId: Long): UserInfo
+    suspend fun getGuildMembers(guildId: Long): Flow<UserInfo>
     suspend fun getGuildInfo(guildId: Long): GuildInfo
 }
 

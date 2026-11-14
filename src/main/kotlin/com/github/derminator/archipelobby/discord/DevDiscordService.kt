@@ -65,6 +65,15 @@ class DevDiscordService(
         parseUsers().singleOrNull { it.id == userId }
             ?: throw IllegalArgumentException("User with ID $userId not found in dev properties")
 
+    override suspend fun getGuildMembers(guildId: Long): Flow<UserInfo> {
+        if (!parseGuilds().any { it.id == guildId }) return emptyList<UserInfo>().asFlow()
+        val memberNames = (properties.userGuilds + properties.adminGuilds)
+            .filter { it.substringAfter(":").toLongOrNull() == guildId }
+            .map { it.substringBefore(":") }
+            .toSet()
+        return parseUsers().filter { it.username in memberNames }.asFlow()
+    }
+
     override suspend fun getGuildInfo(guildId: Long): GuildInfo =
         parseGuilds().single { it.id == guildId }
 }
