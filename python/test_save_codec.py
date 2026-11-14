@@ -4,6 +4,7 @@ import json
 import sys
 import threading
 import unittest
+from contextlib import nullcontext
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -23,7 +24,8 @@ with (
 
 def make_context(cls=MultiServer.Context, populated=True):
     # The catalog is unrelated to persistence and imports every installed world.
-    with patch.object(cls, "_load_game_data"):
+    game_data_patch = patch.object(cls, "_load_game_data") if hasattr(cls, "_load_game_data") else nullcontext()
+    with game_data_patch:
         context = cls("127.0.0.1", 38281, None, None, 1, 10, True, logger=Mock())
     context.slot_info = {
         2: NetworkSlot("Bob", "Factorio", SlotType.player),
