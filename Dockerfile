@@ -34,6 +34,10 @@ RUN /app/.venv/bin/python /app/Archipelago/ModuleUpdate.py --yes
 RUN chown -R appuser:appuser /app
 USER appuser
 
+# Disable the vulnerable AVX-512 Base64 intrinsic until the Temurin CSPU
+# build containing CVE-2026-114938 is available.
+ENV JAVA_TOOL_OPTIONS="-XX:-UseBASE64Intrinsics"
+
 # Point the runner at the pre-created venv's python for Archipelago scripts.
 ENV ARCHIPELOBBY_PYTHON_EXECUTABLE=/app/.venv/bin/python
 
