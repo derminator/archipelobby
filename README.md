@@ -21,12 +21,12 @@ uploaded YAMLs, and easily download individual or bundled entries.
 
 ## Technology Stack
 
-- **Language**: Kotlin 2.4.0
-- **Framework**: Spring Boot 4.1.0-RC1
+- **Language**: Kotlin 2.4.21
+- **Framework**: Spring Boot 4.1.2
 - **Architecture**: Spring WebFlux (Reactive)
 - **Database**: H2 with R2DBC, schema managed by Flyway
 - **Authentication**: Spring Security with OAuth2 (Discord)
-- **Discord Integration**: Discord4J 3.3.2
+- **Discord Integration**: Discord4J 3.3.3
 - **Template Engine**: Thymeleaf
 - **Build Tool**: Gradle (Kotlin DSL)
 - **Java Version**: 25
