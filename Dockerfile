@@ -1,5 +1,5 @@
-# Build stage: plain JDK, no native-image (Temurin 25.0.5_8; Java4Shell fix)
-FROM eclipse-temurin:25.0.5_8-jdk-noble AS build
+# Build stage: plain JDK, no native-image (Temurin 25.0.5.1+2; Java4Shell fix)
+FROM eclipse-temurin:25.0.5.1_2-jdk-noble AS build
 WORKDIR /app
 COPY . ./
 ARG SPRING_PROFILE=prod
@@ -7,7 +7,7 @@ ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
 RUN ./gradlew bootJar --no-daemon
 
 # Run stage: JRE + CPython
-FROM eclipse-temurin:25.0.5_8-jre-noble
+FROM eclipse-temurin:25.0.5.1_2-jre-noble
 WORKDIR /app
 
 RUN groupadd -r -g 10001 appuser && useradd -r -u 10001 -g appuser appuser
