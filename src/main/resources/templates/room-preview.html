@@ -23,7 +23,7 @@
             — <span th:text="${#strings.listJoin(preview.games, ', ')}">Games</span>
         </span>
     </p>
-    <p><a th:href="@{/oauth2/authorization/discord}">Log in with Discord to view the full room</a></p>
+    <p><a th:href="@{/rooms/login/discord(redirect_to=${loginRedirectUri})}">Log in with Discord to view the full room</a></p>
 </main>
 </body>
 </html>

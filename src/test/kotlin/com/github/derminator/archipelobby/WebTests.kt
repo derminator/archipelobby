@@ -275,6 +275,7 @@ class WebTests {
             .expectStatus().isOk
             .expectBody<String>().consumeWith { response ->
                 assert(response.responseBody!!.contains("UUID Room"))
+                assert(response.responseBody!!.contains("/rooms/login/discord?redirect_to=/rooms/$publicId"))
             }
     }
 
