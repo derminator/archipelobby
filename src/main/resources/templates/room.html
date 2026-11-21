@@ -107,6 +107,21 @@
             </a>
             <form method="post"
                   class="inline-form"
+                  th:if="${isAdmin and room.generatedGameFilePath == null}"
+                  th:action="@{/rooms/{roomId}/entries/{entryId}/user(roomId=${room.urlId},entryId=${entry.id})}">
+                <label>
+                    Change owner:
+                    <select name="userId" required>
+                        <option th:each="member : ${guildMembers}"
+                                th:value="${member.id}"
+                                th:selected="${member.id == entry.user.id}"
+                                th:text="${member.username}">Guild member</option>
+                    </select>
+                </label>
+                <input type="submit" value="Change"/>
+            </form>
+            <form method="post"
+                  class="inline-form"
                   th:action="@{/rooms/{roomId}/entries/{entryId}/delete(roomId=${room.urlId},entryId=${entry.id})}"
                   th:if="${(entry.user.id == userId or isAdmin) and room.generatedGameFilePath == null}"
                   th:attr="data-confirm=|Delete entry '${entry.name}'?|">

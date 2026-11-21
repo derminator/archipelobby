@@ -178,6 +178,23 @@ class RoomController(
         }
     }
 
+    @PostMapping("/{roomId}/entries/{entryId}/user")
+    fun changeEntryUser(
+        @PathVariable roomId: String,
+        @PathVariable entryId: Long,
+        principal: Principal,
+        exchange: ServerWebExchange,
+    ): Mono<String> = mono {
+        val formData = exchange.formData.awaitSingle()
+        val newUserId = formData.getFirst("userId")?.toLongOrNull()
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid user ID")
+        val internalRoomId = roomService.resolveRoomUrlId(roomId)
+        roomService.changeEntryUser(
+            entryId, internalRoomId, principal.asDiscordPrincipal.userId, newUserId,
+        )
+        "redirect:/rooms/$roomId"
+    }
+
     @PostMapping("/{roomId}/entries/{entryId}/delete")
     fun deleteEntry(
         @PathVariable roomId: String,
@@ -496,6 +513,9 @@ class RoomController(
         model.addAttribute("room", roomWithEntries.room)
         model.addAttribute("entries", roomWithEntries.entries.toList())
         model.addAttribute("isAdmin", roomWithEntries.isAdmin)
+        model.addAttribute("guildMembers", if (roomWithEntries.isAdmin) {
+            roomService.getGuildMembersForRoom(roomId, userId)
+        } else emptyList())
         model.addAttribute("userId", userId)
         model.addAttribute("apWorlds", roomService.getApWorldsForRoom(roomId, userId).toList())
         model.addAttribute("roomGames", roomWithEntries.roomGames)

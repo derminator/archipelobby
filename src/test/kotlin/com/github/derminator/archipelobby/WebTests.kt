@@ -445,6 +445,75 @@ class WebTests {
     }
 
     @Test
+    fun `admin can change an entry owner to a member of the room guild`(): Unit = runBlocking {
+        val publicId = "550e8400-e29b-41d4-a716-446655440000"
+        val room = Room(id = 42L, guildId = 123L, name = "Room", publicId = publicId)
+        val entry = Entry(id = 7L, roomId = 42L, userId = 10L, name = "Slot", game = "Game", yamlFilePath = "slot.yaml")
+        `when`(roomRepository.findByPublicId(publicId)).thenReturn(Mono.just(room))
+        `when`(roomRepository.findById(42L)).thenReturn(Mono.just(room))
+        `when`(entryRepository.findById(7L)).thenReturn(Mono.just(entry))
+        `when`(discordService.isAdminOfGuild(testPrincipal.userId, 123L)).thenReturn(true)
+        `when`(discordService.isMemberOfGuild(20L, 123L)).thenReturn(true)
+        `when`(entryRepository.save(any(Entry::class.java))).thenAnswer { invocation ->
+            Mono.just(invocation.getArgument<Entry>(0))
+        }
+
+        webTestClient.mutateWith(mockAuthentication(UsernamePasswordAuthenticationToken(
+            testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+        ))).mutateWith(csrf())
+            .post().uri("/rooms/$publicId/entries/7/user")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("userId", "20"))
+            .exchange()
+            .expectStatus().is3xxRedirection
+
+        verify(entryRepository).save(entry.copy(userId = 20L))
+    }
+
+    @Test
+    fun `admin cannot assign an entry to someone outside the guild`(): Unit = runBlocking {
+        val room = Room(id = 42L, guildId = 123L, name = "Room")
+        val entry = Entry(id = 7L, roomId = 42L, userId = 10L, name = "Slot", game = "Game", yamlFilePath = "slot.yaml")
+        `when`(entryRepository.findById(7L)).thenReturn(Mono.just(entry))
+        `when`(roomRepository.findById(42L)).thenReturn(Mono.just(room))
+        `when`(discordService.isAdminOfGuild(testPrincipal.userId, 123L)).thenReturn(true)
+        `when`(discordService.isMemberOfGuild(20L, 123L)).thenReturn(false)
+
+        webTestClient.mutateWith(mockAuthentication(UsernamePasswordAuthenticationToken(
+            testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+        ))).mutateWith(csrf())
+            .post().uri("/rooms/42/entries/7/user")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("userId", "20"))
+            .exchange()
+            .expectStatus().isBadRequest
+
+        verify(entryRepository, never()).save(any(Entry::class.java))
+    }
+
+    @Test
+    fun `non-admin cannot change an entry owner`(): Unit = runBlocking {
+        val publicId = "550e8400-e29b-41d4-a716-446655440000"
+        val room = Room(id = 42L, guildId = 123L, name = "Room", publicId = publicId)
+        `when`(roomRepository.findByPublicId(publicId)).thenReturn(Mono.just(room))
+        `when`(roomRepository.findById(42L)).thenReturn(Mono.just(room))
+        `when`(entryRepository.findById(7L)).thenReturn(Mono.just(
+            Entry(id = 7L, roomId = 42L, userId = 10L, name = "Slot", game = "Game", yamlFilePath = "slot.yaml")
+        ))
+
+        webTestClient.mutateWith(mockAuthentication(UsernamePasswordAuthenticationToken(
+            testPrincipal, null, listOf(SimpleGrantedAuthority("ROLE_USER"))
+        ))).mutateWith(csrf())
+            .post().uri("/rooms/$publicId/entries/7/user")
+            .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+            .body(BodyInserters.fromFormData("userId", "20"))
+            .exchange()
+            .expectStatus().isForbidden
+
+        verify(entryRepository, never()).save(any(Entry::class.java))
+    }
+
+    @Test
     fun `creating a room redirects to a UUID URL`(): Unit = runBlocking {
         `when`(discordService.isAdminOfGuild(testPrincipal.userId, 123L)).thenReturn(true)
         `when`(roomRepository.existsByGuildIdAndName(123L, "Test Room")).thenReturn(Mono.just(false))

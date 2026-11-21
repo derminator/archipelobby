@@ -68,6 +68,12 @@ class RealDiscordService(
             .map { UserInfo(it.id.asLong(), it.username) }
             .awaitSingle()
 
+    override suspend fun getGuildMembers(guildId: Long): Flow<UserInfo> = flow {
+        client().getGuildById(Snowflake.of(guildId)).awaitSingle()
+            .members.asFlow()
+            .collect { member -> emit(UserInfo(member.id.asLong(), member.username)) }
+    }
+
     override suspend fun getGuildInfo(guildId: Long): GuildInfo =
         client().getGuildById(Snowflake.of(guildId))
             .map { GuildInfo(it.id.asLong(), it.name) }
