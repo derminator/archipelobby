@@ -23,8 +23,7 @@ repositories {
     mavenCentral()
 }
 
-// Spring Boot's dependency-management plugin uses this property for its Jackson 2 BOM.
-extra["jackson-2-bom.version"] = "2.21.5"
+
 
 dependencies {
     constraints {
